@@ -14,6 +14,11 @@ export default async function DashboardLayout({
 }) {
   const currentUser = await getCurrentUser();
 
+  // Redirect to login if user is not authenticated
+  if (!currentUser) {
+    redirect("/sign-in");
+  }
+
   // Redirect to onboarding if user hasn't completed it
   if (!currentUser.onboardingCompleted) {
     redirect("/onboarding");

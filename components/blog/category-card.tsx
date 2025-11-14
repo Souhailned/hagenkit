@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
 import {
   motion,
   MotionValue,
   useMotionTemplate,
   useMotionValue,
-} from "framer-motion"
-import Link from "next/link"
+} from "motion/react";
+import Link from "next/link";
 
-import { useId } from "react"
+import { useId } from "react";
 
 function GridPattern({
   width,
@@ -18,14 +18,14 @@ function GridPattern({
   squares,
   ...props
 }: {
-  width: number
-  height: number
-  x: number | string
-  y?: number | string
-  squares?: [number, number][]
-  className?: string
+  width: number;
+  height: number;
+  x: number | string;
+  y?: number | string;
+  squares?: [number, number][];
+  className?: string;
 }) {
-  const patternId = useId()
+  const patternId = useId();
 
   return (
     <svg aria-hidden="true" {...props}>
@@ -62,7 +62,7 @@ function GridPattern({
         </svg>
       )}
     </svg>
-  )
+  );
 }
 
 function CardPattern({
@@ -70,12 +70,12 @@ function CardPattern({
   mouseY,
   ...gridProps
 }: {
-  mouseX: MotionValue<number>
-  mouseY: MotionValue<number>
-  [key: string]: unknown
+  mouseX: MotionValue<number>;
+  mouseY: MotionValue<number>;
+  [key: string]: unknown;
 }) {
-  const maskImage = useMotionTemplate`radial-gradient(180px at ${mouseX}px ${mouseY}px, white, transparent)`
-  const style = { maskImage, WebkitMaskImage: maskImage }
+  const maskImage = useMotionTemplate`radial-gradient(180px at ${mouseX}px ${mouseY}px, white, transparent)`;
+  const style = { maskImage, WebkitMaskImage: maskImage };
 
   return (
     <div className="pointer-events-none">
@@ -105,7 +105,7 @@ function CardPattern({
         />
       </motion.div>
     </div>
-  )
+  );
 }
 
 export default function CategoryCard({
@@ -115,30 +115,30 @@ export default function CategoryCard({
   icon,
   pattern,
 }: {
-  href: string
-  name: string
-  description: string
-  icon: React.ReactNode
+  href: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
   pattern: {
-    y: number
-    squares: [number, number][]
-  }
+    y: number;
+    squares: [number, number][];
+  };
 }) {
-  const mouseX = useMotionValue(0)
-  const mouseY = useMotionValue(0)
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
 
   function onMouseMove({
     currentTarget,
     clientX,
     clientY,
   }: {
-    currentTarget: HTMLDivElement
-    clientX: number
-    clientY: number
+    currentTarget: HTMLDivElement;
+    clientX: number;
+    clientY: number;
   }) {
-    const { left, top } = currentTarget.getBoundingClientRect()
-    mouseX.set(clientX - left)
-    mouseY.set(clientY - top)
+    const { left, top } = currentTarget.getBoundingClientRect();
+    mouseX.set(clientX - left);
+    mouseY.set(clientY - top);
   }
 
   return (
@@ -160,5 +160,5 @@ export default function CategoryCard({
         <p className="mt-1 text-sm text-gray-600">{description}</p>
       </div>
     </div>
-  )
+  );
 }
