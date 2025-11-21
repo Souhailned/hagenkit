@@ -1,4 +1,4 @@
-import { Prisma } from "@/app/generated/prisma";
+import { Prisma } from "@/generated/prisma/client";
 
 /**
  * User type returned from getCurrentUser() action

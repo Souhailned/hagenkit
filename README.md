@@ -55,7 +55,7 @@ cp .env.example .env.local
 
 Update `.env.local` with your credentials:
 
-- `DATABASE_URL` for PostgreSQL or Prisma Accelerate.
+- `DATABASE_URL` for PostgreSQL (direct connection).
 - `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL`.
 - OAuth providers such as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 - Optional integrations (`RESEND_API_KEY`, Stripe keys, etc.).
@@ -119,7 +119,7 @@ pnpm prisma:migrate dev --name change-default-role-to-user
 
 ### Frameworks & Platforms
 - **Next.js 16** – App Router, Server Actions, and edge-ready rendering.
-- **Prisma + PostgreSQL** – Type-safe ORM with generated client in `app/generated/prisma`.
+- **Prisma ORM v7 + PostgreSQL** – Type-safe ORM with `@prisma/adapter-pg` driver for direct TCP connections. Generated client in `app/generated/prisma`.
 - **Better Auth** – Composable auth with cookie/session helpers and social providers.
 - **Vercel** – First-class deployment target with optimized build output.
 
