@@ -12,6 +12,7 @@ import { Spinner } from "@/components/ui/spinner";
 import Link from "next/link";
 import { IconInnerShadowTop } from "@tabler/icons-react";
 import { buttonVariants } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 function formatLoginMethod(method: string | null) {
   if (!method) {
@@ -29,6 +30,7 @@ function formatLoginMethod(method: string | null) {
 }
 
 export default function SignUpAuth() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -102,6 +104,9 @@ export default function SignUpAuth() {
                       },
                       onRequest: () => {
                         setLoading(true);
+                      },
+                      onSuccess: () => {
+                        router.push("/onboarding");
                       },
                       onError: (ctx) => {
                         toast.error(ctx.error.message);

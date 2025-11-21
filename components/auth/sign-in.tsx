@@ -6,12 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 import { useMemo, useState } from "react";
 import { authClient, signIn } from "@/lib/auth-client";
 import { toast } from "sonner";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { IconInnerShadowTop } from "@tabler/icons-react";
@@ -33,6 +32,7 @@ function formatLoginMethod(method: string | null) {
 }
 
 export default function SignInAuth() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -128,7 +128,17 @@ export default function SignInAuth() {
                           },
                           onError: (ctx) => {
                             setLoading(false);
-                            toast.error(ctx.error.message);
+                            if (ctx.error.message.includes("User not found") || ctx.error.status === 401) {
+                                toast.error("Account not found", {
+                                    description: "We couldn't find an account with that email.",
+                                    action: {
+                                        label: "Sign Up",
+                                        onClick: () => router.push("/sign-up"),
+                                    },
+                                });
+                            } else {
+                                toast.error(ctx.error.message);
+                            }
                           },
                         }
                       );

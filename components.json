@@ -21,12 +21,6 @@
   "registries": {
     "@kibo-ui": "https://www.kibo-ui.com/r/{name}.json",
     "@magicui": "https://magicui.design/r/{name}",
-    "@blocks": "https://blocks.so/r/{name}.json",
-    "@tailark-pro": {
-      "url": "https://pro.tailark.com/registry/{name}",
-      "headers": {
-        "Authorization": "Bearer $TAILARK_API_KEY"
-      }
-    }  
+    "@blocks": "https://blocks.so/r/{name}.json"
   }
 }

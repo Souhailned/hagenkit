@@ -56,6 +56,7 @@ export function OnboardingFlow({ userName, userEmail }: OnboardingFlowProps) {
   const [discoverySource, setDiscoverySource] = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
   const [businessName, setBusinessName] = useState("");
+  const [isBusinessNameCustomized, setIsBusinessNameCustomized] = useState(false);
   const [businessPhone, setBusinessPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -353,10 +354,11 @@ export function OnboardingFlow({ userName, userEmail }: OnboardingFlowProps) {
                         id="workspaceName"
                         value={workspaceName}
                         onChange={(e) => {
-                          setWorkspaceName(e.target.value);
-                          // Auto-populate business name if empty
-                          if (!businessName) {
-                            setBusinessName(e.target.value);
+                          const newName = e.target.value;
+                          setWorkspaceName(newName);
+                          // Sync business name if not customized
+                          if (!isBusinessNameCustomized) {
+                            setBusinessName(newName);
                           }
                         }}
                         placeholder="My Awesome Workspace"
@@ -381,7 +383,10 @@ export function OnboardingFlow({ userName, userEmail }: OnboardingFlowProps) {
                     <Input
                       id="businessName"
                       value={businessName}
-                      onChange={(e) => setBusinessName(e.target.value)}
+                      onChange={(e) => {
+                        setBusinessName(e.target.value);
+                        setIsBusinessNameCustomized(true);
+                      }}
                       placeholder="Acme Inc."
                       disabled={isLoading}
                     />
