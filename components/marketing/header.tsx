@@ -122,8 +122,8 @@ const mobileLinks: MobileLink[] = [
     groupName: "Solutions",
     links: [...useCases, ...contentLinks],
   },
-  { name: "Pricing", href: "#" },
-  { name: "Company", href: "#" },
+  { name: "Help", href: "/help" },
+  { name: "Blog", href: "/blog" },
 ];
 
 export function Header() {
@@ -303,14 +303,14 @@ const NavMenu = () => {
             <Link href="#">Solutions</Link>
           </NavigationMenuLink>
         </NavigationMenuItem>
-        <NavigationMenuItem value="pricing">
+        <NavigationMenuItem value="help">
           <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-            <Link href="#">Pricing</Link>
+            <Link href="/help">Help</Link>
           </NavigationMenuLink>
         </NavigationMenuItem>
-        <NavigationMenuItem value="company">
+        <NavigationMenuItem value="blog">
           <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-            <Link href="#">Company</Link>
+            <Link href="/blog">Blog</Link>
           </NavigationMenuLink>
         </NavigationMenuItem>
       </NavigationMenuList>

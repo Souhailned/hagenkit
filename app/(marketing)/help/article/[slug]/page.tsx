@@ -39,7 +39,7 @@ export async function generateMetadata({
   const { title, summary } = post;
 
   return constructMetadata({
-    title: `${title} – Social Forge Help Center`,
+    title: `${title} – HagenKit Help Center`,
     description: summary,
     image: `/api/og/help?title=${encodeURIComponent(
       title
@@ -152,7 +152,7 @@ export default async function HelpArticle({
             )}
             <div className="flex justify-center pt-5">
               <Link
-                href={`https://github.com/Codehagen/social-forge/blob/main/content/help/${slug}.mdx`}
+                href={`https://github.com/codehagen/hagenkit/blob/main/content/help/${slug}.mdx`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-gray-500 transition-colors hover:text-gray-800"

@@ -36,7 +36,7 @@ export async function generateMetadata({
   const { title, seoTitle, summary, seoDescription, image } = post;
 
   return constructMetadata({
-    title: `${seoTitle || title} – Social Forge`,
+    title: `${seoTitle || title} – HagenKit`,
     description: seoDescription || summary,
     image,
   });

@@ -29,10 +29,10 @@ export async function generateMetadata({
   const { title, description } = category;
 
   return constructMetadata({
-    title: `${title} – Social Forge Help Center`,
+    title: `${title} – HagenKit Help Center`,
     description:
       description ||
-      "Browse curated guides and how-tos from the Social Forge support team.",
+      "Browse curated guides and how-tos from the HagenKit support team.",
     image: `/api/og/help?title=${encodeURIComponent(
       title
     )}&summary=${encodeURIComponent(description)}`,

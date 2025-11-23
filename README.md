@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Codehagen/social-forge/blob/main/LICENSE.md">
+  <a href="https://github.com/codehagen/hagenkit/blob/main/LICENSE.md">
     <img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License: AGPL-3.0" />
   </a>
 </p>
