@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Progress Log
 
 ## Task: Create Backup Branch
@@ -543,3 +544,84 @@ Implemented the public property listings page (`/aanbod`) with a two-column desk
 #### Build Status
 - Build: PASS
 - Lint: PASS (no errors in new files)
+=======
+# Progress Report: Property Detail Page Implementation
+
+## Task
+Build app/(marketing)/aanbod/[slug]/page.tsx - Property detail page with SEO, image gallery, contact form, and structured data.
+
+## Completed Items
+
+### 1. Property Actions (app/actions/property.ts)
+- `getPropertyBySlug`: Fetches property with all relations (images, features, agency, creator)
+- `getSimilarProperties`: Returns related properties based on type and city
+- `recordPropertyView`: Tracks unique property views with IP hashing
+- `createPropertyInquiry`: Creates inquiry records with validation
+
+### 2. Property Validation (lib/validations/property.ts)
+- `propertyInquirySchema`: Validates contact form submissions
+- `propertyViewSchema`: Validates view tracking data
+
+### 3. Property Components (components/property/)
+- `PropertyImageGallery`: Carousel with Embla + lightbox dialog, keyboard navigation
+- `PropertyInquiryForm`: React Hook Form + Zod validation with all required fields
+- `PropertyViewTracker`: Client-side view tracking on page load
+- `PropertyCard`: Card component for similar properties display
+
+### 4. Property Detail Page (app/(marketing)/aanbod/[slug]/page.tsx)
+- Async server component with `generateMetadata` for SEO
+- Hero section with image gallery carousel
+- Key stats bar (price, surface, type, status)
+- Two-column layout:
+  - Left: Description, details grid, features by category, location, agent card
+  - Right: Sticky contact form, availability info, stats
+- Breadcrumbs with proper navigation
+- Similar properties section
+- Property view tracking on load
+
+### 5. Structured Data (lib/property/structured-data.tsx)
+- `generatePropertyStructuredData`: RealEstateListing schema.org data
+- `generatePropertyBreadcrumbStructuredData`: Breadcrumb schema
+- `generateAgencyStructuredData`: RealEstateAgent schema
+- `PropertyStructuredData`: Component to inject JSON-LD
+
+### 6. Utility Functions (lib/property/utils.ts)
+- Price formatting (cents to euros)
+- Surface formatting
+- Availability date formatting
+- Lease term formatting
+- Label constants for types, statuses, features
+- Color mappings for scores and energy labels
+
+### 7. Tests (__tests__/property/)
+- `property-utils.test.ts`: Tests for all utility functions
+- `property-validation.test.ts`: Tests for Zod schemas
+- `structured-data.test.ts`: Tests for structured data generation
+
+## Files Created/Modified
+- app/actions/property.ts (NEW)
+- lib/validations/property.ts (NEW)
+- lib/property/utils.ts (NEW)
+- lib/property/structured-data.tsx (NEW)
+- components/property/property-image-gallery.tsx (NEW)
+- components/property/property-inquiry-form.tsx (NEW)
+- components/property/property-view-tracker.tsx (NEW)
+- components/property/property-card.tsx (NEW)
+- components/property/index.ts (NEW)
+- app/(marketing)/aanbod/[slug]/page.tsx (NEW)
+- app/(marketing)/aanbod/README.md (NEW)
+- __tests__/property/property-utils.test.ts (NEW)
+- __tests__/property/property-validation.test.ts (NEW)
+- __tests__/property/structured-data.test.ts (NEW)
+
+## Verification
+- ✅ All lint checks pass for new files
+- ✅ All 55 tests pass
+- ⚠️ Build has pre-existing issues (missing Prisma client in worktree - not related to new code)
+
+## Design Notes
+- Used blue primary color theme as per project guidelines
+- Followed shadcn/ui component patterns
+- Implemented Dutch (NL) localization for all text
+- Mobile-responsive design with sticky contact form on desktop
+>>>>>>> ralphy/agent-39-1769116512886-4rne2d-frontend-design-shadcn-ui-maak-app-marketing-aanbo

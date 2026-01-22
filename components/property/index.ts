@@ -10,3 +10,6 @@ export {
   PropertyListingsSkeleton,
 } from "./property-skeleton";
 export { PropertyListingsClient } from "./property-listings-client";
+export { PropertyImageGallery } from "./property-image-gallery";
+export { PropertyInquiryForm } from "./property-inquiry-form";
+export { PropertyViewTracker } from "./property-view-tracker";
