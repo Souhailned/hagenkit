@@ -1,0 +1,27 @@
+# Progress Log
+
+## 2026-01-22: Property Validation Schemas (FASE 2.2)
+
+### Completed
+- Created `lib/validations/property.ts` with comprehensive Zod validation schemas
+- Exported all property-related enums:
+  - `propertyTypeEnum` (RESTAURANT, CAFE, BAR, HOTEL, DARK_KITCHEN, NIGHTCLUB, FOOD_COURT, CATERING, BAKERY, OTHER)
+  - `propertyStatusEnum` (DRAFT, PENDING_REVIEW, ACTIVE, UNDER_OFFER, RENTED, SOLD, ARCHIVED, REJECTED)
+  - `priceTypeEnum` (RENT, SALE, RENT_OR_SALE)
+  - `featureCategoryEnum` (LICENSE, FACILITY, UTILITY, ACCESSIBILITY)
+  - `propertyImageTypeEnum` (EXTERIOR, INTERIOR, KITCHEN, TERRACE, BATHROOM, STORAGE, FLOORPLAN, LOCATION, RENDER, OTHER)
+  - `propertySortByEnum` (createdAt, publishedAt, rentPrice, salePrice, surfaceTotal, viewCount)
+  - `sortOrderEnum` (asc, desc)
+
+- Implemented schemas:
+  - `createPropertySchema` - with required fields (title min 5 max 200, propertyType, priceType, address, city, postalCode, surfaceTotal) and all optional fields with proper types
+  - `updatePropertySchema` - all fields optional, requires id
+  - `propertyFilterSchema` - cities, propertyTypes, priceType, priceMin/Max, surfaceMin/Max, features, hasTerrace, hasKitchen
+  - `listPropertiesSchema` - page default 1, limit default 20 max 100, sortBy, sortOrder, filters, search
+
+- Created comprehensive test suite in `lib/validations/__tests__/property.test.ts`
+- All new files pass ESLint linting
+
+### Files Created
+- `lib/validations/property.ts` (194 lines)
+- `lib/validations/__tests__/property.test.ts` (340 lines)
