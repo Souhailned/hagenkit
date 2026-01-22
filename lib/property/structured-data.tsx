@@ -29,19 +29,29 @@ interface PropertyForStructuredData {
   salePrice: number | null;
   surfaceTotal: number;
   propertyType: string;
+  floors?: number;
+  buildYear?: number | null;
+  availableFrom?: Date | null;
   images: Array<{
     originalUrl: string;
-    largeUrl: string | null;
-    altText: string | null;
+    largeUrl?: string | null;
+    altText?: string | null;
+    isPrimary?: boolean;
   }>;
   agency: {
     name: string;
-    phone: string | null;
-    email: string | null;
-    logoUrl: string | null;
+    slug?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    website?: string | null;
+    logoUrl?: string | null;
+    logo?: string | null;
+    address?: string | null;
+    city?: string | null;
+    postalCode?: string | null;
   };
-  publishedAt: Date | null;
-  updatedAt: Date;
+  publishedAt?: Date | null;
+  updatedAt?: Date;
 }
 
 /**
@@ -55,6 +65,8 @@ export function generatePropertyStructuredData(property: PropertyForStructuredDa
   const priceCurrency = "EUR";
   const priceUnitText = property.priceType === "RENT" ? "MONTH" : undefined;
 
+  const primaryImage = property.images?.find((img) => img.isPrimary) || property.images?.[0];
+
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "RealEstateListing",
@@ -62,8 +74,8 @@ export function generatePropertyStructuredData(property: PropertyForStructuredDa
     description: property.description || property.shortDescription,
     url: `${baseUrl}/aanbod/${property.slug}`,
     datePosted: property.publishedAt?.toISOString(),
-    dateModified: property.updatedAt.toISOString(),
-    image: property.images.map((img) => img.largeUrl || img.originalUrl),
+    dateModified: property.updatedAt?.toISOString(),
+    image: primaryImage ? primaryImage.largeUrl || primaryImage.originalUrl : property.images.map((img) => img.largeUrl || img.originalUrl),
     address: {
       "@type": "PostalAddress",
       streetAddress: property.address,
@@ -84,19 +96,23 @@ export function generatePropertyStructuredData(property: PropertyForStructuredDa
         "@type": "Offer",
         price: priceInEuros,
         priceCurrency,
-        ...(priceUnitText && { priceSpecification: {
-          "@type": "UnitPriceSpecification",
-          price: priceInEuros,
-          priceCurrency,
-          unitText: priceUnitText,
-        }}),
+        priceValidUntil: property.availableFrom?.toISOString(),
         availability: "https://schema.org/InStock",
+        ...(priceUnitText && {
+          priceSpecification: {
+            "@type": "UnitPriceSpecification",
+            price: priceInEuros,
+            priceCurrency,
+            unitText: priceUnitText,
+          },
+        }),
         seller: {
           "@type": "RealEstateAgent",
           name: property.agency.name,
           telephone: property.agency.phone,
           email: property.agency.email,
           ...(property.agency.logoUrl && { logo: property.agency.logoUrl }),
+          ...(property.agency.logo && { image: property.agency.logo }),
         },
       },
     }),
@@ -105,6 +121,28 @@ export function generatePropertyStructuredData(property: PropertyForStructuredDa
       value: property.surfaceTotal,
       unitCode: "MTK", // square meters
     },
+    ...(property.floors && { numberOfRooms: property.floors }),
+    ...(property.buildYear && { yearBuilt: property.buildYear }),
+    // Agent/Agency broker info
+    ...(property.agency && {
+      broker: {
+        "@type": "RealEstateAgent",
+        name: property.agency.name,
+        url: property.agency.website || `${baseUrl}/makelaars/${property.agency.slug}`,
+        telephone: property.agency.phone,
+        email: property.agency.email,
+        ...(property.agency.logo && { image: property.agency.logo }),
+        ...(property.agency.logoUrl && { logo: property.agency.logoUrl }),
+        ...(property.agency.city && {
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: property.agency.address,
+            addressLocality: property.agency.city,
+            postalCode: property.agency.postalCode,
+          },
+        }),
+      },
+    }),
     additionalProperty: [
       {
         "@type": "PropertyValue",
@@ -154,6 +192,37 @@ export function generatePropertyBreadcrumbStructuredData(
 }
 
 /**
+ * Generate LocalBusiness structured data for a property location
+ */
+export function generateLocalBusinessStructuredData(property: PropertyForStructuredData) {
+  const primaryImage = property.images?.find((img) => img.isPrimary) || property.images?.[0];
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "@id": `${baseUrl}/aanbod/${property.slug}#business`,
+    name: property.title,
+    description: property.shortDescription,
+    image: primaryImage?.largeUrl || primaryImage?.originalUrl,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: property.address,
+      addressLocality: property.city,
+      postalCode: property.postalCode,
+      addressRegion: property.province,
+      addressCountry: property.country,
+    },
+    ...(property.latitude && property.longitude && {
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: property.latitude,
+        longitude: property.longitude,
+      },
+    }),
+  };
+}
+
+/**
  * Generate LocalBusiness structured data for the agency
  */
 export function generateAgencyStructuredData(agency: {
@@ -198,3 +267,8 @@ export function PropertyStructuredData({ data }: { data: object }): React.JSX.El
     />
   );
 }
+
+/**
+ * Alias for PropertyStructuredData for compatibility
+ */
+export const StructuredData = PropertyStructuredData;
