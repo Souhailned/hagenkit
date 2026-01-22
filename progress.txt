@@ -338,3 +338,99 @@ Each feature can be:
 ### Dependencies:
 - Database models (Property, SeekerProfile, etc.) from PRD Phase 1 needed for full functionality
 - Once models exist, uncomment TODO sections in seeker-profile.ts actions
+
+---
+
+## 2026-01-22: PropertyWizard Implementation (FASE 2.1)
+
+### What was implemented:
+
+1. **Property Types & Definitions** (`components/property-wizard/types.ts`)
+   - PropertyType enum (RESTAURANT, CAFE, BAR, HOTEL, DARK_KITCHEN, etc.)
+   - PriceType enum (RENT, SALE, RENT_OR_SALE)
+   - FeatureCategory enum (LICENSE, FACILITY, UTILITY)
+   - PropertyImageType enum for photo categorization
+   - Complete feature definitions with Dutch labels
+   - WizardPhoto type for upload handling
+   - PropertyWizardData interface for form state
+   - WIZARD_STEPS configuration for 7-step flow
+
+2. **WizardStepper Component** (`components/property-wizard/wizard-stepper.tsx`)
+   - Vertical stepper navigation for desktop (sidebar)
+   - Horizontal progress dots for mobile
+   - Step completion tracking with checkmarks
+   - Clickable navigation to completed/current steps
+   - Progress bar indicator
+
+3. **7 Step Components** (`components/property-wizard/steps/`)
+   - **StepBasicInfo**: Title input, property type grid selection, description textarea
+   - **StepLocation**: Address, city with autocomplete suggestions, postal code, optional GPS coordinates
+   - **StepPricing**: Price type radio selection, conditional rent/sale fields, service costs, deposit
+   - **StepDimensions**: Total surface (required), room breakdown, floors counter, ceiling height
+   - **StepFeatures**: Grouped checkboxes for licenses, facilities, utilities with category headers
+   - **StepPhotos**: Drag-drop upload zone, preview grid, set primary, AI enhance toggle
+   - **StepReview**: Summary of all data, validation status, edit links per section
+
+4. **Main PropertyWizard Component** (`components/property-wizard/PropertyWizard.tsx`)
+   - Modal-based dialog using shadcn/ui Dialog
+   - State management for wizard data and step progression
+   - Step validation logic
+   - Save as draft functionality
+   - Publish with validation check
+   - Responsive layout (sidebar on desktop, collapsed on mobile)
+
+### Technical Details:
+- Uses shadcn/ui components (Dialog, Button, Input, Label, Checkbox, RadioGroup, Select, ScrollArea, Badge, Progress)
+- Uses @tabler/icons-react for icons
+- TypeScript with full type safety
+- Mobile-first responsive design
+- Dutch language UI labels
+- CSS variables for theming consistency
+
+### Files Created:
+- `components/property-wizard/PropertyWizard.tsx`
+- `components/property-wizard/wizard-stepper.tsx`
+- `components/property-wizard/types.ts`
+- `components/property-wizard/index.ts`
+- `components/property-wizard/README.md`
+- `components/property-wizard/steps/index.ts`
+- `components/property-wizard/steps/step-basic-info.tsx`
+- `components/property-wizard/steps/step-location.tsx`
+- `components/property-wizard/steps/step-pricing.tsx`
+- `components/property-wizard/steps/step-dimensions.tsx`
+- `components/property-wizard/steps/step-features.tsx`
+- `components/property-wizard/steps/step-photos.tsx`
+- `components/property-wizard/steps/step-review.tsx`
+
+### Testing:
+- No testing framework is configured in this project
+- Lint passed (only pre-existing warnings in other files)
+- Build passed successfully
+
+### Usage Example:
+```tsx
+import { PropertyWizard } from "@/components/property-wizard";
+
+function PropertyPage() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleCreate = async (data: PropertyWizardData, publish: boolean) => {
+    // Handle property creation
+  };
+
+  return (
+    <PropertyWizard
+      open={isOpen}
+      onClose={() => setIsOpen(false)}
+      onCreate={handleCreate}
+    />
+  );
+}
+```
+
+### Next Steps (for future tasks):
+- Integration with Property database model (requires FASE 1.1 completion)
+- Property server actions for create/update
+- Photo upload API integration
+- AI photo enhancement service integration
+- Address geocoding service
