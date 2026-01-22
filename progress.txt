@@ -1,0 +1,108 @@
+# Progress Report: Aanbod Page Implementation
+
+## Date: 2026-01-22
+
+## Task
+Implemented `app/(marketing)/aanbod/page.tsx` - A two-column property listings page with filters, search, and URL params.
+
+## Completed Features
+
+### 1. Server Action & Types
+- **Types** (`types/property.ts`):
+  - PropertyType enum (RESTAURANT, CAFE, HOTEL, BAR, SNACKBAR, etc.)
+  - PropertyFeature enum (TERRACE, PARKING, KITCHEN, etc.)
+  - SortOption enum with Dutch labels
+  - Property interface with all necessary fields
+  - Search params and result types
+
+- **Validation** (`lib/validations/property.ts`):
+  - Zod schemas for filter validation
+  - Search params validation with defaults
+
+- **Server Action** (`app/actions/properties.ts`):
+  - `searchProperties()` - SSR-compatible search with filtering, sorting, pagination
+  - `getFilterOptions()` - Returns available filter values
+  - `getPropertyBySlug()` - Single property lookup
+
+- **Mock Data** (`lib/data/mock-properties.ts`):
+  - 18 realistic Dutch horeca property listings
+  - Dutch cities with provinces
+  - Variety of property types and features
+
+### 2. Filter Components (`components/aanbod/filters/`)
+- **LocationFilter**: Multi-select city search with Command component
+- **TypeFilter**: Checkboxes for property types
+- **PriceFilter**: Min/max inputs with slider
+- **AreaFilter**: Min/max area inputs in m²
+- **FeaturesFilter**: Checkboxes for popular features
+
+### 3. Property Display Components
+- **PropertyCard**: Editorial-style card with:
+  - Image with gradient overlay
+  - Badge for new/featured properties
+  - Property type badge
+  - Location, area, price type
+  - Feature preview (max 3 shown)
+  - Formatted price with type indicator
+  - Hover animations
+
+- **PropertyCardSkeleton**: Loading skeleton matching card layout
+- **PropertyGrid**: Responsive grid layout (1/2/3 columns)
+- **PropertyGridSkeleton**: Grid of loading skeletons
+
+### 4. Filter Management
+- **FilterSidebar**: Sticky desktop sidebar with all filter sections
+- **MobileFilterSheet**: Bottom sheet for mobile filters
+- **ActiveFilters**: Removable filter chips above results
+- **SortDropdown**: Sort by newest, price, area
+
+### 5. Results & Pagination
+- **EmptyState**: Suggestions when no results found
+- **ResultsPagination**: Page navigation with ellipsis
+
+### 6. Main Page (`app/(marketing)/aanbod/page.tsx`)
+- Hero section with gradient title
+- SSR data fetching with Suspense fallback
+- URL search params synchronization (shareable URLs)
+- Two-column responsive layout
+- Proper metadata for SEO
+
+### 7. Client State Management (`components/aanbod/aanbod-client.tsx`)
+- Filter state management with React hooks
+- URL params sync (router.replace for history)
+- Debounced fetch on filter changes
+- Page reset when filters change
+
+## Technical Decisions
+- Used existing shadcn/ui components (Sheet, Select, Checkbox, Slider, etc.)
+- Editorial/magazine aesthetic for property cards
+- Mock data approach since no Property model exists in DB
+- CSS variables for all colors (no hardcoding)
+- Client-side navigation without full page reloads
+
+## Files Created
+- `types/property.ts`
+- `lib/validations/property.ts`
+- `lib/data/mock-properties.ts`
+- `app/actions/properties.ts`
+- `app/(marketing)/aanbod/page.tsx`
+- `components/aanbod/aanbod-client.tsx`
+- `components/aanbod/property-card.tsx`
+- `components/aanbod/property-grid.tsx`
+- `components/aanbod/filter-sidebar.tsx`
+- `components/aanbod/mobile-filter-sheet.tsx`
+- `components/aanbod/active-filters.tsx`
+- `components/aanbod/sort-dropdown.tsx`
+- `components/aanbod/empty-state.tsx`
+- `components/aanbod/results-pagination.tsx`
+- `components/aanbod/filters/location-filter.tsx`
+- `components/aanbod/filters/type-filter.tsx`
+- `components/aanbod/filters/price-filter.tsx`
+- `components/aanbod/filters/area-filter.tsx`
+- `components/aanbod/filters/features-filter.tsx`
+- `components/aanbod/filters/index.ts`
+- `components/aanbod/index.ts`
+
+## Build Status
+- Build: PASSING
+- Lint: PASSING (only warnings from existing files)
