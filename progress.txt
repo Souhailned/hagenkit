@@ -1,0 +1,42 @@
+# Implementation Progress
+
+## Task: Create lib/validations/agency.ts with Zod schemas
+
+### Status: Completed
+
+### Date: 2026-01-22
+
+### What was done:
+- Created `lib/validations/agency.ts` with the following Zod schemas:
+  - `agencyRoleEnum` - Enum with values: OWNER, ADMIN, AGENT, VIEWER
+  - `createAgencySchema` - Full validation for agency creation:
+    - name: min 2, max 100 characters
+    - slug: lowercase alphanumeric with hyphens regex
+    - description: optional, max 1000 characters
+    - kvkNumber: optional, exactly 8 digits
+    - phone: optional, 10-15 digits
+    - email: optional, valid email format
+    - website: optional, valid URL format
+    - address: required, max 200 characters
+    - city: required, max 100 characters
+    - postalCode: required, max 20 characters
+  - `updateAgencySchema` - All fields optional (partial update support)
+  - `inviteAgentSchema` - agencyId, email (valid), role (AgencyRole)
+  - `updateAgentRoleSchema` - memberId, role (AgencyRole)
+  - `removeAgentSchema` - memberId
+  - `acceptAgencyInvitationSchema` - token
+
+- Exported TypeScript types for all schemas:
+  - CreateAgencyInput
+  - UpdateAgencyInput
+  - InviteAgentInput
+  - UpdateAgentRoleInput
+  - RemoveAgentInput
+  - AcceptAgencyInvitationInput
+  - AgencyRole
+
+### Notes:
+- No test framework is configured in this project (no Jest/Vitest setup)
+- The new file passes ESLint without errors
+- Pre-existing lint errors in other files were not addressed (out of scope)
+- Pattern follows existing workspace.ts and user.ts validation conventions
