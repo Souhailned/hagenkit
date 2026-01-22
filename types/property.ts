@@ -14,7 +14,33 @@ export type PropertyType =
   | "FOOD_COURT"
   | "CATERING"
   | "BAKERY"
+  | "SNACKBAR"
+  | "PARTYCENTRUM"
+  | "GRANDCAFE"
+  | "LUNCHROOM"
+  | "PIZZERIA"
+  | "BRASSERIE"
   | "OTHER";
+
+// Property type labels for display (Dutch)
+export const PropertyTypeLabels: Record<PropertyType, string> = {
+  RESTAURANT: "Restaurant",
+  CAFE: "Café",
+  BAR: "Bar",
+  HOTEL: "Hotel",
+  DARK_KITCHEN: "Dark Kitchen",
+  NIGHTCLUB: "Nachtclub",
+  FOOD_COURT: "Food Court",
+  CATERING: "Catering",
+  BAKERY: "Bakkerij",
+  SNACKBAR: "Snackbar",
+  PARTYCENTRUM: "Partycentrum",
+  GRANDCAFE: "Grand Café",
+  LUNCHROOM: "Lunchroom",
+  PIZZERIA: "Pizzeria",
+  BRASSERIE: "Brasserie",
+  OTHER: "Overig",
+};
 
 // Property status enum
 export type PropertyStatus =
@@ -45,6 +71,44 @@ export type PropertyImageType =
   | "LOCATION"
   | "RENDER"
   | "OTHER";
+
+// Property feature enum for filtering
+export type PropertyFeature =
+  | "TERRACE"
+  | "PARKING"
+  | "KITCHEN"
+  | "LIVING_QUARTERS"
+  | "ALCOHOL_LICENSE"
+  | "VENTILATION"
+  | "CELLAR"
+  | "DELIVERY_OPTION"
+  | "OUTDOOR_SEATING"
+  | "WHEELCHAIR_ACCESSIBLE";
+
+// Property feature labels for display (Dutch)
+export const PropertyFeatureLabels: Record<PropertyFeature, string> = {
+  TERRACE: "Terras",
+  PARKING: "Parkeren",
+  KITCHEN: "Keuken",
+  LIVING_QUARTERS: "Woonruimte",
+  ALCOHOL_LICENSE: "Drank- & Horecavergunning",
+  VENTILATION: "Ventilatie",
+  CELLAR: "Kelder",
+  DELIVERY_OPTION: "Bezorgmogelijkheid",
+  OUTDOOR_SEATING: "Buitenzitplaatsen",
+  WHEELCHAIR_ACCESSIBLE: "Rolstoeltoegankelijk",
+};
+
+// Sort options for property listings
+export type SortOption = "newest" | "price_asc" | "price_desc" | "area_desc";
+
+// Sort option labels for display (Dutch)
+export const SortOptionLabels: Record<SortOption, string> = {
+  newest: "Nieuwste",
+  price_asc: "Prijs laag-hoog",
+  price_desc: "Prijs hoog-laag",
+  area_desc: "Oppervlakte",
+};
 
 /**
  * Property image for display
@@ -130,6 +194,9 @@ export interface Property {
   // Images
   images: PropertyImage[];
 
+  // Features for filtering
+  features?: PropertyFeature[];
+
   // Timestamps
   publishedAt?: Date;
   createdAt: Date;
@@ -139,6 +206,10 @@ export interface Property {
   viewCount: number;
   inquiryCount: number;
   savedCount: number;
+
+  // Flags
+  isFeatured?: boolean;
+  isNew?: boolean;
 
   // Agency info (for display)
   agency?: {
@@ -299,6 +370,40 @@ export interface SeekerRecommendations {
 }
 
 /**
+ * Property filters for search
+ */
+export interface PropertyFilters {
+  cities?: string[];
+  types?: PropertyType[];
+  priceMin?: number;
+  priceMax?: number;
+  areaMin?: number;
+  areaMax?: number;
+  features?: PropertyFeature[];
+}
+
+/**
+ * Search properties params
+ */
+export interface SearchPropertiesParams extends PropertyFilters {
+  page?: number;
+  pageSize?: number;
+  sortBy?: SortOption;
+  search?: string;
+}
+
+/**
+ * Search properties result
+ */
+export interface SearchPropertiesResult {
+  properties: Property[];
+  total: number;
+  pageCount: number;
+  page: number;
+  pageSize: number;
+}
+
+/**
  * Helper to format price in euros
  */
 export function formatPrice(priceInCents: number): string {
@@ -321,19 +426,7 @@ export function formatSurface(surfaceInM2: number): string {
  * Helper to get property type label in Dutch
  */
 export function getPropertyTypeLabel(type: PropertyType): string {
-  const labels: Record<PropertyType, string> = {
-    RESTAURANT: "Restaurant",
-    CAFE: "Café",
-    BAR: "Bar",
-    HOTEL: "Hotel",
-    DARK_KITCHEN: "Dark Kitchen",
-    NIGHTCLUB: "Nachtclub",
-    FOOD_COURT: "Food Court",
-    CATERING: "Catering",
-    BAKERY: "Bakkerij",
-    OTHER: "Overig",
-  };
-  return labels[type] || type;
+  return PropertyTypeLabels[type] || type;
 }
 
 /**
