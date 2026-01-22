@@ -101,10 +101,10 @@ export const acceptAgencyInvitationSchema = z.object({
 });
 
 // TypeScript types from schemas
+export type AgencyRole = z.infer<typeof agencyRoleEnum>;
 export type CreateAgencyInput = z.infer<typeof createAgencySchema>;
 export type UpdateAgencyInput = z.infer<typeof updateAgencySchema>;
 export type InviteAgentInput = z.infer<typeof inviteAgentSchema>;
 export type UpdateAgentRoleInput = z.infer<typeof updateAgentRoleSchema>;
 export type RemoveAgentInput = z.infer<typeof removeAgentSchema>;
 export type AcceptAgencyInvitationInput = z.infer<typeof acceptAgencyInvitationSchema>;
-export type AgencyRole = z.infer<typeof agencyRoleEnum>;

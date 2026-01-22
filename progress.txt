@@ -1,5 +1,6 @@
 # Progress Log
 
+<<<<<<< HEAD
 ## Task: Create Backup Branch
 
 **Date:** 2026-01-22
@@ -153,3 +154,44 @@ Datasource "db": PostgreSQL database "hagenkit", schema "public" at "localhost:5
 - Datasource: PostgreSQL database "hagenkit" at localhost:5435
 
 ### Date: 2026-01-22
+=======
+## 2026-01-22 - FASE 2.1: Agency Validatie
+
+### Completed: lib/validations/agency.ts
+
+Created Zod validation schemas for agency-related operations:
+
+**Schemas:**
+- `agencyRoleEnum` - Enum for agency roles: OWNER, ADMIN, AGENT, VIEWER
+- `createAgencySchema` - For creating a new agency with:
+  - name (min 2, max 100 chars)
+  - slug (lowercase alphanumeric with hyphens)
+  - description (optional, max 1000 chars)
+  - kvkNumber (optional, exactly 8 digits)
+  - phone (optional)
+  - email (optional, valid email)
+  - website (optional, valid URL)
+  - address, city, postalCode (required)
+- `updateAgencySchema` - All fields optional except ID
+- `inviteAgentSchema` - agencyId, email (valid), role (defaults to AGENT)
+- `updateAgentRoleSchema` - memberId, role
+- `removeAgentSchema` - memberId
+- `acceptAgencyInvitationSchema` - token
+
+**TypeScript Types Exported:**
+- AgencyRole
+- CreateAgencyInput
+- UpdateAgencyInput
+- InviteAgentInput
+- UpdateAgentRoleInput
+- RemoveAgentInput
+- AcceptAgencyInvitationInput
+
+### Tests
+
+Created comprehensive test suite in `lib/validations/agency.test.ts`:
+- 41 tests covering all schemas
+- Validates required fields, optional fields, regex patterns
+- Tests edge cases for KVK number (8 digits), slug format, email, URL validation
+- All tests passing
+>>>>>>> ralphy/agent-3-1769110632505-u566uh-nextjs-saas-structure-maak-lib-validations-agency-
