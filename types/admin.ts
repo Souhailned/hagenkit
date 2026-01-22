@@ -111,3 +111,73 @@ export type ImpersonateUserFields = Pick<
   AdminUser,
   "id" | "email" | "name" | "image" | "role" | "status" | "lastLoginAt"
 >;
+
+/**
+ * Agency plan type for subscription tiers
+ * Maps to PRD AgencyPlan enum (FREE, PRO, ENTERPRISE)
+ * Currently using workspace-based model, will be updated when Agency model is added
+ */
+export type AgencyPlan = "FREE" | "PRO" | "ENTERPRISE";
+
+/**
+ * Complete agency entity for admin management
+ * Based on Workspace model with additional fields for agency management
+ * Will be updated when Agency model is added to schema
+ */
+export interface AdminAgency {
+  id: string;
+  name: string;
+  slug: string;
+  image: string | null;
+  verified: boolean;
+  verifiedAt: Date | null;
+  plan: AgencyPlan;
+  createdAt: Date;
+  updatedAt: Date;
+  owner: {
+    id: string;
+    email: string;
+    name: string | null;
+  } | null;
+  _count?: {
+    members: number;
+    listings: number;
+    invitations: number;
+  };
+}
+
+/**
+ * Minimal agency fields for edit operations
+ */
+export type AgencyEditFields = Pick<
+  AdminAgency,
+  "id" | "name" | "slug" | "image" | "verified" | "plan"
+>;
+
+/**
+ * Minimal agency fields for delete operations
+ */
+export type AgencyDeleteFields = Pick<AdminAgency, "id" | "name" | "slug">;
+
+/**
+ * Agency detail with recent activity for modal view
+ */
+export interface AdminAgencyDetail extends AdminAgency {
+  members: Array<{
+    id: string;
+    role: string;
+    joinedAt: Date;
+    user: {
+      id: string;
+      email: string;
+      name: string | null;
+      image: string | null;
+    };
+  }>;
+  recentActivity: Array<{
+    id: string;
+    type: "member_joined" | "listing_created" | "listing_updated" | "inquiry_received";
+    description: string;
+    timestamp: Date;
+  }>;
+}

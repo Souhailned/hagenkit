@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   IconArrowLeft,
   IconBook,
+  IconBuilding,
   IconChartBar,
   IconDashboard,
   IconDatabase,
@@ -51,6 +52,11 @@ const data = {
       title: "Workspace Management",
       url: "/admin/workspaces",
       icon: IconInnerShadowTop,
+    },
+    {
+      title: "Agencies",
+      url: "/admin/agencies",
+      icon: IconBuilding,
     },
     {
       title: "System Settings",
