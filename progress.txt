@@ -1,6 +1,5 @@
 # Progress Log
 
-<<<<<<< HEAD
 ## Task: Create Backup Branch
 
 **Date:** 2026-01-22
@@ -107,10 +106,14 @@ Datasource "db": PostgreSQL database "hagenkit", schema "public" at "localhost:5
   - AcceptAgencyInvitationInput
   - AgencyRole
 
+### Tests:
+- Created comprehensive test suite in `lib/validations/agency.test.ts`
+- 41 tests covering all schemas
+- Validates required fields, optional fields, regex patterns
+- Tests edge cases for KVK number (8 digits), slug format, email, URL validation
+- All tests passing
+
 ### Notes:
-- No test framework is configured in this project (no Jest/Vitest setup)
-- The new file passes ESLint without errors
-- Pre-existing lint errors in other files were not addressed (out of scope)
 - Pattern follows existing workspace.ts and user.ts validation conventions
 
 ---
@@ -138,7 +141,6 @@ Datasource "db": PostgreSQL database "hagenkit", schema "public" at "localhost:5
 ### Files Added
 - `lib/validations/property.ts`
 - `lib/validations/__tests__/property.test.ts`
-- `progress.txt`
 
 ---
 
@@ -154,44 +156,51 @@ Datasource "db": PostgreSQL database "hagenkit", schema "public" at "localhost:5
 - Datasource: PostgreSQL database "hagenkit" at localhost:5435
 
 ### Date: 2026-01-22
-=======
-## 2026-01-22 - FASE 2.1: Agency Validatie
 
-### Completed: lib/validations/agency.ts
+---
 
-Created Zod validation schemas for agency-related operations:
+## 2026-01-22: Seeker Profile Validation Schemas
 
-**Schemas:**
-- `agencyRoleEnum` - Enum for agency roles: OWNER, ADMIN, AGENT, VIEWER
-- `createAgencySchema` - For creating a new agency with:
-  - name (min 2, max 100 chars)
-  - slug (lowercase alphanumeric with hyphens)
-  - description (optional, max 1000 chars)
-  - kvkNumber (optional, exactly 8 digits)
-  - phone (optional)
-  - email (optional, valid email)
-  - website (optional, valid URL)
-  - address, city, postalCode (required)
-- `updateAgencySchema` - All fields optional except ID
-- `inviteAgentSchema` - agencyId, email (valid), role (defaults to AGENT)
-- `updateAgentRoleSchema` - memberId, role
-- `removeAgentSchema` - memberId
-- `acceptAgencyInvitationSchema` - token
+### Created lib/validations/seeker-profile.ts
 
-**TypeScript Types Exported:**
-- AgencyRole
-- CreateAgencyInput
-- UpdateAgencyInput
-- InviteAgentInput
-- UpdateAgentRoleInput
-- RemoveAgentInput
-- AcceptAgencyInvitationInput
+Added Zod validation schemas for seeker profile functionality:
 
-### Tests
+1. **`propertyTypeEnum`** - Enum for horeca property types: RESTAURANT, CAFE, BAR, HOTEL, NIGHTCLUB, CATERING, FOOD_TRUCK, BAKERY, OTHER
 
-Created comprehensive test suite in `lib/validations/agency.test.ts`:
-- 41 tests covering all schemas
-- Validates required fields, optional fields, regex patterns
-- Tests edge cases for KVK number (8 digits), slug format, email, URL validation
-- All tests passing
->>>>>>> ralphy/agent-3-1769110632505-u566uh-nextjs-saas-structure-maak-lib-validations-agency-
+2. **`alertFrequencyEnum`** - Enum for alert frequencies: INSTANT, DAILY, WEEKLY, MONTHLY
+
+3. **`updateSeekerProfileSchema`** - Schema for updating seeker profile with:
+   - businessType (optional string)
+   - conceptDescription (optional, max 2000 chars)
+   - experienceYears (optional, 0-50 range)
+   - budgetMin/budgetMax (optional, with min <= max validation)
+   - preferredCities (string array)
+   - preferredTypes (PropertyType array)
+   - minSurface/maxSurface (optional, with min <= max validation)
+   - mustHaveFeatures (string array)
+   - emailAlerts (boolean)
+   - alertFrequency (optional enum)
+
+4. **`createSearchAlertSchema`** - Schema for creating search alerts with:
+   - name (required, 2-100 chars)
+   - cities (required, at least 1)
+   - propertyTypes (required, at least 1)
+   - priceMin/priceMax (optional, with validation)
+   - surfaceMin/surfaceMax (optional, with validation)
+   - mustHaveFeatures (string array)
+   - frequency (required enum)
+
+5. **`updateSearchAlertSchema`** - Schema for updating search alerts:
+   - All fields from create schema made optional
+   - Added active (boolean) field
+
+### Created lib/validations/seeker-profile.test.ts
+
+Comprehensive test suite with 34 tests covering:
+- Enum validation
+- Optional field handling
+- Constraint validation (min/max chars, number ranges)
+- Cross-field validation (budgetMin <= budgetMax, etc.)
+- Edge cases (empty arrays, equal min/max values)
+
+All tests pass.
