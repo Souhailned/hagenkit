@@ -4,6 +4,7 @@ import { z } from "zod";
 // Property Enums (matching Prisma schema from PRD 1.1)
 // ============================================================================
 
+// Property type enum values
 export const propertyTypeEnum = z.enum([
   "RESTAURANT",
   "CAFE",
@@ -17,6 +18,7 @@ export const propertyTypeEnum = z.enum([
   "OTHER",
 ]);
 
+// Property status enum values
 export const propertyStatusEnum = z.enum([
   "DRAFT",
   "PENDING_REVIEW",
@@ -28,8 +30,10 @@ export const propertyStatusEnum = z.enum([
   "REJECTED",
 ]);
 
+// Price type enum values
 export const priceTypeEnum = z.enum(["RENT", "SALE", "RENT_OR_SALE"]);
 
+// Feature category enum values
 export const featureCategoryEnum = z.enum([
   "LICENSE",
   "FACILITY",
@@ -37,6 +41,7 @@ export const featureCategoryEnum = z.enum([
   "ACCESSIBILITY",
 ]);
 
+// Property image type enum values
 export const propertyImageTypeEnum = z.enum([
   "EXTERIOR",
   "INTERIOR",
@@ -50,6 +55,7 @@ export const propertyImageTypeEnum = z.enum([
   "OTHER",
 ]);
 
+// Sort options for property listings
 export const propertySortByEnum = z.enum([
   "createdAt",
   "publishedAt",
@@ -60,6 +66,7 @@ export const propertySortByEnum = z.enum([
   "title",
 ]);
 
+// Sort order
 export const sortOrderEnum = z.enum(["asc", "desc"]);
 
 // ============================================================================
