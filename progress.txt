@@ -63,10 +63,114 @@
 Created `components/onboarding/seeker-steps/`:
 - StepBusinessType.tsx, StepBudget.tsx, StepPreferences.tsx, StepComplete.tsx, types.ts, index.ts
 
-### Agent Steps  
+### Agent Steps
 Created `components/onboarding/agent-steps/`:
 - StepAgencyInfo.tsx, StepAgentProfile.tsx, StepFirstProperty.tsx, StepComplete.tsx, types.ts, index.ts
 
 ### Status
 - Build: ✅ Passes
 - Lint: ✅ No errors in new files
+
+---
+
+## 2026-01-22: Create Seeker Dashboard Component (PRD Task 9.2)
+
+### Summary
+Implemented the seeker dashboard component for horeca entrepreneurs searching for locations. The dashboard displays personalized property recommendations, recently viewed properties, and new matches based on user preferences and search alerts.
+
+### Files Created
+
+#### 1. `types/property.ts`
+**Purpose:** Type definitions for properties and seeker preferences
+
+**Key exports:**
+- `PropertyType` - Enum for horeca property types (RESTAURANT, CAFE, BAR, etc.)
+- `PropertyStatus` - Enum for property statuses (ACTIVE, DRAFT, etc.)
+- `PriceType` - Enum for pricing types (RENT, SALE, RENT_OR_SALE)
+- `PropertyListItem` - Interface for property card data
+- `SeekerPreferences` - Interface for user search preferences
+- `SeekerRecommendations` - Interface for dashboard data response
+
+#### 2. `app/actions/seeker-profile.ts`
+**Purpose:** Server actions for seeker profile and recommendations
+
+**Key functions:**
+- `getSeekerRecommendations()` - Fetches personalized recommendations for the logged-in user
+- `getSeekerPreferences()` - Gets the user's search preferences
+
+**Notes:**
+- Uses mock data since Property and SeekerProfile Prisma models are not yet available
+- Includes TODO comments for when the database models are ready
+- Mock properties include realistic Dutch horeca listings
+
+#### 3. `components/dashboard/property-card.tsx`
+**Purpose:** Reusable property card component for grids
+
+**Key exports:**
+- `PropertyCard` - Main card component with:
+  - Property image with hover zoom effect
+  - Type badge and featured badge
+  - Horeca score indicator (A+ to F)
+  - Price display with rent/sale type
+  - Key stats (surface, seating, terrace, kitchen)
+  - Agency info and view/save counts
+- `PropertyCardSkeleton` - Loading state placeholder
+
+**Features:**
+- Responsive design with theme tokens
+- Accessible with proper focus states
+- Smooth hover transitions
+- Links to property detail page
+
+#### 4. `components/dashboard/seeker-empty-state.tsx`
+**Purpose:** Empty state components for the seeker dashboard
+
+**Key exports:**
+- `SeekerNoPreferencesState` - Full-page empty state when no preferences are set
+- `SeekerSectionEmptyState` - Section-level empty state with customizable content
+
+#### 5. `components/dashboard/seeker-dashboard.tsx`
+**Purpose:** Main seeker dashboard server component
+
+**Key exports:**
+- `SeekerDashboard` - Server component that fetches and displays:
+  - Welcome header with action buttons
+  - "Aanbevolen voor jou" section (personalized recommendations)
+  - "Recent bekeken" section (recently viewed properties)
+  - "Nieuwe matches" section (properties matching alerts)
+- `SeekerDashboardSkeleton` - Loading state for the entire dashboard
+
+**Features:**
+- Server component for optimal performance
+- Conditional rendering based on user preferences
+- Error state handling
+- Section headers with badges and navigation links
+
+### Design Decisions
+
+#### 1. Server Component Architecture
+The dashboard is a server component that fetches data on the server, improving initial load performance and SEO.
+
+#### 2. Mock Data Strategy
+Since the Prisma models for Property and SeekerProfile aren't available yet, the action uses realistic mock data. The code includes TODO comments showing exactly how to integrate with the real database when ready.
+
+#### 3. Blue Theme Consistency
+All components use CSS variables (`--primary`, `--muted`, etc.) and avoid hardcoded colors, following the project's blue theme guidelines.
+
+#### 4. Dutch Language UI
+All user-facing text is in Dutch to match the target market (Dutch horeca entrepreneurs).
+
+#### 5. Horeca Score Visualization
+Property cards display the "Horeca Score" (A+ to F) with color-coded badges, making it easy for users to quickly assess property quality.
+
+### Testing Notes
+
+- **Lint:** All new files pass ESLint with no errors
+- **TypeScript:** All new files compile without type errors
+- **Components:** Ready for visual testing when integrated into the dashboard page
+
+### Next Steps
+
+1. The dashboard page (`app/dashboard/page.tsx`) needs to be updated to render `SeekerDashboard` for users with the "seeker" role (PRD Task 9.3)
+2. When the Prisma models are migrated, update `getSeekerRecommendations` to use real database queries
+3. Add analytics tracking for property views and recommendations
