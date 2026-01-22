@@ -1,0 +1,26 @@
+# Progress Log
+
+## 2026-01-22: Property Validation Schemas (PRD Task 2.2)
+
+### Completed
+- Created `lib/validations/property.ts` with comprehensive Zod schemas:
+  - **Enums exported**: `propertyTypeEnum`, `propertyStatusEnum`, `priceTypeEnum`, `featureCategoryEnum`, `propertyImageTypeEnum`, `propertySortByEnum`, `sortOrderEnum`
+  - **Schemas**:
+    - `createPropertySchema`: Required fields (title 5-200 chars, propertyType, priceType, address, city, postalCode, surfaceTotal positive int) + all optional fields with correct types
+    - `updatePropertySchema`: All fields optional, includes status and admin-only fields
+    - `propertyFilterSchema`: Filter by cities, propertyTypes, priceType, price range, surface range, features, hasTerrace, hasKitchen
+    - `listPropertiesSchema`: Pagination (page default 1, limit default 20 max 100), sorting (sortBy enum, sortOrder asc/desc), filters, search string
+  - **TypeScript types** exported for all schemas
+
+### Tests
+- Created `lib/validations/__tests__/property.test.ts` with 43 passing tests covering:
+  - All enum validations
+  - Create property schema (required fields, optional fields, validation rules, defaults)
+  - Update property schema (partial updates, status, admin fields)
+  - Filter schema (all filter options)
+  - List schema (pagination, sorting, defaults)
+
+### Files Added
+- `lib/validations/property.ts`
+- `lib/validations/__tests__/property.test.ts`
+- `progress.txt`
