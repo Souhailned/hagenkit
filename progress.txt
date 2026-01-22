@@ -1,0 +1,47 @@
+# Progress Log
+
+## 2026-01-22: Seeker Profile Validation Schemas
+
+### Completed Tasks
+
+1. **Created `lib/validations/seeker-profile.ts`**
+   - Defined `propertyTypeEnum` with horeca property types (RESTAURANT, CAFE, BAR, HOTEL, NIGHTCLUB, FAST_FOOD, CATERING, OTHER)
+   - Defined `alertFrequencyEnum` with notification frequencies (INSTANT, DAILY, WEEKLY, MONTHLY)
+   - Implemented `updateSeekerProfileSchema` with:
+     - businessType (optional string)
+     - conceptDescription (optional, max 2000 chars)
+     - experienceYears (optional, 0-50 range)
+     - budgetMin/budgetMax (optional, with min<=max validation)
+     - preferredCities (string array, default [])
+     - preferredTypes (PropertyType array, default [])
+     - minSurface/maxSurface (optional, with min<=max validation)
+     - mustHaveFeatures (string array, default [])
+     - emailAlerts (boolean, default false)
+     - alertFrequency (optional AlertFrequency enum)
+   - Implemented `createSearchAlertSchema` with:
+     - name (required, 2-100 chars)
+     - cities (string array, default [])
+     - propertyTypes (PropertyType array, default [])
+     - priceMin/priceMax (optional, with min<=max validation)
+     - surfaceMin/surfaceMax (optional, with min<=max validation)
+     - mustHaveFeatures (string array, default [])
+     - frequency (AlertFrequency, default DAILY)
+   - Implemented `updateSearchAlertSchema` with all fields optional + active boolean
+   - Exported TypeScript types for all schemas
+
+2. **Created `lib/validations/__tests__/seeker-profile.test.ts`**
+   - 33 test cases covering all schemas
+   - Tests for enum validation
+   - Tests for field constraints (min/max values, string lengths)
+   - Tests for cross-field validations (budgetMin <= budgetMax, etc.)
+   - Tests for default values
+   - All tests passing
+
+### Test Results
+- 33 tests passed
+- 50 expect() calls
+- Runtime: 23ms
+
+### Lint Status
+- New files pass ESLint
+- Pre-existing lint issues in codebase not addressed (out of scope)
