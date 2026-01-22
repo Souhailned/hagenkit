@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Progress Log
 
 ## Task: Create Backup Branch
@@ -204,3 +205,46 @@ Comprehensive test suite with 34 tests covering:
 - Edge cases (empty arrays, equal min/max values)
 
 All tests pass.
+=======
+# Task Progress
+
+## Completed: RoleSelection Component
+
+### What was done
+- Created `components/onboarding/role-selection.tsx`
+- Created `components/onboarding/README.md`
+
+### Component Details
+File: `components/onboarding/role-selection.tsx`
+
+A two-card role selection component for the onboarding flow:
+- **Seeker Card**: Building icon, "Ik zoek horeca ruimte", for users looking for hospitality spaces
+- **Agent Card**: Briefcase icon, "Ik ben makelaar", for real estate agents
+
+### Features Implemented
+- Responsive grid (stacked on mobile, side-by-side on sm+)
+- Hover states with shadow elevation and primary border hint
+- Selected state with primary border (2px) and primary/5 background
+- Keyboard accessibility (Enter/Space to select)
+- ARIA attributes (role="button", aria-pressed, aria-label)
+- Checkmark indicator on selected card
+- Icon container with color transitions
+- Uses theme CSS variables (no hardcoded colors)
+
+### Props Interface
+```typescript
+interface RoleSelectionProps {
+  selectedRole: RoleValue | null; // "seeker" | "agent" | null
+  onSelect: (role: RoleValue) => void;
+}
+```
+
+### Test Status
+- Test cases documented in README.md
+- Full tests ready to run once Vitest + RTL are installed
+
+### Build/Lint Status
+- ESLint: ✅ No errors in new files (pre-existing errors in codebase)
+- TypeScript: ✅ Component compiles correctly
+- Build: ⚠️ Build fails due to missing Prisma client (environment issue, not component-related)
+>>>>>>> ralphy/agent-37-1769113109316-oz29kj-shadcn-ui-frontend-design-maak-components-onboardi
