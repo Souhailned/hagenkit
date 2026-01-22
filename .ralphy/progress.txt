@@ -1,0 +1,121 @@
+# Horecagrond Documentation Review - Progress
+
+## Task: Read existing documentation for full context
+
+### Status: COMPLETED
+
+### Date: 2026-01-22
+
+---
+
+## Summary of Findings
+
+The referenced documentation files (`docs/HORECAGROND-MASTERPLAN.md` and `docs/DATABASE-DESIGN.md`) do not exist as separate files. All documentation is consolidated in `PRD.md`.
+
+---
+
+## Key Stakeholders Identified
+
+### 1. Seekers (Horeca Ondernemers)
+- Users looking for horeca real estate (restaurants, cafes, bars, hotels, etc.)
+- Need to search properties, save favorites, set alerts, make inquiries
+- Can visualize their concept using AI image processing
+
+### 2. Agents (Makelaars)
+- Real estate agents listing horeca properties
+- Work within an Agency (multi-tenant model)
+- Manage listings, handle leads/inquiries, view analytics
+
+### 3. Admins
+- Platform administrators
+- Manage agencies, verify listings, oversee platform
+
+---
+
+## User Journeys
+
+### Seeker Journey:
+1. Sign up → Select "I'm looking for horeca space" role
+2. Onboarding: Business type, budget, preferences
+3. Dashboard: Recommended properties, search, save favorites
+4. Browse listings → Make inquiries → Get matched with agents
+5. AI visualization of their concept
+
+### Agent Journey:
+1. Sign up → Select "I'm a realtor" role
+2. Onboarding: Agency info, agent profile, first property
+3. Dashboard: Stats, leads, property management
+4. Create/manage listings → Handle inquiries → Close deals
+5. Team management within agency
+
+---
+
+## Database Design Overview
+
+### Current Schema (prisma/schema.prisma):
+- User, Session, Account, Verification (auth)
+- Workspace, WorkspaceMember, WorkspaceInvitation (multi-tenancy)
+- Roles: OWNER, ADMIN, MEMBER, VIEWER
+- UserRole: user, admin
+
+### Planned Extensions (from PRD.md):
+
+#### New Enums:
+- PropertyType: RESTAURANT, CAFE, BAR, HOTEL, DARK_KITCHEN, NIGHTCLUB, etc.
+- PropertyStatus: DRAFT, PENDING_REVIEW, ACTIVE, UNDER_OFFER, RENTED, SOLD, etc.
+- PriceType: RENT, SALE, RENT_OR_SALE
+- FeatureCategory: LICENSE, FACILITY, UTILITY, ACCESSIBILITY
+- InquiryStatus: NEW, VIEWED, CONTACTED, VIEWING_SCHEDULED, etc.
+- AgencyRole: OWNER, ADMIN, AGENT, VIEWER
+- AgencyPlan: FREE, PRO, ENTERPRISE
+- AlertFrequency: INSTANT, DAILY, WEEKLY
+
+#### New Models:
+1. **Agency** - Multi-tenant for realtors (name, slug, KvK, plan, limits)
+2. **AgencyMember** - Links users to agencies with roles
+3. **AgencyInvitation** - Invite agents to agency
+4. **SeekerProfile** - Preferences for horeca seekers
+5. **AgentProfile** - Agent details, specializations
+6. **Property** - Main listing model (location, pricing, dimensions, horeca specifics)
+7. **PropertyImage** - Photos with AI enhancement support
+8. **PropertyFeature** - Licenses, facilities, utilities
+9. **PropertyInquiry** - Lead management
+10. **SavedProperty** - User favorites
+11. **PropertyView** - Analytics tracking
+12. **SearchAlert** - Saved search notifications
+
+---
+
+## Technical Architecture
+
+### App Structure:
+- `app/(marketing)/` - Public pages, listings, broker profiles
+- `app/(auth)/` - Authentication flows
+- `app/dashboard/` - Role-based dashboard (seeker vs agent views)
+- `app/(admin)/` - Platform administration
+
+### Key Features:
+- Role-based access control (seeker, agent, admin)
+- Agency multi-tenancy for realtors
+- AI photo enhancement integration (existing ImageProject model)
+- Horeca scoring system (A+ to F)
+- Email notifications (inquiries, alerts, invitations)
+- Analytics (views, conversions)
+
+---
+
+## Next Steps (FASE 1)
+
+1. Add new enums to Prisma schema
+2. Update UserRole from {user, admin} to {seeker, agent, admin}
+3. Create Agency, AgencyMember, AgencyInvitation models
+4. Create SeekerProfile, AgentProfile models
+5. Create Property and related models
+6. Run prisma:generate and prisma:push
+
+---
+
+## Files Reviewed:
+- PRD.md (42,125 bytes) - Complete project requirements
+- prisma/schema.prisma - Current database schema
+- CLAUDE.md - Project conventions and guidelines
