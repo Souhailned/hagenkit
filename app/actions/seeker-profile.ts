@@ -7,6 +7,7 @@ import type {
   PropertyListItem,
   SeekerRecommendations,
   SeekerPreferences,
+  SeekerProfile,
 } from "@/types/property";
 
 /**
@@ -41,7 +42,7 @@ const mockProperties: PropertyListItem[] = [
     surfaceTotal: 85,
     seatingCapacityInside: 45,
     seatingCapacityOutside: 20,
-    hasTermace: true,
+    hasTerrace: true,
     hasKitchen: false,
     horecaScore: "A",
     featured: true,
@@ -75,7 +76,7 @@ const mockProperties: PropertyListItem[] = [
     surfaceTotal: 180,
     seatingCapacityInside: 80,
     seatingCapacityOutside: 40,
-    hasTermace: true,
+    hasTerrace: true,
     hasKitchen: true,
     horecaScore: "A+",
     featured: true,
@@ -109,7 +110,7 @@ const mockProperties: PropertyListItem[] = [
     surfaceTotal: 120,
     seatingCapacityInside: null,
     seatingCapacityOutside: null,
-    hasTermace: false,
+    hasTerrace: false,
     hasKitchen: true,
     horecaScore: "B",
     featured: false,
@@ -143,7 +144,7 @@ const mockProperties: PropertyListItem[] = [
     surfaceTotal: 95,
     seatingCapacityInside: 50,
     seatingCapacityOutside: 15,
-    hasTermace: true,
+    hasTerrace: true,
     hasKitchen: false,
     horecaScore: "A",
     featured: false,
@@ -177,7 +178,7 @@ const mockProperties: PropertyListItem[] = [
     surfaceTotal: 140,
     seatingCapacityInside: 20,
     seatingCapacityOutside: 8,
-    hasTermace: true,
+    hasTerrace: true,
     hasKitchen: true,
     horecaScore: "B+",
     featured: true,
@@ -211,7 +212,7 @@ const mockProperties: PropertyListItem[] = [
     surfaceTotal: 110,
     seatingCapacityInside: 55,
     seatingCapacityOutside: 30,
-    hasTermace: true,
+    hasTerrace: true,
     hasKitchen: true,
     horecaScore: "A",
     featured: false,
@@ -229,6 +230,166 @@ const mockProperties: PropertyListItem[] = [
     },
   },
 ];
+
+/**
+ * Get the current user's seeker profile
+ * Creates a default profile if one doesn't exist
+ */
+export async function getSeekerProfile(
+  userId?: string
+): Promise<ActionResult<SeekerProfile | null>> {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user?.id) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    const targetUserId = userId || user.id;
+
+    // Only allow users to view their own profile unless admin
+    if (targetUserId !== user.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // TODO: Once Prisma schema is updated with SeekerProfile model,
+    // uncomment and use the following:
+    /*
+    const profile = await prisma.seekerProfile.findUnique({
+      where: { userId: targetUserId },
+    });
+
+    if (!profile) {
+      // Create default profile
+      const newProfile = await prisma.seekerProfile.create({
+        data: {
+          userId: targetUserId,
+          preferredCities: [],
+          preferredProvinces: [],
+          preferredTypes: [],
+          mustHaveFeatures: [],
+          niceToHaveFeatures: [],
+          emailAlerts: true,
+          pushAlerts: false,
+          alertFrequency: "DAILY",
+          hasBusinessPlan: false,
+        },
+      });
+      return { success: true, data: newProfile };
+    }
+
+    return { success: true, data: profile };
+    */
+
+    // Temporary: Return null until database models are created
+    return { success: true, data: null };
+  } catch (error) {
+    console.error("Error getting seeker profile:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to get profile",
+    };
+  }
+}
+
+/**
+ * Update the seeker profile
+ */
+export async function updateSeekerProfile(
+  _data: Partial<SeekerProfile>
+): Promise<ActionResult<SeekerProfile>> {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user?.id) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    // TODO: Once Prisma schema is updated with SeekerProfile model,
+    // implement the update logic using _data
+    /*
+    const profile = await prisma.seekerProfile.upsert({
+      where: { userId: user.id },
+      update: {
+        ..._data,
+        updatedAt: new Date(),
+      },
+      create: {
+        userId: user.id,
+        ..._data,
+        preferredCities: _data.preferredCities || [],
+        preferredProvinces: _data.preferredProvinces || [],
+        preferredTypes: _data.preferredTypes || [],
+        mustHaveFeatures: _data.mustHaveFeatures || [],
+        niceToHaveFeatures: _data.niceToHaveFeatures || [],
+        emailAlerts: _data.emailAlerts ?? true,
+        pushAlerts: _data.pushAlerts ?? false,
+        alertFrequency: _data.alertFrequency || "DAILY",
+        hasBusinessPlan: _data.hasBusinessPlan ?? false,
+      },
+    });
+
+    return { success: true, data: profile };
+    */
+
+    return { success: false, error: "Profile update not yet implemented" };
+  } catch (error) {
+    console.error("Error updating seeker profile:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to update profile",
+    };
+  }
+}
+
+/**
+ * Complete seeker onboarding with initial profile data
+ */
+export async function completeSeekerOnboarding(
+  _data: Partial<SeekerProfile>
+): Promise<ActionResult<void>> {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user?.id) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    // TODO: Once Prisma schema is updated, implement using _data:
+    // 1. Update user role to 'seeker'
+    // 2. Create SeekerProfile with provided _data
+    // 3. Set onboardingCompleted to true
+    /*
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: user.id },
+        data: {
+          role: "seeker",
+          onboardingCompleted: true,
+        },
+      }),
+      prisma.seekerProfile.create({
+        data: {
+          userId: user.id,
+          ..._data,
+        },
+      }),
+    ]);
+    */
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error completing seeker onboarding:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to complete onboarding",
+    };
+  }
+}
 
 /**
  * Get seeker recommendations based on user preferences
@@ -357,5 +518,39 @@ export async function getSeekerPreferences(): Promise<
       success: false,
       error: "Er ging iets mis bij het ophalen van voorkeuren",
     };
+  }
+}
+
+/**
+ * Check if a property is saved by the current user
+ */
+export async function isPropertySaved(
+  _propertyId: string
+): Promise<ActionResult<boolean>> {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user?.id) {
+      return { success: true, data: false };
+    }
+
+    // TODO: Once Prisma schema is updated, use _propertyId:
+    /*
+    const saved = await prisma.savedProperty.findUnique({
+      where: {
+        userId_propertyId: {
+          userId: user.id,
+          propertyId: _propertyId,
+        },
+      },
+    });
+
+    return { success: true, data: !!saved };
+    */
+
+    return { success: true, data: false };
+  } catch (error) {
+    console.error("Error checking saved property:", error);
+    return { success: true, data: false };
   }
 }
