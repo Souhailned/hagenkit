@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Progress Log
 
 ## Task: Create Backup Branch
@@ -375,3 +374,63 @@ Note: Tests use Vitest but the testing framework is not yet installed in the pro
 - All components use shadcn/ui primitives
 - Theme tokens from CSS variables (no hardcoded colors)
 - Follows existing codebase patterns
+
+---
+
+## 2026-01-22: Agent Onboarding Steps Components
+
+### Task
+Implemented components/onboarding/agent-steps/ directory with:
+- StepAgencyInfo.tsx - Agency information form
+- StepAgentProfile.tsx - Agent profile form with multi-select
+- StepFirstProperty.tsx - First property choice screen
+- StepComplete.tsx - Success confirmation with confetti
+
+### Implementation Details
+
+**StepAgencyInfo.tsx**
+- Form fields: kantoor naam, KvK nummer (with validation), telefoon, email, website, adres
+- Validation hints for KvK (8 digits), postal code, email, phone
+- Uses shadcn/ui Input and Label components
+- Memoized validation state and handlers for performance
+- Responsive grid layout for contact fields
+
+**StepAgentProfile.tsx**
+- Form fields: naam, functie titel, telefoon, bio textarea
+- Multi-select for PropertyType specializations (10 horeca types)
+- Multi-select for regions (12 Dutch provinces)
+- Toggle-able checkboxes with selected badges display
+- Character count for bio field
+
+**StepFirstProperty.tsx**
+- Choice screen with "Voeg nu je eerste pand toe" CTA button
+- "Ik doe dit later" skip link
+- Benefits showcase cards (AI photos, analytics, reach)
+
+**StepComplete.tsx**
+- Success header with checkmark icon
+- Confetti celebration animation (canvas-confetti)
+- Summary cards showing agency and profile creation
+- "What's next" suggestions
+- Dashboard CTA button
+
+**Supporting Files**
+- types.ts - Type definitions, constants, validation helpers
+- index.ts - Exports all components and types
+- README.md - Usage documentation
+- __tests__/types.test.ts - Unit tests for validation functions
+
+### Technical Decisions
+- Used controlled form pattern with data/onUpdate props
+- Implemented validation helpers for Dutch-specific formats
+- Memoized handlers to prevent unnecessary re-renders
+- Used CSS theme tokens (no hardcoded colors)
+- Followed existing codebase patterns (shadcn/ui, tabler icons)
+
+### Tests
+- Created unit tests for validation functions (isValidKvkNumber, isValidPostalCode, isValidEmail, isValidPhone, isValidUrl)
+- Tests require vitest to be installed to run
+
+### Build & Lint Status
+- Build: ✅ Passes
+- Lint: ✅ New components have no lint errors (pre-existing errors in codebase not related to this task)
