@@ -1,0 +1,62 @@
+# Progress Log - Property Search Actions
+
+## Date: 2026-01-22
+
+## Task: Implement app/actions/property-search.ts
+
+### Completed
+
+1. **Created lib/validations/property.ts**
+   - Added Zod schemas for property validation
+   - Exported enums: `propertyTypeEnum`, `propertyStatusEnum`, `priceTypeEnum`, `featureCategoryEnum`, `propertySortByEnum`, `sortOrderEnum`
+   - Created `propertyFilterSchema` with all filter options (cities, provinces, propertyTypes, priceType, price range, surface range, features)
+   - Created `listPropertiesSchema` for pagination and sorting
+   - Created `createPropertySchema` and `updatePropertySchema` for CRUD operations
+   - Exported TypeScript types for all schemas
+
+2. **Created app/actions/property-search.ts with all required functions:**
+
+   - **`searchProperties(input: ListPropertiesInput)`**
+     - Filters properties with pagination and sorting
+     - Only returns ACTIVE status properties for public searches
+     - Includes primary image and key stats
+     - Returns `{ items, total, hasMore, page, pageCount }`
+
+   - **`getFeaturedProperties(limit: number)`**
+     - Returns properties where `featured=true` and `featuredUntil > now`
+     - Sorted by expiration date and publishedAt
+
+   - **`getRecentProperties(limit: number)`**
+     - Returns properties sorted by `publishedAt desc`
+     - Only ACTIVE status with publishedAt set
+
+   - **`getSimilarProperties(propertyId: string, limit: number)`**
+     - Finds similar properties based on type, city, and price range
+     - Excludes the source property
+     - Defaults to limit of 4
+
+   - **`getPropertiesByAgency(agencyId: string, options?)`**
+     - For agency owners/admins: returns all statuses
+     - For public view: returns only ACTIVE properties
+     - Includes pagination support
+
+3. **Helper functions created:**
+   - `toPropertySummary()` - Transforms raw property data to summary format
+   - `buildWhereClause()` - Builds Prisma where clause from filter input
+
+4. **Types exported:**
+   - `PropertySummary` - Interface for list view property data
+   - `PropertySearchResult` - Interface for paginated search results
+
+### Verification
+
+- Lint check passed (no errors in new files)
+- Build completed successfully
+- TypeScript types are valid
+
+### Notes
+
+- The Property model must be added to the Prisma schema (Phase 1 of PRD) before these actions can be used
+- The code follows the existing ActionResult<T> pattern
+- Uses the same getCurrentUser helper as other actions
+- All prices are in cents (matching PRD specification)
