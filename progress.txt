@@ -1,0 +1,59 @@
+# Horecagrond Development Progress
+
+## Task: Update Landing Page (Marketing Page)
+**Date:** 2026-01-22
+**Status:** Completed
+
+### What was done:
+
+1. **Hero Section**
+   - New headline: "Vind de perfecte horecalocatie"
+   - Animated pulsing badge showing available listings count
+   - Subtext highlighting platform stats (properties, agents, cities)
+   - Two prominent CTAs: "Bekijk Aanbod" and "Ik ben Makelaar"
+   - Trust indicators (Gratis zoeken, Direct contact, Dagelijks nieuwe panden)
+   - Decorative Dutch tile-inspired background pattern
+   - SVG underline animation on the keyword "horecalocatie"
+
+2. **Featured Listings Section**
+   - Mock data for 4 featured properties (Café, Restaurant, Hotel, Dark Kitchen)
+   - Property cards with:
+     - Property type badge with icon
+     - Price overlay on image placeholder
+     - Title, city, surface area
+     - Feature tags (seating capacity, terrace)
+   - Responsive 4-column grid (sm: 2 cols, lg: 4 cols)
+   - "Bekijk alle panden" link
+
+3. **How It Works Section**
+   - 3-step process: Zoek & Filter → Plan Bezichtiging → Onderteken Deal
+   - Icon-based step indicators with numbered badges
+   - Desktop connector lines between steps
+   - Responsive grid layout
+
+4. **Stats Section**
+   - Three stat cards with hover effects:
+     - 847+ Horecapanden
+     - 126 Gecertificeerde Makelaars
+     - 42 Steden in Nederland
+   - Gradient background with primary color accents
+
+5. **Makelaar CTA Banner**
+   - Eye-catching full-width banner with primary gradient
+   - Headline: "Bereik duizenden horecaondernemers"
+   - "Start Gratis" and "Meer informatie" CTAs
+   - Feature highlights (eerste 3 panden gratis, lead notificaties, AI foto)
+   - Decorative blur effects and tile pattern overlay
+
+### Technical Details:
+- File modified: `app/(marketing)/page.tsx`
+- Used existing shadcn/ui components: Button, Badge
+- Lucide icons for visual elements
+- Dutch locale formatting for prices (Intl.NumberFormat)
+- Fully responsive design with mobile-first approach
+- CSS theme tokens used throughout (no hardcoded colors)
+
+### Notes:
+- Featured properties use mock data until `getFeaturedProperties` action is implemented (Phase 4.4)
+- Stats are hardcoded until database queries are available
+- Links to `/aanbod` and `/makelaars` pages will need corresponding page implementations
