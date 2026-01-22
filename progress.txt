@@ -716,3 +716,44 @@ Comprehensive test suite covering:
 - Test framework (vitest) could not be installed due to Prisma preinstall hook blocking on Node v23.11.0
 - Tests are ready to run once Node version is updated or Prisma constraint is resolved
 - Run tests with: `npx vitest run lib/horeca-score.test.ts`
+
+---
+
+## 2026-01-22: Created lib/slug.ts
+
+### Task
+Maak lib/slug.ts: export generateSlug(title) functie die URL-safe slug maakt. Lowercase, replace spaces met hyphens, remove special chars, trim hyphens. Export generateUniqueSlug(title, checkExists) async functie die suffix toevoegt als slug al bestaat (bijv "cafe-amsterdam-2")
+
+### Completed
+- Created `lib/slug.ts` with two exported functions:
+  - `generateSlug(title: string): string` - Converts title to URL-safe slug
+    - Converts to lowercase
+    - Normalizes and removes accented characters (café → cafe)
+    - Removes special characters (keeps alphanumeric and hyphens)
+    - Replaces spaces with hyphens
+    - Collapses multiple consecutive hyphens
+    - Trims leading/trailing hyphens
+  - `generateUniqueSlug(title: string, checkExists: (slug: string) => Promise<boolean>): Promise<string>`
+    - Returns base slug if available
+    - Appends numeric suffix (-2, -3, etc.) if slug already exists
+    - Handles edge case of empty titles with "item-N" fallback
+
+- Created `lib/__tests__/slug.test.ts` with 15 test cases covering:
+  - Lowercase conversion
+  - Space to hyphen replacement
+  - Special character removal
+  - Accented character handling (café, naïve, über)
+  - Hyphen trimming and collapsing
+  - Empty/whitespace input handling
+  - Number preservation
+  - Complex real-world titles
+  - Unique slug generation with suffix increments
+  - Async checkExists behavior
+
+### Test Results
+All 15 tests pass with Node's built-in test runner.
+
+### Files Changed
+- `lib/slug.ts` (new)
+- `lib/__tests__/slug.test.ts` (new)
+- `progress.txt` (new)
