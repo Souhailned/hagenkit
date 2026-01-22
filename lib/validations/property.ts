@@ -63,6 +63,7 @@ export const propertySortByEnum = z.enum([
   "salePrice",
   "surfaceTotal",
   "viewCount",
+  "inquiryCount",
   "title",
 ]);
 
@@ -80,6 +81,42 @@ export type FeatureCategory = z.infer<typeof featureCategoryEnum>;
 export type PropertyImageType = z.infer<typeof propertyImageTypeEnum>;
 export type PropertySortBy = z.infer<typeof propertySortByEnum>;
 export type SortOrder = z.infer<typeof sortOrderEnum>;
+
+// ============================================================================
+// Property Filter Schema
+// ============================================================================
+
+export const propertyFilterSchema = z.object({
+  cities: z.array(z.string()).optional(),
+  provinces: z.array(z.string()).optional(),
+  propertyTypes: z.array(propertyTypeEnum).optional(),
+  priceType: priceTypeEnum.optional(),
+  priceMin: z.number().int().nonnegative().optional(),
+  priceMax: z.number().int().nonnegative().optional(),
+  surfaceMin: z.number().int().nonnegative().optional(),
+  surfaceMax: z.number().int().nonnegative().optional(),
+  features: z.array(z.string()).optional(),
+  hasTerrace: z.boolean().optional(),
+  hasKitchen: z.boolean().optional(),
+  hasBasement: z.boolean().optional(),
+  hasStorage: z.boolean().optional(),
+  hasParking: z.boolean().optional(),
+  seatingCapacityMin: z.number().int().positive().optional(),
+  seatingCapacityMax: z.number().int().positive().optional(),
+});
+
+// ============================================================================
+// List Properties Schema (with pagination, sorting, filters)
+// ============================================================================
+
+export const listPropertiesSchema = z.object({
+  page: z.number().int().positive().default(1),
+  limit: z.number().int().positive().max(100).default(20),
+  sortBy: propertySortByEnum.default("createdAt"),
+  sortOrder: sortOrderEnum.default("desc"),
+  filters: propertyFilterSchema.optional(),
+  search: z.string().max(200).optional(),
+});
 
 // ============================================================================
 // Create Property Schema
@@ -175,6 +212,8 @@ export const createPropertySchema = z.object({
 // ============================================================================
 
 export const updatePropertySchema = createPropertySchema.partial().extend({
+  // ID required for updates
+  id: z.string().min(1, "Property ID is required").optional(),
   // Status can only be set via update (not create)
   status: propertyStatusEnum.optional(),
   // Admin-only fields
@@ -183,40 +222,10 @@ export const updatePropertySchema = createPropertySchema.partial().extend({
 });
 
 // ============================================================================
-// Property Filter Schema
-// ============================================================================
-
-export const propertyFilterSchema = z.object({
-  cities: z.array(z.string()).optional(),
-  propertyTypes: z.array(propertyTypeEnum).optional(),
-  priceType: priceTypeEnum.optional(),
-  priceMin: z.number().int().nonnegative().optional(),
-  priceMax: z.number().int().nonnegative().optional(),
-  surfaceMin: z.number().int().nonnegative().optional(),
-  surfaceMax: z.number().int().nonnegative().optional(),
-  features: z.array(z.string()).optional(),
-  hasTerrace: z.boolean().optional(),
-  hasKitchen: z.boolean().optional(),
-});
-
-// ============================================================================
-// List Properties Schema (with pagination, sorting, filters)
-// ============================================================================
-
-export const listPropertiesSchema = z.object({
-  page: z.number().int().positive().default(1),
-  limit: z.number().int().positive().max(100).default(20),
-  sortBy: propertySortByEnum.default("createdAt"),
-  sortOrder: sortOrderEnum.default("desc"),
-  filters: propertyFilterSchema.optional(),
-  search: z.string().optional(),
-});
-
-// ============================================================================
 // TypeScript Types from Schemas
 // ============================================================================
 
-export type CreatePropertyInput = z.infer<typeof createPropertySchema>;
-export type UpdatePropertyInput = z.infer<typeof updatePropertySchema>;
 export type PropertyFilterInput = z.infer<typeof propertyFilterSchema>;
 export type ListPropertiesInput = z.infer<typeof listPropertiesSchema>;
+export type CreatePropertyInput = z.infer<typeof createPropertySchema>;
+export type UpdatePropertyInput = z.infer<typeof updatePropertySchema>;
