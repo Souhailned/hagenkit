@@ -657,3 +657,62 @@ Resolved merge conflicts from branch `ralphy/agent-57-1769116977360-n08lj3-front
 - HEAD versions had more complete implementations
 - Merged functionality from both branches where applicable
 - Added compatibility aliases (e.g., StructuredData for PropertyStructuredData)
+
+---
+
+## 2026-01-22 - Horeca Score Calculator Implementation
+
+### Task
+Maak lib/horeca-score.ts: export calculateHorecaScore(property, features) functie
+
+### Completed
+
+#### lib/horeca-score.ts
+Created comprehensive horeca property scoring module with:
+
+**Exports:**
+- `calculateHorecaScore(property, features)` - Main scoring function
+- `getScoreColor(grade)` - UI color helper for grade badges
+- `getNumericScoreColor(score)` - UI color helper for progress bars
+
+**Score Factors (with weights):**
+1. **Location (30%)** - footfall estimate, neighborhood rating, transport distance, parking, tourist area, visibility
+2. **Licenses (20%)** - alcohol, terrace, late night, food service, gaming, catering, event permits
+3. **Facilities (20%)** - kitchen type, extraction system, cold storage, cellar, seating capacity, toilets, staff area
+4. **Condition (15%)** - build year, renovation year, ratings (overall, electrical, plumbing, HVAC), energy label
+5. **Price/Quality (15%)** - rent vs market, revenue potential, key money, lease duration
+
+**Return Object:**
+- `overallScore`: Grade from A+ to F
+- `numericScore`: 0-100
+- `breakdown`: Per-factor details with score, weight, grade, and details
+- `suggestions`: Prioritized improvement recommendations
+- `calculatedAt`: Timestamp
+
+**Types Exported:**
+- `ScoreGrade`, `ScoreFactorKey`, `LocationData`, `LicenseData`, `FacilitiesData`
+- `ConditionData`, `PriceQualityData`, `HorecaProperty`, `HorecaFeatures`
+- `ScoreFactorResult`, `ScoreSuggestion`, `HorecaScoreResult`, `ScoreColorScheme`
+- `KitchenType`, `ExtractionType`
+
+#### lib/horeca-score.test.ts
+Comprehensive test suite covering:
+- Minimal/empty data handling
+- Location scoring (high/low scenarios)
+- License scoring (all/none/weighted)
+- Facilities scoring (professional/basic)
+- Condition scoring (new vs old properties)
+- Price/quality scoring
+- Overall score calculation
+- Suggestion generation
+- UI helper functions (getScoreColor, getNumericScoreColor)
+
+### Verification
+- [x] ESLint passes on new files
+- [x] TypeScript compiles (our module is type-safe)
+- [ ] Tests require vitest to be installed (blocked by Node version mismatch with Prisma)
+
+### Notes
+- Test framework (vitest) could not be installed due to Prisma preinstall hook blocking on Node v23.11.0
+- Tests are ready to run once Node version is updated or Prisma constraint is resolved
+- Run tests with: `npx vitest run lib/horeca-score.test.ts`
