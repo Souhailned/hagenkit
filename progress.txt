@@ -757,3 +757,74 @@ All 15 tests pass with Node's built-in test runner.
 - `lib/slug.ts` (new)
 - `lib/__tests__/slug.test.ts` (new)
 - `progress.txt` (new)
+
+---
+
+## Task: Admin Agencies Page (PRD Task 12.1)
+
+**Date:** 2026-01-22
+**Status:** Completed
+
+### Implemented Features
+
+1. **Admin Agency Types** (`types/admin.ts`)
+   - Added `AgencyPlan` type (FREE, PRO, ENTERPRISE)
+   - Added `AdminAgency` interface with all required fields
+   - Added `AgencyEditFields` and `AgencyDeleteFields` types
+   - Added `AdminAgencyDetail` interface for modal view with members and activity
+
+2. **Server Actions** (`app/actions/admin/agencies.ts`)
+   - `getAgencies()` - Paginated list with search, sort, verified filter, plan filter
+   - `getAgencyById()` - Detailed agency info with members and activity
+   - `updateAgencyVerified()` - Toggle verification status
+   - `updateAgencyPlan()` - Change subscription plan
+   - `getAgencyOwnerId()` - Get owner for impersonation
+   - Note: Currently using Workspace model as base (Agency model pending in schema)
+
+3. **Data Table Component** (`components/admin/agencies-data-table.tsx`)
+   - Columns: Name (with avatar), Slug, Owner Email, Plan, Verified Status, Listings Count, Members Count, Created Date
+   - Actions dropdown: View Details, Verify/Unverify toggle, Change Plan submenu, Impersonate Owner
+   - Filters: Plan (FREE/PRO/ENTERPRISE), Verified Status (true/false)
+   - Search: By agency name
+   - Pagination: Built-in via useDataTable hook
+   - Row click: Opens detail modal
+
+4. **Detail Modal** (`components/admin/agency-detail-modal.tsx`)
+   - Overview tab: Stats (members, listings, invitations), Owner info, Dates
+   - Members tab: List of all members with roles and join dates
+   - Activity tab: Recent activity timeline
+   - Loading states and error handling
+
+5. **Admin Page** (`app/(admin)/admin/agencies/page.tsx`)
+   - Uses ContentCard pattern (standard container layout)
+   - Header with "Agencies" title and description
+   - Suspense with skeleton loading
+   - Server-side data fetching with filters from URL params
+
+6. **Navigation** (`components/admin-sidebar.tsx`)
+   - Added "Agencies" nav item with IconBuilding icon
+   - Placed after "Workspace Management" in the sidebar
+
+### Technical Notes
+
+- The implementation uses `Workspace` model as the base since the `Agency` model from PRD hasn't been added to the Prisma schema yet
+- `verified`, `plan`, and `listings` fields are simulated/placeholder values
+- When the Agency model is added to schema, the server actions will need minimal updates to use real fields
+- All patterns follow existing admin pages (users, workspaces, impersonate)
+
+### Files Created/Modified
+
+**Created:**
+- `app/(admin)/admin/agencies/page.tsx`
+- `app/actions/admin/agencies.ts`
+- `components/admin/agencies-data-table.tsx`
+- `components/admin/agency-detail-modal.tsx`
+
+**Modified:**
+- `types/admin.ts` - Added agency types
+- `components/admin-sidebar.tsx` - Added Agencies nav item
+
+### Build Status
+
+- Lint: Passed (no errors in new files)
+- Build: Passed (agencies page included in output)
