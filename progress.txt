@@ -1,0 +1,12 @@
+# Progress Log
+
+## Task: Run bun run prisma:push om schema naar database te pushen (development)
+
+### Status: COMPLETED
+
+### Actions Performed:
+- Ran `bun run prisma:push` command
+- Result: The database is already in sync with the Prisma schema
+- Datasource: PostgreSQL database "hagenkit" at localhost:5435
+
+### Date: 2026-01-22
