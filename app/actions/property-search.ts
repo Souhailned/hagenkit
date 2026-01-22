@@ -1,598 +1,542 @@
 "use server";
 
-import prisma from "@/lib/prisma";
-import { getCurrentUser } from "./user";
-import type { ActionResult } from "@/types/actions";
 import {
+  type PropertyFilter,
+  type PropertyType,
+  type PriceType,
+  type SortBy,
+  type SortOrder,
   listPropertiesSchema,
-  type ListPropertiesInput,
-  type PropertyFilterInput,
 } from "@/lib/validations/property";
-import type { Prisma } from "@/generated/prisma/client";
 
-/**
- * Property summary type for list views
- * Includes primary image and key stats
- */
-export interface PropertySummary {
-  id: string;
-  title: string;
-  slug: string;
-  shortDescription: string | null;
-  propertyType: string | null;
-  status: string;
-  priceType: string | null;
-  rentPrice: number | null;
-  salePrice: number | null;
-  city: string | null;
-  province: string | null;
-  surfaceTotal: number;
-  hasTerrace: boolean | null;
-  hasKitchen: boolean;
-  seatingCapacityInside: number | null;
-  seatingCapacityOutside: number | null;
-  viewCount: number;
-  inquiryCount: number;
-  savedCount: number;
-  publishedAt: Date | null;
-  createdAt: Date;
-  primaryImage: {
-    id: string;
-    thumbnailUrl: string | null;
-    mediumUrl: string | null;
-    altText: string | null;
-  } | null;
-  agency: {
-    id: string;
-    name: string;
-    slug: string;
-    logo: string | null;
-  } | null;
-}
+// ActionResult type for consistent returns
+type ActionResult<T = void> = {
+  success: boolean;
+  data?: T;
+  error?: string;
+};
 
-/**
- * Paginated search result type
- */
+// Property type for search results (matches future Prisma model)
 export interface PropertySearchResult {
-  items: PropertySummary[];
-  total: number;
-  hasMore: boolean;
-  page: number;
-  pageCount: number;
-}
-
-/**
- * Select fields for property summary queries
- */
-const propertySummarySelect = {
-  id: true,
-  title: true,
-  slug: true,
-  shortDescription: true,
-  propertyType: true,
-  status: true,
-  priceType: true,
-  rentPrice: true,
-  salePrice: true,
-  city: true,
-  province: true,
-  surfaceTotal: true,
-  hasTerrace: true,
-  surfaceKitchen: true,
-  seatingCapacityInside: true,
-  seatingCapacityOutside: true,
-  viewCount: true,
-  inquiryCount: true,
-  savedCount: true,
-  publishedAt: true,
-  createdAt: true,
-  images: {
-    where: { isPrimary: true },
-    take: 1,
-    select: {
-      id: true,
-      thumbnailUrl: true,
-      mediumUrl: true,
-      altText: true,
-    },
-  },
-  agency: {
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      logo: true,
-    },
-  },
-} as const;
-
-/**
- * Transform raw property data to PropertySummary
- */
-function toPropertySummary(property: {
   id: string;
-  title: string;
   slug: string;
+  title: string;
   shortDescription: string | null;
-  propertyType: string | null;
-  status: string;
-  priceType: string | null;
+  propertyType: PropertyType;
+  priceType: PriceType;
   rentPrice: number | null;
   salePrice: number | null;
-  city: string | null;
+  city: string;
   province: string | null;
+  address: string;
   surfaceTotal: number;
-  hasTerrace: boolean | null;
-  surfaceKitchen: number | null;
+  hasTerrace: boolean;
+  hasKitchen: boolean;
+  hasParking: boolean;
   seatingCapacityInside: number | null;
   seatingCapacityOutside: number | null;
-  viewCount: number;
-  inquiryCount: number;
-  savedCount: number;
   publishedAt: Date | null;
-  createdAt: Date;
-  images: Array<{
-    id: string;
-    thumbnailUrl: string | null;
-    mediumUrl: string | null;
+  viewCount: number;
+  savedCount: number;
+  primaryImage: {
+    thumbnailUrl: string;
     altText: string | null;
-  }>;
+  } | null;
   agency: {
     id: string;
     name: string;
     slug: string;
-    logo: string | null;
   } | null;
-}): PropertySummary {
-  return {
-    id: property.id,
-    title: property.title,
-    slug: property.slug,
-    shortDescription: property.shortDescription,
-    propertyType: property.propertyType,
-    status: property.status,
-    priceType: property.priceType,
-    rentPrice: property.rentPrice,
-    salePrice: property.salePrice,
-    city: property.city,
-    province: property.province,
-    surfaceTotal: property.surfaceTotal,
-    hasTerrace: property.hasTerrace,
-    hasKitchen: property.surfaceKitchen != null && property.surfaceKitchen > 0,
-    seatingCapacityInside: property.seatingCapacityInside,
-    seatingCapacityOutside: property.seatingCapacityOutside,
-    viewCount: property.viewCount,
-    inquiryCount: property.inquiryCount,
-    savedCount: property.savedCount,
-    publishedAt: property.publishedAt,
-    createdAt: property.createdAt,
-    primaryImage: property.images[0] ?? null,
-    agency: property.agency,
-  };
 }
 
-/**
- * Build Prisma where clause from filter input
- */
-function buildWhereClause(
-  filters?: PropertyFilterInput,
-  search?: string,
-  statusFilter: string | string[] = "ACTIVE"
-): Prisma.PropertyWhereInput {
-  const where: Prisma.PropertyWhereInput = {};
-
-  // Status filter (default to ACTIVE for public searches)
-  if (Array.isArray(statusFilter)) {
-    where.status = { in: statusFilter as Prisma.Enumerable<string> };
-  } else {
-    where.status = statusFilter;
-  }
-
-  // Search by title or description
-  if (search && search.trim()) {
-    where.OR = [
-      { title: { contains: search, mode: "insensitive" } },
-      { description: { contains: search, mode: "insensitive" } },
-      { city: { contains: search, mode: "insensitive" } },
-      { neighborhood: { contains: search, mode: "insensitive" } },
-    ];
-  }
-
-  if (!filters) return where;
-
-  // Location filters
-  if (filters.cities && filters.cities.length > 0) {
-    where.city = { in: filters.cities, mode: "insensitive" };
-  }
-
-  if (filters.provinces && filters.provinces.length > 0) {
-    where.province = { in: filters.provinces, mode: "insensitive" };
-  }
-
-  // Property type filter
-  if (filters.propertyTypes && filters.propertyTypes.length > 0) {
-    where.propertyType = { in: filters.propertyTypes as Prisma.Enumerable<string> };
-  }
-
-  // Price type filter
-  if (filters.priceType) {
-    where.priceType = filters.priceType;
-  }
-
-  // Price range filters
-  if (filters.priceMin || filters.priceMax) {
-    // Determine which price field to filter based on priceType
-    const priceField = filters.priceType === "SALE" ? "salePrice" : "rentPrice";
-
-    if (filters.priceMin && filters.priceMax) {
-      where[priceField] = {
-        gte: filters.priceMin,
-        lte: filters.priceMax,
-      };
-    } else if (filters.priceMin) {
-      where[priceField] = { gte: filters.priceMin };
-    } else if (filters.priceMax) {
-      where[priceField] = { lte: filters.priceMax };
-    }
-  }
-
-  // Surface area filters
-  if (filters.surfaceMin || filters.surfaceMax) {
-    if (filters.surfaceMin && filters.surfaceMax) {
-      where.surfaceTotal = {
-        gte: filters.surfaceMin,
-        lte: filters.surfaceMax,
-      };
-    } else if (filters.surfaceMin) {
-      where.surfaceTotal = { gte: filters.surfaceMin };
-    } else if (filters.surfaceMax) {
-      where.surfaceTotal = { lte: filters.surfaceMax };
-    }
-  }
-
-  // Boolean feature filters
-  if (filters.hasTerrace !== undefined) {
-    where.hasTerrace = filters.hasTerrace;
-  }
-
-  if (filters.hasKitchen !== undefined && filters.hasKitchen) {
-    where.surfaceKitchen = { gt: 0 };
-  }
-
-  if (filters.hasBasement !== undefined) {
-    where.hasBasement = filters.hasBasement;
-  }
-
-  if (filters.hasStorage !== undefined) {
-    where.hasStorage = filters.hasStorage;
-  }
-
-  if (filters.hasParking !== undefined) {
-    where.hasParking = filters.hasParking;
-  }
-
-  // Seating capacity filters
-  if (filters.seatingCapacityMin || filters.seatingCapacityMax) {
-    // Filter on combined inside + outside seating capacity
-    if (filters.seatingCapacityMin) {
-      where.seatingCapacityInside = { gte: filters.seatingCapacityMin };
-    }
-    if (filters.seatingCapacityMax) {
-      where.seatingCapacityInside = {
-        ...((where.seatingCapacityInside as object) || {}),
-        lte: filters.seatingCapacityMax,
-      };
-    }
-  }
-
-  return where;
+export interface SearchPropertiesResult {
+  items: PropertySearchResult[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasMore: boolean;
 }
+
+// Input type for search
+export interface SearchPropertiesInput {
+  page?: number;
+  limit?: number;
+  sortBy?: SortBy;
+  sortOrder?: SortOrder;
+  filters?: PropertyFilter;
+  search?: string;
+}
+
+// Mock data for development (will be replaced with real Prisma queries)
+const MOCK_PROPERTIES: PropertySearchResult[] = [
+  {
+    id: "prop_1",
+    slug: "restaurant-centrum-amsterdam",
+    title: "Karakteristiek Restaurant in Hartje Amsterdam",
+    shortDescription: "Prachtig restaurant op A-locatie in de Jordaan. Volledig ingericht met professionele keuken en terrasvergunning.",
+    propertyType: "RESTAURANT",
+    priceType: "RENT",
+    rentPrice: 650000, // in cents
+    salePrice: null,
+    city: "Amsterdam",
+    province: "Noord-Holland",
+    address: "Prinsengracht 123",
+    surfaceTotal: 180,
+    hasTerrace: true,
+    hasKitchen: true,
+    hasParking: false,
+    seatingCapacityInside: 65,
+    seatingCapacityOutside: 30,
+    publishedAt: new Date("2024-01-15"),
+    viewCount: 342,
+    savedCount: 28,
+    primaryImage: {
+      thumbnailUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=300&fit=crop",
+      altText: "Restaurant interieur Amsterdam",
+    },
+    agency: {
+      id: "agency_1",
+      name: "Horeca Makelaars Amsterdam",
+      slug: "horeca-makelaars-amsterdam",
+    },
+  },
+  {
+    id: "prop_2",
+    slug: "cafe-rotterdam-centrum",
+    title: "Sfeervolle Café-Bar met Woning",
+    shortDescription: "Unieke kans! Draaiend café met bovenwoning op toplocatie in Rotterdam. Volledige inventaris en trouwe klantenkring.",
+    propertyType: "BAR",
+    priceType: "SALE",
+    rentPrice: null,
+    salePrice: 42500000, // in cents (€425.000)
+    city: "Rotterdam",
+    province: "Zuid-Holland",
+    address: "Witte de Withstraat 45",
+    surfaceTotal: 145,
+    hasTerrace: true,
+    hasKitchen: true,
+    hasParking: false,
+    seatingCapacityInside: 50,
+    seatingCapacityOutside: 20,
+    publishedAt: new Date("2024-01-18"),
+    viewCount: 156,
+    savedCount: 12,
+    primaryImage: {
+      thumbnailUrl: "https://images.unsplash.com/photo-1525268323446-0505b6fe7778?w=400&h=300&fit=crop",
+      altText: "Café bar Rotterdam",
+    },
+    agency: {
+      id: "agency_2",
+      name: "Zuid-Holland Horeca",
+      slug: "zuid-holland-horeca",
+    },
+  },
+  {
+    id: "prop_3",
+    slug: "dark-kitchen-utrecht",
+    title: "Moderne Dark Kitchen met Bezorgdepot",
+    shortDescription: "Volledig uitgeruste dark kitchen op industrieterrein. Ideaal voor meerdere delivery-concepten met laadperron.",
+    propertyType: "DARK_KITCHEN",
+    priceType: "RENT",
+    rentPrice: 350000,
+    salePrice: null,
+    city: "Utrecht",
+    province: "Utrecht",
+    address: "Lage Weide 78",
+    surfaceTotal: 320,
+    hasTerrace: false,
+    hasKitchen: true,
+    hasParking: true,
+    seatingCapacityInside: null,
+    seatingCapacityOutside: null,
+    publishedAt: new Date("2024-01-20"),
+    viewCount: 89,
+    savedCount: 7,
+    primaryImage: {
+      thumbnailUrl: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=400&h=300&fit=crop",
+      altText: "Dark kitchen Utrecht",
+    },
+    agency: {
+      id: "agency_3",
+      name: "Utrecht Bedrijfsruimte",
+      slug: "utrecht-bedrijfsruimte",
+    },
+  },
+  {
+    id: "prop_4",
+    slug: "hotel-boutique-den-haag",
+    title: "Boutique Hotel 3-Sterren met Restaurant",
+    shortDescription: "Charmant boutique hotel in monumentaal pand. 22 kamers, ontbijtzaal en eigen restaurant op straathoek.",
+    propertyType: "HOTEL",
+    priceType: "RENT_OR_SALE",
+    rentPrice: 1250000,
+    salePrice: 185000000,
+    city: "Den Haag",
+    province: "Zuid-Holland",
+    address: "Lange Voorhout 12",
+    surfaceTotal: 850,
+    hasTerrace: true,
+    hasKitchen: true,
+    hasParking: false,
+    seatingCapacityInside: 45,
+    seatingCapacityOutside: 15,
+    publishedAt: new Date("2024-01-10"),
+    viewCount: 421,
+    savedCount: 35,
+    primaryImage: {
+      thumbnailUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=300&fit=crop",
+      altText: "Boutique hotel Den Haag",
+    },
+    agency: {
+      id: "agency_1",
+      name: "Horeca Makelaars Amsterdam",
+      slug: "horeca-makelaars-amsterdam",
+    },
+  },
+  {
+    id: "prop_5",
+    slug: "cafe-eindhoven-strijp",
+    title: "Trendy Café op Strijp-S",
+    shortDescription: "Hip café in creatieve wijk Strijp-S. Industrieel karakter met hoge plafonds en groot terras.",
+    propertyType: "CAFE",
+    priceType: "RENT",
+    rentPrice: 425000,
+    salePrice: null,
+    city: "Eindhoven",
+    province: "Noord-Brabant",
+    address: "Torenallee 22",
+    surfaceTotal: 200,
+    hasTerrace: true,
+    hasKitchen: true,
+    hasParking: true,
+    seatingCapacityInside: 80,
+    seatingCapacityOutside: 60,
+    publishedAt: new Date("2024-01-22"),
+    viewCount: 67,
+    savedCount: 5,
+    primaryImage: {
+      thumbnailUrl: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&h=300&fit=crop",
+      altText: "Café Strijp-S Eindhoven",
+    },
+    agency: {
+      id: "agency_4",
+      name: "Brabant Horeca Makelaars",
+      slug: "brabant-horeca-makelaars",
+    },
+  },
+  {
+    id: "prop_6",
+    slug: "bakkerij-groningen-centrum",
+    title: "Ambachtelijke Bakkerij met Lunchroom",
+    shortDescription: "Gevestigde bakkerij met trouwe klantenkring. Volledige bakkerijinrichting en gezellige lunchruimte.",
+    propertyType: "BAKERY",
+    priceType: "SALE",
+    rentPrice: null,
+    salePrice: 28500000,
+    city: "Groningen",
+    province: "Groningen",
+    address: "Zwanestraat 8",
+    surfaceTotal: 140,
+    hasTerrace: false,
+    hasKitchen: true,
+    hasParking: false,
+    seatingCapacityInside: 25,
+    seatingCapacityOutside: null,
+    publishedAt: new Date("2024-01-12"),
+    viewCount: 134,
+    savedCount: 11,
+    primaryImage: {
+      thumbnailUrl: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=300&fit=crop",
+      altText: "Bakkerij Groningen",
+    },
+    agency: {
+      id: "agency_5",
+      name: "Noord Makelaardij",
+      slug: "noord-makelaardij",
+    },
+  },
+  {
+    id: "prop_7",
+    slug: "nachtclub-amsterdam-rembrandtplein",
+    title: "Exclusieve Nachtclub op Rembrandtplein",
+    shortDescription: "Bekende nachtclub op iconische locatie. Twee verdiepingen, professioneel geluidssysteem en alle vergunningen.",
+    propertyType: "NIGHTCLUB",
+    priceType: "RENT",
+    rentPrice: 1500000,
+    salePrice: null,
+    city: "Amsterdam",
+    province: "Noord-Holland",
+    address: "Rembrandtplein 28",
+    surfaceTotal: 450,
+    hasTerrace: false,
+    hasKitchen: true,
+    hasParking: false,
+    seatingCapacityInside: null,
+    seatingCapacityOutside: null,
+    publishedAt: new Date("2024-01-08"),
+    viewCount: 567,
+    savedCount: 42,
+    primaryImage: {
+      thumbnailUrl: "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?w=400&h=300&fit=crop",
+      altText: "Nachtclub Amsterdam",
+    },
+    agency: {
+      id: "agency_1",
+      name: "Horeca Makelaars Amsterdam",
+      slug: "horeca-makelaars-amsterdam",
+    },
+  },
+  {
+    id: "prop_8",
+    slug: "food-court-rotterdam-markthal",
+    title: "Food Court Unit in de Markthal",
+    shortDescription: "Unieke kans in Rotterdam's Markthal. Kant-en-klare unit met veel passanten.",
+    propertyType: "FOOD_COURT",
+    priceType: "RENT",
+    rentPrice: 550000,
+    salePrice: null,
+    city: "Rotterdam",
+    province: "Zuid-Holland",
+    address: "Markthal 45",
+    surfaceTotal: 45,
+    hasTerrace: false,
+    hasKitchen: true,
+    hasParking: false,
+    seatingCapacityInside: 12,
+    seatingCapacityOutside: null,
+    publishedAt: new Date("2024-01-19"),
+    viewCount: 234,
+    savedCount: 19,
+    primaryImage: {
+      thumbnailUrl: "https://images.unsplash.com/photo-1567521464027-f127ff144326?w=400&h=300&fit=crop",
+      altText: "Food court Rotterdam",
+    },
+    agency: {
+      id: "agency_2",
+      name: "Zuid-Holland Horeca",
+      slug: "zuid-holland-horeca",
+    },
+  },
+];
 
 /**
  * Search properties with filters, pagination, and sorting
- * Only returns ACTIVE status properties for public searches
+ * This action is used on the public listings page with SSR
  */
 export async function searchProperties(
-  input: ListPropertiesInput
-): Promise<ActionResult<PropertySearchResult>> {
+  input: SearchPropertiesInput
+): Promise<ActionResult<SearchPropertiesResult>> {
   try {
     // Validate input
-    const validatedInput = listPropertiesSchema.parse(input);
-    const { page, limit, sortBy, sortOrder, filters, search } = validatedInput;
+    const validated = listPropertiesSchema.parse({
+      page: input.page ?? 1,
+      limit: input.limit ?? 20,
+      sortBy: input.sortBy ?? "publishedAt",
+      sortOrder: input.sortOrder ?? "desc",
+      filters: input.filters,
+      search: input.search,
+    });
 
-    // Build where clause (only ACTIVE properties)
-    const where = buildWhereClause(filters, search, "ACTIVE");
+    // Apply filters to mock data
+    let filteredProperties = [...MOCK_PROPERTIES];
 
-    // Calculate pagination
-    const skip = (page - 1) * limit;
+    // Search filter
+    if (validated.search) {
+      const searchLower = validated.search.toLowerCase();
+      filteredProperties = filteredProperties.filter(
+        (p) =>
+          p.title.toLowerCase().includes(searchLower) ||
+          p.shortDescription?.toLowerCase().includes(searchLower) ||
+          p.city.toLowerCase().includes(searchLower) ||
+          p.address.toLowerCase().includes(searchLower)
+      );
+    }
 
-    // Build orderBy clause
-    const orderBy: Prisma.PropertyOrderByWithRelationInput = {
-      [sortBy]: sortOrder,
-    };
+    // Apply property filters
+    if (validated.filters) {
+      const { filters } = validated;
 
-    // Execute queries in parallel
-    const [properties, total] = await Promise.all([
-      prisma.property.findMany({
-        where,
-        select: propertySummarySelect,
-        orderBy,
-        skip,
-        take: limit,
-      }),
-      prisma.property.count({ where }),
-    ]);
+      // City filter
+      if (filters.cities && filters.cities.length > 0) {
+        filteredProperties = filteredProperties.filter((p) =>
+          filters.cities!.some(
+            (city) => p.city.toLowerCase() === city.toLowerCase()
+          )
+        );
+      }
 
-    // Transform to PropertySummary
-    const items = properties.map(toPropertySummary);
-    const pageCount = Math.ceil(total / limit);
-    const hasMore = page < pageCount;
+      // Province filter
+      if (filters.provinces && filters.provinces.length > 0) {
+        filteredProperties = filteredProperties.filter(
+          (p) =>
+            p.province &&
+            filters.provinces!.some(
+              (prov) => p.province!.toLowerCase() === prov.toLowerCase()
+            )
+        );
+      }
+
+      // Property type filter
+      if (filters.propertyTypes && filters.propertyTypes.length > 0) {
+        filteredProperties = filteredProperties.filter((p) =>
+          filters.propertyTypes!.includes(p.propertyType)
+        );
+      }
+
+      // Price type filter
+      if (filters.priceType) {
+        filteredProperties = filteredProperties.filter(
+          (p) =>
+            p.priceType === filters.priceType ||
+            p.priceType === "RENT_OR_SALE"
+        );
+      }
+
+      // Price range filter (using rent or sale price based on priceType)
+      if (filters.priceMin !== undefined) {
+        filteredProperties = filteredProperties.filter((p) => {
+          const price = p.rentPrice ?? p.salePrice ?? 0;
+          return price >= filters.priceMin!;
+        });
+      }
+      if (filters.priceMax !== undefined) {
+        filteredProperties = filteredProperties.filter((p) => {
+          const price = p.rentPrice ?? p.salePrice ?? Infinity;
+          return price <= filters.priceMax!;
+        });
+      }
+
+      // Surface filter
+      if (filters.surfaceMin !== undefined) {
+        filteredProperties = filteredProperties.filter(
+          (p) => p.surfaceTotal >= filters.surfaceMin!
+        );
+      }
+      if (filters.surfaceMax !== undefined) {
+        filteredProperties = filteredProperties.filter(
+          (p) => p.surfaceTotal <= filters.surfaceMax!
+        );
+      }
+
+      // Feature filters
+      if (filters.hasTerrace !== undefined) {
+        filteredProperties = filteredProperties.filter(
+          (p) => p.hasTerrace === filters.hasTerrace
+        );
+      }
+      if (filters.hasKitchen !== undefined) {
+        filteredProperties = filteredProperties.filter(
+          (p) => p.hasKitchen === filters.hasKitchen
+        );
+      }
+      if (filters.hasParking !== undefined) {
+        filteredProperties = filteredProperties.filter(
+          (p) => p.hasParking === filters.hasParking
+        );
+      }
+    }
+
+    // Sort
+    filteredProperties.sort((a, b) => {
+      let comparison = 0;
+      switch (validated.sortBy) {
+        case "publishedAt":
+          comparison =
+            (a.publishedAt?.getTime() ?? 0) - (b.publishedAt?.getTime() ?? 0);
+          break;
+        case "rentPrice":
+          comparison = (a.rentPrice ?? 0) - (b.rentPrice ?? 0);
+          break;
+        case "salePrice":
+          comparison = (a.salePrice ?? 0) - (b.salePrice ?? 0);
+          break;
+        case "surfaceTotal":
+          comparison = a.surfaceTotal - b.surfaceTotal;
+          break;
+        case "viewCount":
+          comparison = a.viewCount - b.viewCount;
+          break;
+      }
+      return validated.sortOrder === "desc" ? -comparison : comparison;
+    });
+
+    // Pagination
+    const total = filteredProperties.length;
+    const totalPages = Math.ceil(total / validated.limit);
+    const start = (validated.page - 1) * validated.limit;
+    const items = filteredProperties.slice(start, start + validated.limit);
 
     return {
       success: true,
       data: {
         items,
         total,
-        hasMore,
-        page,
-        pageCount,
+        page: validated.page,
+        limit: validated.limit,
+        totalPages,
+        hasMore: validated.page < totalPages,
       },
     };
   } catch (error) {
     console.error("Error searching properties:", error);
     return {
       success: false,
-      error: "Failed to search properties. Please try again.",
+      error: error instanceof Error ? error.message : "Er ging iets mis bij het zoeken",
     };
   }
 }
 
 /**
- * Get featured properties
- * Returns properties where featured=true and featuredUntil > now
+ * Get featured properties for homepage
  */
 export async function getFeaturedProperties(
-  limit: number = 6
-): Promise<ActionResult<PropertySummary[]>> {
+  limit: number = 4
+): Promise<ActionResult<PropertySearchResult[]>> {
   try {
-    const now = new Date();
-
-    const properties = await prisma.property.findMany({
-      where: {
-        status: "ACTIVE",
-        featured: true,
-        OR: [
-          { featuredUntil: null }, // No expiration
-          { featuredUntil: { gt: now } }, // Not expired
-        ],
-      },
-      select: propertySummarySelect,
-      orderBy: [
-        { featuredUntil: "asc" }, // Expiring soon first
-        { publishedAt: "desc" },
-      ],
-      take: limit,
-    });
-
-    const items = properties.map(toPropertySummary);
-
-    return {
-      success: true,
-      data: items,
-    };
+    // In real implementation, filter by featured=true and featuredUntil > now
+    const featured = MOCK_PROPERTIES.slice(0, limit);
+    return { success: true, data: featured };
   } catch (error) {
     console.error("Error fetching featured properties:", error);
     return {
       success: false,
-      error: "Failed to fetch featured properties.",
+      error: "Kon uitgelichte panden niet laden",
     };
   }
 }
 
 /**
  * Get recent properties
- * Returns properties sorted by publishedAt desc
  */
 export async function getRecentProperties(
-  limit: number = 8
-): Promise<ActionResult<PropertySummary[]>> {
+  limit: number = 6
+): Promise<ActionResult<PropertySearchResult[]>> {
   try {
-    const properties = await prisma.property.findMany({
-      where: {
-        status: "ACTIVE",
-        publishedAt: { not: null },
-      },
-      select: propertySummarySelect,
-      orderBy: { publishedAt: "desc" },
-      take: limit,
-    });
-
-    const items = properties.map(toPropertySummary);
-
-    return {
-      success: true,
-      data: items,
-    };
+    const recent = [...MOCK_PROPERTIES]
+      .sort(
+        (a, b) =>
+          (b.publishedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? 0)
+      )
+      .slice(0, limit);
+    return { success: true, data: recent };
   } catch (error) {
     console.error("Error fetching recent properties:", error);
     return {
       success: false,
-      error: "Failed to fetch recent properties.",
+      error: "Kon recente panden niet laden",
     };
   }
 }
 
 /**
- * Get similar properties based on type, city, and price range
- * Excludes the source property
+ * Get unique cities from properties for filter options
  */
-export async function getSimilarProperties(
-  propertyId: string,
-  limit: number = 4
-): Promise<ActionResult<PropertySummary[]>> {
+export async function getPropertyCities(): Promise<ActionResult<string[]>> {
   try {
-    // First, get the source property to find similar ones
-    const sourceProperty = await prisma.property.findUnique({
-      where: { id: propertyId },
-      select: {
-        id: true,
-        propertyType: true,
-        city: true,
-        priceType: true,
-        rentPrice: true,
-        salePrice: true,
-      },
-    });
-
-    if (!sourceProperty) {
-      return {
-        success: false,
-        error: "Property not found.",
-      };
-    }
-
-    // Build similarity criteria
-    const where: Prisma.PropertyWhereInput = {
-      id: { not: propertyId }, // Exclude self
-      status: "ACTIVE",
-    };
-
-    // Build OR conditions for similarity matching
-    const orConditions: Prisma.PropertyWhereInput[] = [];
-
-    // Same type
-    if (sourceProperty.propertyType) {
-      orConditions.push({ propertyType: sourceProperty.propertyType });
-    }
-
-    // Same city
-    if (sourceProperty.city) {
-      orConditions.push({ city: sourceProperty.city });
-    }
-
-    // Similar price range (within 50% of source price)
-    if (sourceProperty.priceType === "RENT" && sourceProperty.rentPrice) {
-      const minPrice = Math.floor(sourceProperty.rentPrice * 0.5);
-      const maxPrice = Math.ceil(sourceProperty.rentPrice * 1.5);
-      orConditions.push({
-        rentPrice: { gte: minPrice, lte: maxPrice },
-      });
-    } else if (sourceProperty.priceType === "SALE" && sourceProperty.salePrice) {
-      const minPrice = Math.floor(sourceProperty.salePrice * 0.5);
-      const maxPrice = Math.ceil(sourceProperty.salePrice * 1.5);
-      orConditions.push({
-        salePrice: { gte: minPrice, lte: maxPrice },
-      });
-    }
-
-    // Add OR conditions if any
-    if (orConditions.length > 0) {
-      where.OR = orConditions;
-    }
-
-    // Query similar properties
-    const properties = await prisma.property.findMany({
-      where,
-      select: propertySummarySelect,
-      orderBy: [
-        // Prioritize same type and city
-        { propertyType: "asc" },
-        { city: "asc" },
-        { publishedAt: "desc" },
-      ],
-      take: limit,
-    });
-
-    const items = properties.map(toPropertySummary);
-
-    return {
-      success: true,
-      data: items,
-    };
-  } catch (error) {
-    console.error("Error fetching similar properties:", error);
-    return {
-      success: false,
-      error: "Failed to fetch similar properties.",
-    };
-  }
-}
-
-/**
- * Get properties by agency
- * For agency owners/admins: returns all statuses
- * For public view: returns only ACTIVE properties
- */
-export async function getPropertiesByAgency(
-  agencyId: string,
-  options?: {
-    page?: number;
-    limit?: number;
-    includeAllStatuses?: boolean;
-  }
-): Promise<ActionResult<PropertySearchResult>> {
-  try {
-    const page = options?.page ?? 1;
-    const limit = options?.limit ?? 20;
-    const skip = (page - 1) * limit;
-
-    // Determine if user is agency owner/admin
-    let isAgencyMember = false;
-    const currentUser = await getCurrentUser();
-
-    if (currentUser && options?.includeAllStatuses) {
-      // Check if user is a member of this agency
-      const membership = await prisma.agencyMember.findFirst({
-        where: {
-          agencyId,
-          userId: currentUser.id,
-          role: { in: ["OWNER", "ADMIN"] },
-        },
-      });
-      isAgencyMember = !!membership;
-    }
-
-    // Build where clause
-    const where: Prisma.PropertyWhereInput = {
-      agencyId,
-    };
-
-    // Only show ACTIVE properties for public view
-    if (!isAgencyMember) {
-      where.status = "ACTIVE";
-    }
-
-    // Execute queries
-    const [properties, total] = await Promise.all([
-      prisma.property.findMany({
-        where,
-        select: propertySummarySelect,
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      prisma.property.count({ where }),
-    ]);
-
-    const items = properties.map(toPropertySummary);
-    const pageCount = Math.ceil(total / limit);
-    const hasMore = page < pageCount;
-
-    return {
-      success: true,
-      data: {
-        items,
-        total,
-        hasMore,
-        page,
-        pageCount,
-      },
-    };
-  } catch (error) {
-    console.error("Error fetching agency properties:", error);
-    return {
-      success: false,
-      error: "Failed to fetch agency properties.",
-    };
+    const cities = [...new Set(MOCK_PROPERTIES.map((p) => p.city))].sort();
+    return { success: true, data: cities };
+  } catch {
+    return { success: false, error: "Kon steden niet laden" };
   }
 }

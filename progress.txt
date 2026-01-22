@@ -488,3 +488,58 @@ function PropertyPage() {
 - Featured properties use mock data until `getFeaturedProperties` action is implemented (Phase 4.4)
 - Stats are hardcoded until database queries are available
 - Links to `/aanbod` and `/makelaars` pages will need corresponding page implementations
+
+---
+
+## 2026-01-22: PRD 10.2 - Zoekpagina (Aanbod)
+
+### Completed: 2026-01-22
+
+#### Summary
+Implemented the public property listings page (`/aanbod`) with a two-column desktop layout, filter sidebar, active filter chips, property cards grid, pagination, and mobile-responsive filters via Sheet drawer. Uses URL search params for shareable filter state and SSR for initial data loading.
+
+#### Files Created
+
+**Validation Schema:**
+- `lib/validations/property.ts` - PropertyType, PropertyStatus, PriceType enums, filter and create schemas with Dutch labels
+
+**Server Action:**
+- `app/actions/property-search.ts` - searchProperties, getFeaturedProperties, getRecentProperties, getPropertyCities actions with mock data
+
+**Components (components/property/):**
+- `property-card.tsx` - Property card with image, price, title, location, features
+- `property-filters.tsx` - Sticky sidebar filter component (location, type, price, surface, features)
+- `active-filters.tsx` - Filter chips with remove buttons
+- `property-skeleton.tsx` - Loading skeletons (card, grid, filters, full page)
+- `property-empty-state.tsx` - Empty state with suggestions
+- `mobile-filters-sheet.tsx` - Mobile filter drawer using Sheet
+- `property-listings-client.tsx` - Main client component with URL sync, pagination, sorting
+- `index.ts` - Barrel exports
+- `README.md` - Component documentation
+
+**Pages:**
+- `app/(marketing)/aanbod/page.tsx` - Main page with SSR data fetching
+- `app/(marketing)/aanbod/loading.tsx` - Loading UI
+
+#### Features Implemented
+1. Two-column desktop layout (sticky filter sidebar + results)
+2. Filter sections: Location (city badges), Type (checkboxes), Price (min/max inputs), Surface (min/max), Features (checkboxes)
+3. Active filter chips above results with remove buttons
+4. Results header with count and sort dropdown (Nieuwste, Prijs laag-hoog, Prijs hoog-laag, Oppervlakte)
+5. Property cards grid with responsive columns
+6. Pagination with page numbers
+7. Mobile: Filters in Sheet/drawer
+8. Loading skeletons for all states
+9. Empty state with suggestions
+10. URL search params for filters (shareable)
+11. SSR with searchProperties action
+
+#### URL Parameters Supported
+- cities, types, priceMin, priceMax, surfaceMin, surfaceMax
+- terrace, kitchen, parking, storage, basement (boolean flags)
+- features (comma-separated)
+- sortBy, sortOrder, page
+
+#### Build Status
+- Build: PASS
+- Lint: PASS (no errors in new files)

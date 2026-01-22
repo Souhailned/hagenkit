@@ -55,7 +55,11 @@ export const PropertyImageType = {
   OTHER: "OTHER",
 } as const;
 
-// Zod enums
+// ============================================================================
+// Zod Enums
+// ============================================================================
+
+// Property Type enum
 export const propertyTypeEnum = z.enum([
   "RESTAURANT",
   "CAFE",
@@ -69,6 +73,7 @@ export const propertyTypeEnum = z.enum([
   "OTHER",
 ]);
 
+// Property Status enum
 export const propertyStatusEnum = z.enum([
   "DRAFT",
   "PENDING_REVIEW",
@@ -80,8 +85,10 @@ export const propertyStatusEnum = z.enum([
   "REJECTED",
 ]);
 
+// Price Type enum
 export const priceTypeEnum = z.enum(["RENT", "SALE", "RENT_OR_SALE"]);
 
+// Feature Category enum
 export const featureCategoryEnum = z.enum([
   "LICENSE",
   "FACILITY",
@@ -114,13 +121,22 @@ export const propertySortByEnum = z.enum([
   "title",
 ]);
 
-// Sort order
+// Alias for backward compatibility
+export const sortByEnum = z.enum([
+  "publishedAt",
+  "rentPrice",
+  "salePrice",
+  "surfaceTotal",
+  "viewCount",
+]);
+
 export const sortOrderEnum = z.enum(["asc", "desc"]);
 
 // ============================================================================
 // Property Filter Schema
 // ============================================================================
 
+// Property filter schema for search
 export const propertyFilterSchema = z.object({
   cities: z.array(z.string()).optional(),
   provinces: z.array(z.string()).optional(),
@@ -144,6 +160,7 @@ export const propertyFilterSchema = z.object({
 // List Properties Schema (with pagination, sorting, filters)
 // ============================================================================
 
+// List properties schema with pagination
 export const listPropertiesSchema = z.object({
   page: z.number().int().positive().default(1),
   limit: z.number().int().positive().max(100).default(20),
@@ -157,6 +174,7 @@ export const listPropertiesSchema = z.object({
 // Create Property Schema
 // ============================================================================
 
+// Create property schema
 export const createPropertySchema = z.object({
   // Required fields
   title: z
@@ -246,8 +264,8 @@ export const createPropertySchema = z.object({
 // Update Property Schema (all fields optional)
 // ============================================================================
 
+// Update property schema (all optional)
 export const updatePropertySchema = createPropertySchema.partial().extend({
-  // ID required for updates
   id: z.string().min(1, "Property ID is verplicht"),
   // Status can only be set via update (not create)
   status: propertyStatusEnum.optional(),
@@ -309,15 +327,18 @@ export const propertyFeatureSchema = z.object({
 // TypeScript Types from Enums and Schemas
 // ============================================================================
 
+// TypeScript types
 export type PropertyType = z.infer<typeof propertyTypeEnum>;
 export type PropertyStatus = z.infer<typeof propertyStatusEnum>;
 export type PriceType = z.infer<typeof priceTypeEnum>;
 export type FeatureCategory = z.infer<typeof featureCategoryEnum>;
 export type PropertyImageType = z.infer<typeof propertyImageTypeEnum>;
 export type PropertySortBy = z.infer<typeof propertySortByEnum>;
+export type SortBy = z.infer<typeof sortByEnum>;
 export type SortOrder = z.infer<typeof sortOrderEnum>;
 
 export type PropertyFilterInput = z.infer<typeof propertyFilterSchema>;
+export type PropertyFilter = PropertyFilterInput; // Alias for backward compatibility
 export type ListPropertiesInput = z.infer<typeof listPropertiesSchema>;
 export type CreatePropertyInput = z.infer<typeof createPropertySchema>;
 export type UpdatePropertyInput = z.infer<typeof updatePropertySchema>;
@@ -467,6 +488,9 @@ export const propertyTypeLabels: Record<PropertyType, string> = {
   OTHER: "Overig",
 };
 
+// Alias for backward compatibility
+export const PROPERTY_TYPE_LABELS = propertyTypeLabels;
+
 // Helper for property status labels
 export const propertyStatusLabels: Record<PropertyStatus, string> = {
   DRAFT: "Concept",
@@ -485,6 +509,9 @@ export const priceTypeLabels: Record<PriceType, string> = {
   SALE: "Te Koop",
   RENT_OR_SALE: "Te Huur / Te Koop",
 };
+
+// Alias for backward compatibility
+export const PRICE_TYPE_LABELS = priceTypeLabels;
 
 // Helper for feature category labels
 export const featureCategoryLabels: Record<FeatureCategory, string> = {
@@ -515,6 +542,7 @@ export const availableFeatures: Record<FeatureCategory, Array<{ key: string; lab
     { key: "bar_setup", label: "Bar opstelling", type: "boolean" },
     { key: "coffee_setup", label: "Koffie opstelling", type: "boolean" },
     { key: "sound_system", label: "Geluidssysteem", type: "boolean" },
+    { key: "loading_dock", label: "Laaddok", type: "boolean" },
   ],
   UTILITY: [
     { key: "air_conditioning", label: "Airconditioning", type: "boolean" },
@@ -534,3 +562,39 @@ export const availableFeatures: Record<FeatureCategory, Array<{ key: string; lab
     { key: "parking_nearby", label: "Parkeren in de buurt", type: "boolean" },
   ],
 };
+
+// Common Dutch cities for filters
+export const DUTCH_CITIES = [
+  "Amsterdam",
+  "Rotterdam",
+  "Den Haag",
+  "Utrecht",
+  "Eindhoven",
+  "Groningen",
+  "Tilburg",
+  "Almere",
+  "Breda",
+  "Nijmegen",
+  "Enschede",
+  "Haarlem",
+  "Arnhem",
+  "Zaanstad",
+  "Amersfoort",
+  "Apeldoorn",
+  "Hoofddorp",
+  "Maastricht",
+  "Leiden",
+  "Dordrecht",
+] as const;
+
+// Popular features for filtering
+export const POPULAR_FEATURES = [
+  { key: "alcohol_license", label: "Alcoholvergunning", category: "LICENSE" },
+  { key: "terrace_license", label: "Terrasvergunning", category: "LICENSE" },
+  { key: "extraction_system", label: "Afzuigsysteem", category: "FACILITY" },
+  { key: "professional_kitchen", label: "Professionele keuken", category: "FACILITY" },
+  { key: "cold_storage", label: "Koelcel", category: "FACILITY" },
+  { key: "wheelchair_accessible", label: "Rolstoeltoegankelijk", category: "ACCESSIBILITY" },
+  { key: "air_conditioning", label: "Airconditioning", category: "UTILITY" },
+  { key: "loading_dock", label: "Laaddok", category: "FACILITY" },
+] as const;
