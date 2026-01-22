@@ -1,0 +1,47 @@
+# Progress
+
+## 2026-01-22
+
+### Created lib/validations/seeker-profile.ts
+
+Added Zod validation schemas for seeker profile functionality:
+
+1. **`propertyTypeEnum`** - Enum for horeca property types: RESTAURANT, CAFE, BAR, HOTEL, NIGHTCLUB, CATERING, FOOD_TRUCK, BAKERY, OTHER
+
+2. **`alertFrequencyEnum`** - Enum for alert frequencies: INSTANT, DAILY, WEEKLY, MONTHLY
+
+3. **`updateSeekerProfileSchema`** - Schema for updating seeker profile with:
+   - businessType (optional string)
+   - conceptDescription (optional, max 2000 chars)
+   - experienceYears (optional, 0-50 range)
+   - budgetMin/budgetMax (optional, with min <= max validation)
+   - preferredCities (string array)
+   - preferredTypes (PropertyType array)
+   - minSurface/maxSurface (optional, with min <= max validation)
+   - mustHaveFeatures (string array)
+   - emailAlerts (boolean)
+   - alertFrequency (optional enum)
+
+4. **`createSearchAlertSchema`** - Schema for creating search alerts with:
+   - name (required, 2-100 chars)
+   - cities (required, at least 1)
+   - propertyTypes (required, at least 1)
+   - priceMin/priceMax (optional, with validation)
+   - surfaceMin/surfaceMax (optional, with validation)
+   - mustHaveFeatures (string array)
+   - frequency (required enum)
+
+5. **`updateSearchAlertSchema`** - Schema for updating search alerts:
+   - All fields from create schema made optional
+   - Added active (boolean) field
+
+### Created lib/validations/seeker-profile.test.ts
+
+Comprehensive test suite with 34 tests covering:
+- Enum validation
+- Optional field handling
+- Constraint validation (min/max chars, number ranges)
+- Cross-field validation (budgetMin <= budgetMax, etc.)
+- Edge cases (empty arrays, equal min/max values)
+
+All tests pass.
