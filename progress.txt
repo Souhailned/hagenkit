@@ -17,3 +17,30 @@
 ### Notes:
 - This backup allows rollback if needed during the Horecagrond migration
 - No tests applicable for this git operation task
+
+---
+
+## 2026-01-22 - Prisma Client Generation
+
+### Task: Run bun run prisma:generate om Prisma client te genereren met nieuwe models
+
+### Completed:
+- Ran `bun run prisma:generate` successfully
+- Prisma Client (7.3.0) generated to ./generated/prisma in 23ms
+- Schema loaded from prisma/schema.prisma
+
+### Generated Models:
+- User
+- Session
+- Account
+- Verification
+- Workspace
+- WorkspaceMember
+- WorkspaceInvitation
+
+### Generated Enums:
+- Role (OWNER, ADMIN, MEMBER, VIEWER)
+- UserRole (user, admin)
+- UserStatus (ACTIVE, SUSPENDED, DELETED)
+
+### Status: COMPLETED
