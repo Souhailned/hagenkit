@@ -4,7 +4,58 @@ import { z } from "zod";
 // Property Enums (matching Prisma schema from PRD 1.1)
 // ============================================================================
 
-// Property type enum values
+// Property type enum as const object for easier access
+export const PropertyType = {
+  RESTAURANT: "RESTAURANT",
+  CAFE: "CAFE",
+  BAR: "BAR",
+  HOTEL: "HOTEL",
+  DARK_KITCHEN: "DARK_KITCHEN",
+  NIGHTCLUB: "NIGHTCLUB",
+  FOOD_COURT: "FOOD_COURT",
+  CATERING: "CATERING",
+  BAKERY: "BAKERY",
+  OTHER: "OTHER",
+} as const;
+
+export const PropertyStatus = {
+  DRAFT: "DRAFT",
+  PENDING_REVIEW: "PENDING_REVIEW",
+  ACTIVE: "ACTIVE",
+  UNDER_OFFER: "UNDER_OFFER",
+  RENTED: "RENTED",
+  SOLD: "SOLD",
+  ARCHIVED: "ARCHIVED",
+  REJECTED: "REJECTED",
+} as const;
+
+export const PriceType = {
+  RENT: "RENT",
+  SALE: "SALE",
+  RENT_OR_SALE: "RENT_OR_SALE",
+} as const;
+
+export const FeatureCategory = {
+  LICENSE: "LICENSE",
+  FACILITY: "FACILITY",
+  UTILITY: "UTILITY",
+  ACCESSIBILITY: "ACCESSIBILITY",
+} as const;
+
+export const PropertyImageType = {
+  EXTERIOR: "EXTERIOR",
+  INTERIOR: "INTERIOR",
+  KITCHEN: "KITCHEN",
+  TERRACE: "TERRACE",
+  BATHROOM: "BATHROOM",
+  STORAGE: "STORAGE",
+  FLOORPLAN: "FLOORPLAN",
+  LOCATION: "LOCATION",
+  RENDER: "RENDER",
+  OTHER: "OTHER",
+} as const;
+
+// Zod enums
 export const propertyTypeEnum = z.enum([
   "RESTAURANT",
   "CAFE",
@@ -18,7 +69,6 @@ export const propertyTypeEnum = z.enum([
   "OTHER",
 ]);
 
-// Property status enum values
 export const propertyStatusEnum = z.enum([
   "DRAFT",
   "PENDING_REVIEW",
@@ -30,10 +80,8 @@ export const propertyStatusEnum = z.enum([
   "REJECTED",
 ]);
 
-// Price type enum values
 export const priceTypeEnum = z.enum(["RENT", "SALE", "RENT_OR_SALE"]);
 
-// Feature category enum values
 export const featureCategoryEnum = z.enum([
   "LICENSE",
   "FACILITY",
@@ -41,7 +89,6 @@ export const featureCategoryEnum = z.enum([
   "ACCESSIBILITY",
 ]);
 
-// Property image type enum values
 export const propertyImageTypeEnum = z.enum([
   "EXTERIOR",
   "INTERIOR",
@@ -69,18 +116,6 @@ export const propertySortByEnum = z.enum([
 
 // Sort order
 export const sortOrderEnum = z.enum(["asc", "desc"]);
-
-// ============================================================================
-// TypeScript Types from Enums
-// ============================================================================
-
-export type PropertyType = z.infer<typeof propertyTypeEnum>;
-export type PropertyStatus = z.infer<typeof propertyStatusEnum>;
-export type PriceType = z.infer<typeof priceTypeEnum>;
-export type FeatureCategory = z.infer<typeof featureCategoryEnum>;
-export type PropertyImageType = z.infer<typeof propertyImageTypeEnum>;
-export type PropertySortBy = z.infer<typeof propertySortByEnum>;
-export type SortOrder = z.infer<typeof sortOrderEnum>;
 
 // ============================================================================
 // Property Filter Schema
@@ -126,31 +161,35 @@ export const createPropertySchema = z.object({
   // Required fields
   title: z
     .string()
-    .min(5, "Title must be at least 5 characters")
-    .max(200, "Title must be at most 200 characters"),
+    .min(5, "Titel moet minimaal 5 karakters zijn")
+    .max(200, "Titel mag maximaal 200 karakters zijn"),
   propertyType: propertyTypeEnum,
   priceType: priceTypeEnum,
-  address: z.string().min(1, "Address is required"),
-  city: z.string().min(1, "City is required"),
-  postalCode: z.string().min(1, "Postal code is required"),
-  surfaceTotal: z.number().int().positive("Surface total must be positive"),
+  address: z.string().min(1, "Adres is verplicht"),
+  city: z.string().min(1, "Stad is verplicht"),
+  postalCode: z.string().min(1, "Postcode is verplicht"),
+  surfaceTotal: z.number().int().positive("Totale oppervlakte is verplicht"),
 
   // Optional text fields
-  description: z.string().optional(),
-  shortDescription: z.string().max(200).optional(),
+  description: z.string().max(5000, "Beschrijving mag maximaal 5000 karakters zijn").optional(),
+  shortDescription: z.string().max(200, "Korte beschrijving mag maximaal 200 karakters zijn").optional(),
   addressLine2: z.string().optional(),
   province: z.string().optional(),
   country: z.string().default("NL"),
   neighborhood: z.string().optional(),
 
   // Optional pricing fields (in cents)
-  rentPrice: z.number().int().positive("Rent price must be positive").optional(),
+  rentPrice: z.number().int().positive("Huurprijs moet positief zijn").optional(),
   rentPriceMin: z.number().int().positive().optional(),
-  salePrice: z.number().int().positive("Sale price must be positive").optional(),
+  salePrice: z.number().int().positive("Verkoopprijs moet positief zijn").optional(),
   salePriceMin: z.number().int().positive().optional(),
   priceNegotiable: z.boolean().default(true),
   servicesCosts: z.number().int().nonnegative().optional(),
   depositMonths: z.number().int().nonnegative().optional(),
+
+  // Optional location fields
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
 
   // Optional dimension fields
   surfaceCommercial: z.number().int().positive().optional(),
@@ -161,19 +200,15 @@ export const createPropertySchema = z.object({
   floors: z.number().int().positive().default(1),
   ceilingHeight: z.number().positive().optional(),
 
-  // Optional location fields
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
-
   // Optional horeca specifics
   seatingCapacityInside: z.number().int().nonnegative().optional(),
   seatingCapacityOutside: z.number().int().nonnegative().optional(),
   standingCapacity: z.number().int().nonnegative().optional(),
   kitchenType: z.string().optional(),
-  hasBasement: z.boolean().optional(),
-  hasStorage: z.boolean().optional(),
-  hasTerrace: z.boolean().optional(),
-  hasParking: z.boolean().optional(),
+  hasBasement: z.boolean().default(false),
+  hasStorage: z.boolean().default(false),
+  hasTerrace: z.boolean().default(false),
+  hasParking: z.boolean().default(false),
   parkingSpaces: z.number().int().nonnegative().optional(),
 
   // Optional previous use fields
@@ -185,7 +220,7 @@ export const createPropertySchema = z.object({
   // Optional building fields
   buildYear: z.number().int().min(1800).max(2100).optional(),
   lastRenovation: z.number().int().min(1800).max(2100).optional(),
-  monumentStatus: z.string().optional(),
+  monumentStatus: z.boolean().optional(),
   energyLabel: z.string().optional(),
 
   // Optional scores
@@ -213,7 +248,7 @@ export const createPropertySchema = z.object({
 
 export const updatePropertySchema = createPropertySchema.partial().extend({
   // ID required for updates
-  id: z.string().min(1, "Property ID is required").optional(),
+  id: z.string().min(1, "Property ID is verplicht"),
   // Status can only be set via update (not create)
   status: propertyStatusEnum.optional(),
   // Admin-only fields
@@ -222,10 +257,280 @@ export const updatePropertySchema = createPropertySchema.partial().extend({
 });
 
 // ============================================================================
-// TypeScript Types from Schemas
+// Additional Action Schemas
 // ============================================================================
+
+// Publish/unpublish schema
+export const publishPropertySchema = z.object({
+  id: z.string().min(1, "Property ID is verplicht"),
+});
+
+export const unpublishPropertySchema = z.object({
+  id: z.string().min(1, "Property ID is verplicht"),
+});
+
+// Delete property schema
+export const deletePropertySchema = z.object({
+  id: z.string().min(1, "Property ID is verplicht"),
+});
+
+// Property image schema
+export const propertyImageSchema = z.object({
+  id: z.string(),
+  propertyId: z.string(),
+  originalUrl: z.string().url(),
+  thumbnailUrl: z.string().url().optional(),
+  mediumUrl: z.string().url().optional(),
+  largeUrl: z.string().url().optional(),
+  enhancedUrl: z.string().url().optional(),
+  type: propertyImageTypeEnum.default("INTERIOR"),
+  caption: z.string().optional(),
+  altText: z.string().optional(),
+  order: z.number().int().default(0),
+  isPrimary: z.boolean().default(false),
+  aiProcessed: z.boolean().default(false),
+});
+
+// Property feature schema
+export const propertyFeatureSchema = z.object({
+  id: z.string(),
+  propertyId: z.string(),
+  category: featureCategoryEnum,
+  key: z.string(),
+  value: z.string().optional(),
+  numericValue: z.number().optional(),
+  booleanValue: z.boolean().optional(),
+  verified: z.boolean().default(false),
+  displayOrder: z.number().int().default(0),
+  highlighted: z.boolean().default(false),
+});
+
+// ============================================================================
+// TypeScript Types from Enums and Schemas
+// ============================================================================
+
+export type PropertyType = z.infer<typeof propertyTypeEnum>;
+export type PropertyStatus = z.infer<typeof propertyStatusEnum>;
+export type PriceType = z.infer<typeof priceTypeEnum>;
+export type FeatureCategory = z.infer<typeof featureCategoryEnum>;
+export type PropertyImageType = z.infer<typeof propertyImageTypeEnum>;
+export type PropertySortBy = z.infer<typeof propertySortByEnum>;
+export type SortOrder = z.infer<typeof sortOrderEnum>;
 
 export type PropertyFilterInput = z.infer<typeof propertyFilterSchema>;
 export type ListPropertiesInput = z.infer<typeof listPropertiesSchema>;
 export type CreatePropertyInput = z.infer<typeof createPropertySchema>;
 export type UpdatePropertyInput = z.infer<typeof updatePropertySchema>;
+export type PublishPropertyInput = z.infer<typeof publishPropertySchema>;
+export type UnpublishPropertyInput = z.infer<typeof unpublishPropertySchema>;
+export type DeletePropertyInput = z.infer<typeof deletePropertySchema>;
+export type PropertyImage = z.infer<typeof propertyImageSchema>;
+export type PropertyFeature = z.infer<typeof propertyFeatureSchema>;
+
+// ============================================================================
+// Full Property Interface (for display)
+// ============================================================================
+
+export interface Property {
+  id: string;
+  agencyId: string;
+  createdById: string;
+
+  // Basic info
+  title: string;
+  slug: string;
+  description?: string;
+  shortDescription?: string;
+
+  // Location
+  address: string;
+  addressLine2?: string;
+  city: string;
+  postalCode: string;
+  province?: string;
+  country: string;
+  latitude?: number;
+  longitude?: number;
+  neighborhood?: string;
+
+  // Pricing (in cents)
+  priceType: PriceType;
+  rentPrice?: number;
+  rentPriceMin?: number;
+  salePrice?: number;
+  salePriceMin?: number;
+  priceNegotiable: boolean;
+  servicesCosts?: number;
+  depositMonths?: number;
+
+  // Dimensions
+  surfaceTotal: number;
+  surfaceCommercial?: number;
+  surfaceKitchen?: number;
+  surfaceStorage?: number;
+  surfaceTerrace?: number;
+  surfaceBasement?: number;
+  floors: number;
+  ceilingHeight?: number;
+
+  // Classification
+  propertyType: PropertyType;
+  status: PropertyStatus;
+
+  // Horeca specifics
+  seatingCapacityInside?: number;
+  seatingCapacityOutside?: number;
+  standingCapacity?: number;
+  kitchenType?: string;
+  hasBasement: boolean;
+  hasStorage: boolean;
+  hasTerrace: boolean;
+  hasParking: boolean;
+  parkingSpaces?: number;
+
+  // Previous use
+  previousUse?: string;
+  wasHoreca?: boolean;
+  previousHorecaType?: PropertyType;
+  yearsHoreca?: number;
+
+  // Building
+  buildYear?: number;
+  lastRenovation?: number;
+  monumentStatus?: boolean;
+  energyLabel?: string;
+
+  // Scores
+  horecaScore?: string;
+  horecaScoreDetails?: Record<string, unknown>;
+  locationScore?: number;
+  footfallEstimate?: number;
+
+  // SEO
+  metaTitle?: string;
+  metaDescription?: string;
+  featured: boolean;
+  featuredUntil?: Date;
+  boostUntil?: Date;
+
+  // Availability
+  availableFrom?: Date;
+  availableUntil?: Date;
+  minimumLeaseTerm?: number;
+
+  // Publishing
+  publishedAt?: Date;
+  expiresAt?: Date;
+  viewCount: number;
+  inquiryCount: number;
+  savedCount: number;
+
+  // Admin
+  adminNotes?: string;
+  rejectionReason?: string;
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+
+  // Relations
+  images?: PropertyImage[];
+  features?: PropertyFeature[];
+  agency?: {
+    id: string;
+    name: string;
+    slug: string;
+    logo?: string;
+  };
+  createdBy?: {
+    id: string;
+    name?: string;
+    email: string;
+  };
+}
+
+// ============================================================================
+// Helper Labels (Dutch)
+// ============================================================================
+
+// Helper for property type labels
+export const propertyTypeLabels: Record<PropertyType, string> = {
+  RESTAURANT: "Restaurant",
+  CAFE: "Café",
+  BAR: "Bar",
+  HOTEL: "Hotel",
+  DARK_KITCHEN: "Dark Kitchen",
+  NIGHTCLUB: "Nachtclub",
+  FOOD_COURT: "Food Court",
+  CATERING: "Catering",
+  BAKERY: "Bakkerij",
+  OTHER: "Overig",
+};
+
+// Helper for property status labels
+export const propertyStatusLabels: Record<PropertyStatus, string> = {
+  DRAFT: "Concept",
+  PENDING_REVIEW: "In Review",
+  ACTIVE: "Actief",
+  UNDER_OFFER: "Onder Bod",
+  RENTED: "Verhuurd",
+  SOLD: "Verkocht",
+  ARCHIVED: "Gearchiveerd",
+  REJECTED: "Afgewezen",
+};
+
+// Helper for price type labels
+export const priceTypeLabels: Record<PriceType, string> = {
+  RENT: "Te Huur",
+  SALE: "Te Koop",
+  RENT_OR_SALE: "Te Huur / Te Koop",
+};
+
+// Helper for feature category labels
+export const featureCategoryLabels: Record<FeatureCategory, string> = {
+  LICENSE: "Vergunningen",
+  FACILITY: "Faciliteiten",
+  UTILITY: "Voorzieningen",
+  ACCESSIBILITY: "Toegankelijkheid",
+};
+
+// Available features per category
+export const availableFeatures: Record<FeatureCategory, Array<{ key: string; label: string; type: "boolean" | "string" | "number" }>> = {
+  LICENSE: [
+    { key: "alcohol_license", label: "Alcoholvergunning", type: "boolean" },
+    { key: "alcohol_license_hours", label: "Alcoholvergunning tot", type: "string" },
+    { key: "terrace_license", label: "Terrasvergunning", type: "boolean" },
+    { key: "terrace_size", label: "Terrasomvang (m²)", type: "number" },
+    { key: "music_license", label: "Muziekvergunning", type: "boolean" },
+    { key: "late_night_license", label: "Nachtvergunning", type: "boolean" },
+    { key: "food_license", label: "Horecavergunning", type: "boolean" },
+    { key: "exploitation_license", label: "Exploitatievergunning", type: "boolean" },
+  ],
+  FACILITY: [
+    { key: "professional_kitchen", label: "Professionele keuken", type: "boolean" },
+    { key: "extraction_system", label: "Afzuigsysteem", type: "boolean" },
+    { key: "cold_storage", label: "Koelcel", type: "boolean" },
+    { key: "freezer_storage", label: "Vriezer", type: "boolean" },
+    { key: "dishwasher", label: "Vaatwasmachine", type: "boolean" },
+    { key: "bar_setup", label: "Bar opstelling", type: "boolean" },
+    { key: "coffee_setup", label: "Koffie opstelling", type: "boolean" },
+    { key: "sound_system", label: "Geluidssysteem", type: "boolean" },
+  ],
+  UTILITY: [
+    { key: "air_conditioning", label: "Airconditioning", type: "boolean" },
+    { key: "heating", label: "Verwarming", type: "boolean" },
+    { key: "wifi", label: "WiFi", type: "boolean" },
+    { key: "security_system", label: "Beveiligingssysteem", type: "boolean" },
+    { key: "cctv", label: "Camerabewaking", type: "boolean" },
+    { key: "pos_system", label: "Kassasysteem", type: "boolean" },
+    { key: "delivery_door", label: "Leveranciersingang", type: "boolean" },
+  ],
+  ACCESSIBILITY: [
+    { key: "wheelchair_accessible", label: "Rolstoeltoegankelijk", type: "boolean" },
+    { key: "accessible_toilet", label: "Invalidentoilet", type: "boolean" },
+    { key: "elevator", label: "Lift", type: "boolean" },
+    { key: "ground_floor", label: "Begane grond", type: "boolean" },
+    { key: "public_transport", label: "OV bereikbaar", type: "boolean" },
+    { key: "parking_nearby", label: "Parkeren in de buurt", type: "boolean" },
+  ],
+};

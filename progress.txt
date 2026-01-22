@@ -174,3 +174,110 @@ Property cards display the "Horeca Score" (A+ to F) with color-coded badges, mak
 1. The dashboard page (`app/dashboard/page.tsx`) needs to be updated to render `SeekerDashboard` for users with the "seeker" role (PRD Task 9.3)
 2. When the Prisma models are migrated, update `getSeekerRecommendations` to use real database queries
 3. Add analytics tracking for property views and recommendations
+
+---
+
+## 2026-01-22: Property Detail Page (app/dashboard/panden/[id])
+
+### Completed Task
+Implemented the property detail page (`app/dashboard/panden/[id]/page.tsx`) with full tabs navigation and edit functionality.
+
+### Files Created
+
+#### Core Files
+1. `app/dashboard/panden/[id]/page.tsx` - Async server component that fetches property by ID
+2. `lib/validations/property.ts` - Complete property validation schemas and types
+3. `app/actions/property.ts` - Server actions for property CRUD operations with mock data
+
+#### Component Files
+4. `components/property/property-detail-content.tsx` - Main detail content with header, stats, and tabs
+5. `components/property/property-detail-skeleton.tsx` - Loading skeleton component
+6. `components/property/tabs/property-algemeen-tab.tsx` - Edit form for all property fields
+7. `components/property/tabs/property-fotos-tab.tsx` - Image gallery with upload, reorder, delete, AI enhance
+8. `components/property/tabs/property-kenmerken-tab.tsx` - Feature editor per category
+9. `components/property/tabs/property-statistieken-tab.tsx` - Charts for views/inquiries over time
+
+### Features Implemented
+
+#### Header
+- Property title with status badge
+- Address and property type display
+- Price display with proper formatting
+- Quick stats bar (views, inquiries, saved, conversion rate)
+- Publish/Unpublish button based on status
+- Delete button with confirmation dialog
+- More actions dropdown menu
+
+#### Tab 1: Algemeen (General)
+Collapsible sections for:
+- **Basis Info**: Title, property type, short/long description
+- **Locatie**: Address fields, city, postal code, province, neighborhood
+- **Prijzen**: Price type (rent/sale/both), prices in euros, service costs, deposit
+- **Afmetingen**: Total surface, commercial, kitchen, storage, terrace, basement, floors, ceiling height
+- **Horeca Details**: Seating capacity (inside/outside), standing capacity, kitchen type, amenities checkboxes
+- **Gebouw**: Build year, last renovation, energy label, monument status
+
+#### Tab 2: Foto's (Photos)
+- Drag-and-drop upload zone
+- Image gallery with drag-to-reorder functionality
+- Set primary image
+- Edit image metadata (caption, alt text, type)
+- Delete images with confirmation
+- AI enhance button (placeholder for integration)
+- Lightbox view with navigation
+
+#### Tab 3: Kenmerken (Features)
+Four categories of features:
+- **Vergunningen (Licenses)**: Alcohol, terrace, music, late night, food licenses
+- **Faciliteiten (Facilities)**: Professional kitchen, extraction, cold storage, etc.
+- **Voorzieningen (Utilities)**: AC, heating, WiFi, security, POS system
+- **Toegankelijkheid (Accessibility)**: Wheelchair access, elevator, public transport
+
+Each feature can be:
+- Toggled on/off
+- Given a value (string/number where applicable)
+- Highlighted for the listing
+- Shows verified status
+
+#### Tab 4: Statistieken (Statistics)
+- Period selector (7, 14, 30 days)
+- Chart type selector (area, line, bar)
+- Stats cards with trend indicators
+- Main chart showing views and inquiries over time
+- Top performing days list
+- Conversion analysis with tips
+
+### Technical Details
+
+#### Data Flow
+- Server component fetches property using `getProperty` action
+- Client components use server actions for updates
+- Mock data provided for development (database schema not yet implemented)
+- All prices stored in cents, displayed in euros
+
+#### Validation
+- Complete Zod schemas for all property fields
+- Type definitions for Property, PropertyImage, PropertyFeature
+- Dutch labels for all property types, statuses, and features
+
+#### UI Components Used
+- Tabs, TabsList, TabsTrigger, TabsContent
+- Card, CardHeader, CardContent, CardTitle
+- Collapsible, Accordion
+- Form fields (Input, Textarea, Select, Checkbox)
+- Badge for status display
+- Charts (AreaChart, LineChart, BarChart from recharts)
+- Dialog, AlertDialog for modals
+- Dropdown menus for actions
+
+### Build Status
+- ✅ Build passes without errors
+- ✅ Lint passes without errors in new files
+- ✅ TypeScript types are correct
+
+### Next Steps (Not part of this task)
+1. Implement actual database schema for Property model
+2. Connect actions to real database
+3. Implement image upload to Supabase
+4. Connect AI enhancement to existing image processing flow
+5. Add real-time stats from PropertyView model
