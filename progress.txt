@@ -1,0 +1,61 @@
+# Agent Dashboard Implementation Progress
+
+## Task
+Create `components/dashboard/agent-dashboard.tsx`: Server component displaying agent stats with:
+- 4 stat cards in grid: Actieve Panden (count + trend), Nieuwe Leads Vandaag (count + badge if > 0), Views Deze Week (count + compare vs previous week), Gemiddelde Response (time)
+- Two columns below: left "Recente Leads" list (max 5), right "Top Panden" list (max 5)
+- Use Card, Badge components
+- Fetch data via getAgencyStats and listInquiries actions
+
+## Completed
+
+### 1. Created Server Actions (`app/actions/agency.ts`)
+- `getAgencyStats()` - Returns agency statistics (active properties, new leads, views, response time)
+- `listInquiries(limit)` - Returns recent property inquiries/leads
+- `getTopProperties(limit)` - Returns top performing properties by views/inquiries
+- Follows project patterns: `ActionResult<T>` type, auth checks, proper error handling
+- Currently uses mock data (ready for database integration when Property/Inquiry models are added)
+
+### 2. Created Agent Dashboard Component (`components/dashboard/agent-dashboard.tsx`)
+- Server component (no 'use client' directive)
+- Fetches all data in parallel via Promise.all for performance
+- **Stat Cards Grid** (4 cards, responsive):
+  - Actieve Panden: count + trend percentage
+  - Nieuwe Leads Vandaag: count + badge when > 0
+  - Views Deze Week: count + comparison vs previous week
+  - Gemiddelde Response: formatted response time
+- **Two Column Layout**:
+  - Left: "Recente Leads" - max 5 inquiries with property name, contact name, time ago, status badge, priority icon
+  - Right: "Top Panden" - max 5 properties with name, views count, inquiries count
+- Uses theme tokens exclusively (no hardcoded colors)
+- Dutch language labels as specified
+
+### 3. Types Defined
+- `AgencyStats` - Stats interface with nested objects for each metric
+- `InquiryStatus` - Union type for inquiry statuses (NEW, VIEWED, CONTACTED, etc.)
+- `InquiryPriority` - Union type for priority levels (hot, warm, cold)
+- `PropertyInquiry` - Interface for lead data
+- `TopProperty` - Interface for property performance data
+
+### 4. UI Components Used
+- `Card`, `CardContent`, `CardHeader`, `CardTitle`, `CardDescription` from shadcn/ui
+- `Badge` with variants (default, secondary, destructive, outline)
+- Icons from lucide-react (Building2, Users, Eye, Clock, TrendingUp, TrendingDown, Flame, ThermometerSun, Snowflake)
+- `cn()` utility for conditional classes
+
+## Testing
+- No test framework exists in this project (no vitest, jest, or testing-library)
+- ESLint passes on new files
+- TypeScript compilation succeeds
+- Build passes successfully
+
+## Files Created
+- `app/actions/agency.ts` - Server actions for agency data
+- `components/dashboard/agent-dashboard.tsx` - Dashboard component
+- `progress.txt` - This file
+
+## Next Steps (for future development)
+1. Add Property and PropertyInquiry models to Prisma schema
+2. Replace mock data with actual database queries in actions
+3. Create a dashboard page that uses this component
+4. Add interactivity (click handlers for leads/properties to navigate to details)
