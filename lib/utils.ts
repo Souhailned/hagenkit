@@ -61,6 +61,30 @@ export function nFormatter(num: number, digits?: number) {
     : "0";
 }
 
+export function formatCurrency(
+  amount: number,
+  options?: {
+    currency?: string;
+    locale?: string;
+    minimumFractionDigits?: number;
+    maximumFractionDigits?: number;
+  }
+): string {
+  const {
+    currency = "EUR",
+    locale = "nl-NL",
+    minimumFractionDigits = 0,
+    maximumFractionDigits = 0,
+  } = options || {};
+
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    minimumFractionDigits,
+    maximumFractionDigits,
+  }).format(amount);
+}
+
 export function formatDate(date: string) {
   const currentDate = new Date().getTime();
   if (!date.includes("T")) {

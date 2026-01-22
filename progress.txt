@@ -499,6 +499,7 @@ Built the public property detail page with SEO, image gallery, contact form, and
 - `generatePropertyStructuredData`: RealEstateListing schema.org data
 - `generatePropertyBreadcrumbStructuredData`: Breadcrumb schema
 - `generateAgencyStructuredData`: RealEstateAgent schema
+- `generateLocalBusinessStructuredData`: LocalBusiness schema
 - `PropertyStructuredData`: Component to inject JSON-LD
 
 #### 6. Utility Functions (lib/property/utils.ts)
@@ -547,3 +548,112 @@ Built the public property detail page with SEO, image gallery, contact form, and
 3. Add generateStaticParams() when database is populated
 4. Implement email notifications for inquiries
 5. Add testing framework and write unit tests
+
+---
+
+## 2026-01-22/23: Agency Detail Page (makelaars/[slug])
+
+### Completed Tasks
+
+#### 1. Types & Data Layer
+- Created `types/agency.ts` with TypeScript types:
+  - `Agency`, `AgencyWithDetails` - agency organization data
+  - `AgentProfile` - individual agent profiles
+  - `Property`, `PropertyImage` - property listings
+  - Enums: `PropertyType`, `PropertyStatus`, `PriceType`, `AgencyPlan`
+
+- Created `app/actions/agency.ts` with server actions:
+  - `getAgency(slug)` - fetch agency by slug with agents
+  - `getPropertiesByAgency(agencyId, options)` - fetch properties for agency
+  - `getAllAgencySlugs()` - for static generation
+  - Includes mock data (ready for Prisma integration when models exist)
+
+#### 2. Components
+- Created `components/property/property-card.tsx`:
+  - Displays property with image, title, location, price, features
+  - Responsive design with hover effects
+  - Includes skeleton loader
+  - Uses theme tokens, no hardcoded colors
+
+- Created `components/agency/agent-card.tsx`:
+  - Displays agent profile with avatar, name, rating
+  - Shows specializations, languages, bio
+  - Contact links (email, phone, LinkedIn, Twitter)
+  - Verified badge and deal count
+  - Includes skeleton loader
+
+- Added README.md files for both component folders
+
+#### 3. Page Implementation
+- Created `app/(marketing)/makelaars/[slug]/page.tsx`:
+  - Async server component with SSG support
+  - `generateStaticParams()` for static generation
+  - `generateMetadata()` for dynamic SEO
+
+  **Sections:**
+  1. **Header** - Agency logo, name, description, verified badge, quick stats
+  2. **Team** - Grid of AgentCards
+  3. **Listings** - Grid of PropertyCards (active properties)
+  4. **Contact** - Full contact info, CTA buttons, KvK/BTW info
+
+#### 4. SEO & Structured Data
+- Created `app/(marketing)/makelaars/[slug]/structured-data.tsx`:
+  - `generateAgencyStructuredData()` - RealEstateAgent schema
+  - `generateAgentStructuredData()` - Person schema for employees
+  - `generateBreadcrumbStructuredData()` - navigation breadcrumbs
+  - `generateLocalBusinessStructuredData()` - enhanced local SEO
+  - `StructuredData` component for JSON-LD injection
+
+#### 5. Utilities
+- Added `formatCurrency()` to `lib/utils.ts` for Dutch currency formatting
+
+### Files Created/Modified
+
+#### New Files
+- `types/agency.ts`
+- `app/actions/agency.ts`
+- `components/property/property-card.tsx`
+- `components/property/README.md`
+- `components/agency/agent-card.tsx`
+- `components/agency/README.md`
+- `app/(marketing)/makelaars/[slug]/page.tsx`
+- `app/(marketing)/makelaars/[slug]/structured-data.tsx`
+
+#### Modified Files
+- `lib/utils.ts` - added formatCurrency function
+
+### Build Verification
+- ESLint: No errors in new files (0 errors, 0 warnings after fix)
+- Build: Successful compilation with Turbopack
+- Static page generated: `/makelaars/horecagrond-makelaars`
+
+### Notes
+- Mock data used for agencies/properties (Prisma models not yet in schema)
+- Actions contain TODO comments for Prisma integration
+- No test framework configured in project - skipped test writing
+- Pre-existing lint warnings in codebase not addressed (out of scope)
+
+### Future Work
+- Add Prisma models for Agency, AgentProfile, Property
+- Replace mock data with actual database queries
+- Add makelaars index page (/makelaars)
+- Add property detail page (/panden/[slug])
+- Add search/filter functionality
+
+---
+
+## 2026-01-23: Merge Conflict Resolution
+
+### Task
+Resolved merge conflicts from branch `ralphy/agent-57-1769116977360-n08lj3-frontend-design-shadcn-ui-maak-app-marketing-aanbo`
+
+### Files Resolved
+1. `app/(marketing)/aanbod/[slug]/page.tsx` - Kept HEAD's comprehensive implementation with PropertyImageGallery, PropertyInquiryForm
+2. `app/actions/property.ts` - Already resolved (no remaining conflicts)
+3. `lib/property/structured-data.tsx` - Merged both implementations, keeping all functions and adding StructuredData alias
+4. `progress.txt` - Merged both progress logs combining all entries from both branches
+
+### Resolution Strategy
+- HEAD versions had more complete implementations
+- Merged functionality from both branches where applicable
+- Added compatibility aliases (e.g., StructuredData for PropertyStructuredData)

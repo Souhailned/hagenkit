@@ -1,159 +1,159 @@
-import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Maximize2, Users, Heart, Building2 } from "lucide-react";
+import Image from "next/image";
+import {
+  MapPin,
+  Ruler,
+  Users,
+  UtensilsCrossed,
+  Sun,
+  Car,
+} from "lucide-react";
+import { cn, formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { PROPERTY_TYPE_LABELS, PRICE_TYPE_LABELS } from "@/lib/validations/property";
-import type { PropertySearchResult } from "@/app/actions/property-search";
+import type { Property } from "@/types/agency";
 
 interface PropertyCardProps {
-  property: PropertySearchResult;
+  property: Property;
   priority?: boolean;
   className?: string;
 }
 
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("nl-NL", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
-}
+const propertyTypeLabels: Record<Property["propertyType"], string> = {
+  RESTAURANT: "Restaurant",
+  CAFE: "Café",
+  BAR: "Bar",
+  HOTEL: "Hotel",
+  DARK_KITCHEN: "Dark Kitchen",
+  NIGHTCLUB: "Nachtclub",
+  FAST_FOOD: "Fast Food",
+  BAKERY: "Bakkerij",
+  CATERING: "Catering",
+  OTHER: "Overig",
+};
 
-export function PropertyCard({ property, priority = false, className }: PropertyCardProps) {
-  const {
-    slug,
-    title,
-    shortDescription,
-    propertyType,
-    priceType,
-    rentPrice,
-    salePrice,
-    city,
-    address,
-    surfaceTotal,
-    hasTerrace,
-    seatingCapacityInside,
-    seatingCapacityOutside,
-    primaryImage,
-    viewCount,
-    savedCount,
-  } = property;
-
-  const displayPrice = priceType === "SALE" ? salePrice : rentPrice;
-  const priceLabel = priceType === "SALE" ? "" : "/mnd";
-  const totalSeating = (seatingCapacityInside ?? 0) + (seatingCapacityOutside ?? 0);
+export function PropertyCard({
+  property,
+  priority = false,
+  className,
+}: PropertyCardProps) {
+  const coverImage = property.images[0];
+  const priceLabel =
+    property.priceType === "SALE"
+      ? `${formatCurrency(property.salePrice ?? 0)} k.k.`
+      : `${formatCurrency(property.rentPrice ?? 0)} /mnd`;
 
   return (
-    <article
+    <Link
+      href={`/panden/${property.slug}`}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-xl border bg-card transition-all duration-300 hover:shadow-lg hover:border-primary/20",
+        "group relative flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card transition-all duration-300",
+        "hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         className
       )}
     >
       {/* Image Container */}
-      <Link href={`/aanbod/${slug}`} className="relative aspect-[4/3] overflow-hidden">
-        {primaryImage ? (
+      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+        {coverImage ? (
           <Image
-            src={primaryImage.thumbnailUrl}
-            alt={primaryImage.altText ?? title}
+            src={coverImage.url}
+            alt={coverImage.alt || property.title}
             fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
             priority={priority}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-muted">
-            <Building2 className="size-12 text-muted-foreground/40" />
+          <div className="flex h-full items-center justify-center">
+            <UtensilsCrossed className="h-12 w-12 text-muted-foreground/40" />
           </div>
         )}
 
-        {/* Overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-        {/* Badges */}
-        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-          <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm text-xs font-medium">
-            {PROPERTY_TYPE_LABELS[propertyType]}
+        {/* Property Type Badge */}
+        <div className="absolute left-3 top-3">
+          <Badge
+            variant="secondary"
+            className="bg-background/90 backdrop-blur-sm"
+          >
+            {propertyTypeLabels[property.propertyType]}
           </Badge>
-          {priceType === "RENT_OR_SALE" && (
-            <Badge variant="outline" className="bg-background/90 backdrop-blur-sm text-xs">
-              {PRICE_TYPE_LABELS[priceType]}
-            </Badge>
-          )}
         </div>
 
-        {/* Save button */}
-        <button
-          className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full bg-background/90 backdrop-blur-sm transition-all hover:bg-background hover:scale-110"
-          aria-label="Bewaar dit pand"
-        >
-          <Heart className="size-4 text-muted-foreground" />
-        </button>
-
-        {/* Stats overlay on hover */}
-        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          <span className="text-xs text-white/90">{viewCount} weergaven</span>
-          <span className="text-xs text-white/90">{savedCount} keer bewaard</span>
+        {/* Price Tag */}
+        <div className="absolute bottom-3 right-3">
+          <div className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground shadow-md">
+            {priceLabel}
+          </div>
         </div>
-      </Link>
+      </div>
 
       {/* Content */}
       <div className="flex flex-1 flex-col p-4">
-        {/* Price */}
-        <div className="mb-2">
-          <span className="text-xl font-bold tracking-tight text-foreground">
-            {displayPrice ? formatPrice(displayPrice) : "Prijs op aanvraag"}
-          </span>
-          {displayPrice && priceLabel && (
-            <span className="text-sm text-muted-foreground">{priceLabel}</span>
-          )}
-        </div>
-
         {/* Title */}
-        <Link href={`/aanbod/${slug}`} className="group/title">
-          <h3 className="mb-1 line-clamp-2 text-base font-semibold leading-snug text-foreground transition-colors group-hover/title:text-primary">
-            {title}
-          </h3>
-        </Link>
+        <h3 className="mb-2 line-clamp-2 text-lg font-semibold leading-tight text-foreground transition-colors group-hover:text-primary">
+          {property.title}
+        </h3>
 
         {/* Location */}
         <div className="mb-3 flex items-center gap-1.5 text-sm text-muted-foreground">
-          <MapPin className="size-3.5 shrink-0" />
-          <span className="truncate">{address}, {city}</span>
+          <MapPin className="h-4 w-4 shrink-0" />
+          <span className="truncate">
+            {property.city}, {property.province}
+          </span>
         </div>
 
-        {/* Description */}
-        {shortDescription && (
+        {/* Short Description */}
+        {property.shortDescription && (
           <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">
-            {shortDescription}
+            {property.shortDescription}
           </p>
         )}
 
-        {/* Features */}
-        <div className="mt-auto flex flex-wrap items-center gap-3 border-t pt-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Maximize2 className="size-3.5" />
-            <span>{surfaceTotal} m&sup2;</span>
-          </div>
-
-          {totalSeating > 0 && (
-            <div className="flex items-center gap-1">
-              <Users className="size-3.5" />
-              <span>{totalSeating} zitplaatsen</span>
+        {/* Features Grid */}
+        <div className="mt-auto grid grid-cols-2 gap-2 border-t border-border/50 pt-3">
+          {property.surfaceTotal && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Ruler className="h-3.5 w-3.5" />
+              <span>{property.surfaceTotal} m²</span>
             </div>
           )}
-
-          {hasTerrace && (
-            <Badge variant="secondary" className="text-xs px-2 py-0">
-              Terras
-            </Badge>
+          {property.seatingCapacity && property.seatingCapacity > 0 && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Users className="h-3.5 w-3.5" />
+              <span>{property.seatingCapacity} zitplaatsen</span>
+            </div>
+          )}
+          {property.hasTerrace && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Sun className="h-3.5 w-3.5" />
+              <span>Terras</span>
+            </div>
+          )}
+          {property.hasParking && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Car className="h-3.5 w-3.5" />
+              <span>Parking</span>
+            </div>
           )}
         </div>
       </div>
-    </article>
+    </Link>
   );
 }
 
-export default PropertyCard;
+export function PropertyCardSkeleton() {
+  return (
+    <div className="flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card">
+      <div className="aspect-[4/3] animate-pulse bg-muted" />
+      <div className="flex flex-1 flex-col p-4">
+        <div className="mb-2 h-6 w-3/4 animate-pulse rounded bg-muted" />
+        <div className="mb-3 h-4 w-1/2 animate-pulse rounded bg-muted" />
+        <div className="mb-4 h-10 w-full animate-pulse rounded bg-muted" />
+        <div className="mt-auto grid grid-cols-2 gap-2 border-t border-border/50 pt-3">
+          <div className="h-4 w-16 animate-pulse rounded bg-muted" />
+          <div className="h-4 w-16 animate-pulse rounded bg-muted" />
+        </div>
+      </div>
+    </div>
+  );
+}
