@@ -1,0 +1,120 @@
+# Progress Log - PropertyWizard Component
+
+## Date: 2026-01-22
+
+## Task: PRD.md Task 9.6 - Property Wizard Component
+
+### Completed Work
+
+Created a complete multi-step modal wizard for creating horecavastgoed (hospitality real estate) listings.
+
+### Files Created
+
+1. **components/property-wizard/types.ts**
+   - TypeScript types for wizard data
+   - Property type enums (RESTAURANT, CAFE, BAR, HOTEL, etc.)
+   - Price type enums (RENT, SALE, RENT_OR_SALE)
+   - Feature categories with grouped features (Vergunningen, Faciliteiten, Voorzieningen)
+   - Wizard step definitions
+   - Default data helper function
+
+2. **components/property-wizard/WizardStepper.tsx**
+   - Desktop sidebar stepper with icons and progress indicators
+   - Mobile compact stepper with progress bar
+   - Completed/active/pending step states
+   - Click navigation to completed steps
+
+3. **components/property-wizard/steps/StepBasicInfo.tsx**
+   - Title input with validation
+   - Property type selection grid with icons
+   - Short description (max 200 chars)
+   - Full description textarea
+
+4. **components/property-wizard/steps/StepLocation.tsx**
+   - Address input with MapPin icon
+   - City with autocomplete suggestions (Dutch cities)
+   - Postal code with Dutch format
+   - Province select dropdown
+   - Collapsible advanced section for manual lat/lng
+   - "Use current location" button with geolocation API
+
+5. **components/property-wizard/steps/StepPricing.tsx**
+   - Price type selection (rent/sale/both) with radio cards
+   - Conditional price fields based on selection
+   - Service costs input
+   - Deposit months input (for rent)
+   - Price negotiable toggle switch
+   - Currency formatting helpers
+
+6. **components/property-wizard/steps/StepDimensions.tsx**
+   - Total surface (required, highlighted)
+   - Optional surface breakdown (commercial, kitchen, storage, terrace, basement)
+   - Floors count
+   - Ceiling height
+   - Surface summary badges
+
+7. **components/property-wizard/steps/StepFeatures.tsx**
+   - Grouped checkboxes by category
+   - Categories: Vergunningen (licenses), Faciliteiten (facilities), Voorzieningen (utilities)
+   - Selection counter per category
+   - Select all / deselect all quick actions
+   - Dutch language labels
+
+8. **components/property-wizard/steps/StepPhotos.tsx**
+   - Drag-and-drop upload zone
+   - File input for manual selection
+   - Photo grid with preview thumbnails
+   - Drag-to-reorder photos
+   - Set primary photo
+   - AI enhancement checkbox per photo
+   - Remove photo button
+   - Max 20 photos limit
+   - Purple-themed AI enhancement info section
+
+9. **components/property-wizard/steps/StepReview.tsx**
+   - Summary sections for all data
+   - Edit links to jump to specific steps
+   - Completeness indicator
+   - Photo thumbnails preview
+   - Feature badges
+   - "Publiceer" (publish) button
+   - "Bewaar als Concept" (save as draft) button
+   - Submission loading states
+
+10. **components/property-wizard/PropertyWizard.tsx**
+    - Main wizard component with Dialog modal
+    - Step navigation (next/previous)
+    - Step validation with error messages
+    - Completed steps tracking
+    - Responsive layout (desktop sidebar, mobile stepper)
+    - Props: open, onClose, onCreate callback
+
+11. **components/property-wizard/index.ts**
+    - Public exports for easy importing
+
+12. **components/property-wizard/README.md**
+    - Usage documentation
+    - Props documentation
+    - File structure overview
+
+### Technical Highlights
+
+- **React Best Practices**: Used useCallback for memoized handlers, useMemo for derived state
+- **shadcn/ui Components**: Dialog, Button, Input, Label, Textarea, RadioGroup, Checkbox, Select, Switch, ScrollArea, Badge, Collapsible
+- **Accessibility**: Proper ARIA labels, keyboard navigation, focus management
+- **Mobile Responsive**: Different stepper layouts for mobile/desktop
+- **Dutch Language**: All UI text in Dutch for horeca platform
+- **Type Safety**: Full TypeScript with strict types
+
+### Validation & Linting
+
+- Fixed all ESLint errors in property-wizard files
+- Escaped apostrophes in Dutch text (`foto's` -> `foto&apos;s`)
+- Added eslint-disable comments for blob URL img tags
+- Build passes successfully
+
+### Notes
+
+- No testing framework is set up in the project, so unit tests were not written
+- The component follows the onboarding flow pattern from the existing codebase
+- Photos use blob URLs for preview (real upload handled by parent component)
