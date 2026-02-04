@@ -3,9 +3,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMemo, useState } from "react";
 import { authClient, signIn } from "@/lib/auth-client";
 import { toast } from "sonner";
@@ -78,12 +78,12 @@ export default function SignInAuth() {
           <div className="absolute inset-0 bg-zinc-900" />
           <div className="relative z-20 flex items-center text-lg font-medium">
             <IconInnerShadowTop className="mr-2 h-6 w-6" />
-            HagenKit
+            DataRAG
           </div>
           <div className="relative z-20 mt-auto">
             <blockquote className="space-y-2">
               <p className="text-lg">
-                &ldquo;HagenKit gave us launch-ready auth, billing, and UI in a
+                &ldquo;DataRAG gave us launch-ready auth, billing, and UI in a
                 single weekend. Our team shipped features instead of scaffolding
                 infrastructure.&rdquo;
               </p>
@@ -114,182 +114,111 @@ export default function SignInAuth() {
               )}
             </div>
             <div className="grid gap-6">
-              <Tabs defaultValue="password" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="password">Login</TabsTrigger>
-                  <TabsTrigger value="magic-link">Magic Link</TabsTrigger>
-                </TabsList>
-                <TabsContent value="password">
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      await signIn.email(
-                        {
-                          email,
-                          password,
-                          callbackURL,
-                          rememberMe,
-                        },
-                        {
-                          onRequest: () => {
-                            setLoading(true);
-                          },
-                          onResponse: () => {
-                            setLoading(false);
-                          },
-                          onError: (ctx) => {
-                            setLoading(false);
-                            if (ctx.error.message.includes("User not found") || ctx.error.status === 401) {
-                                toast.error("Account not found", {
-                                    description: "We couldn't find an account with that email.",
-                                    action: {
-                                        label: "Sign Up",
-                                        onClick: () => router.push("/sign-up"),
-                                    },
-                                });
-                            } else {
-                                toast.error(ctx.error.message);
-                            }
-                          },
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  await signIn.email(
+                    {
+                      email,
+                      password,
+                      callbackURL,
+                      rememberMe,
+                    },
+                    {
+                      onRequest: () => {
+                        setLoading(true);
+                      },
+                      onResponse: () => {
+                        setLoading(false);
+                      },
+                      onError: (ctx) => {
+                        setLoading(false);
+                        const errorMessage = ctx.error?.message;
+                        if (errorMessage?.includes("User not found") || ctx.error?.status === 401) {
+                            toast.error("Account not found", {
+                                description: "We couldn't find an account with that email.",
+                                action: {
+                                    label: "Sign Up",
+                                    onClick: () => router.push("/sign-up"),
+                                },
+                            });
+                        } else {
+                            toast.error(errorMessage || "An error occurred during sign in");
                         }
-                      );
-                    }}
-                  >
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="email-password">Email</Label>
-                        <Input
-                          id="email-password"
-                          type="email"
-                          placeholder="name@example.com"
-                          required
-                          onChange={(e) => setEmail(e.target.value)}
-                          value={email}
-                          disabled={loading}
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <div className="flex items-center">
-                          <Label htmlFor="password">Password</Label>
-                          <Link
-                            href="/forgot-password"
-                            className="ml-auto inline-block text-sm underline"
-                          >
-                            Forgot password?
-                          </Link>
-                        </div>
-                        <Input
-                          id="password"
-                          type="password"
-                          placeholder="••••••••"
-                          autoComplete="current-password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                          disabled={loading}
-                        />
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="remember"
-                          checked={rememberMe}
-                          onCheckedChange={(checked) =>
-                            setRememberMe(checked as boolean)
-                          }
-                        />
-                        <label
-                          htmlFor="remember"
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          Remember me
-                        </label>
-                      </div>
-                      <Button
-                        type="submit"
-                        className="w-full justify-center"
-                        variant={emailVariant}
-                        disabled={loading}
+                      },
+                    }
+                  );
+                }}
+              >
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="name@example.com"
+                      required
+                      onChange={(e) => setEmail(e.target.value)}
+                      value={email}
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <div className="flex items-center">
+                      <Label htmlFor="password">Password</Label>
+                      <Link
+                        href="/forgot-password"
+                        className="ml-auto inline-block text-sm underline"
                       >
-                        {loading && (
-                          <Spinner className="mr-2 size-4" aria-hidden="true" />
-                        )}
-                        <span>Sign in with Password</span>
-                        {emailIsLast && (
-                          <>
-                            <Badge className="ml-2" variant="secondary">
-                              Last used
-                            </Badge>
-                            <span className="sr-only">Last used login method</span>
-                          </>
-                        )}
-                      </Button>
+                        Forgot password?
+                      </Link>
                     </div>
-                  </form>
-                </TabsContent>
-                <TabsContent value="magic-link">
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      await signIn.magicLink(
-                        {
-                          email,
-                          callbackURL,
-                        },
-                        {
-                          onRequest: () => {
-                            setLoading(true);
-                          },
-                          onResponse: () => {
-                            setLoading(false);
-                          },
-                          onSuccess: () => {
-                            setLoading(false);
-                            toast.success("Check your email for the magic link!");
-                          },
-                          onError: (ctx) => {
-                            setLoading(false);
-                            toast.error(ctx.error.message);
-                          },
-                        }
-                      );
-                    }}
+                    <PasswordInput
+                      id="password"
+                      placeholder="••••••••"
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="remember"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) =>
+                        setRememberMe(checked as boolean)
+                      }
+                    />
+                    <label
+                      htmlFor="remember"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Remember me
+                    </label>
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full justify-center"
+                    variant={emailVariant}
+                    disabled={loading}
                   >
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="email-magic">Email</Label>
-                        <Input
-                          id="email-magic"
-                          type="email"
-                          placeholder="name@example.com"
-                          required
-                          onChange={(e) => setEmail(e.target.value)}
-                          value={email}
-                          disabled={loading}
-                        />
-                      </div>
-                      <Button
-                        type="submit"
-                        className="w-full justify-center"
-                        variant={emailVariant}
-                        disabled={loading}
-                      >
-                        {loading && (
-                          <Spinner className="mr-2 size-4" aria-hidden="true" />
-                        )}
-                        <span>Sign in with Magic Link</span>
-                        {emailIsLast && (
-                          <>
-                            <Badge className="ml-2" variant="secondary">
-                              Last used
-                            </Badge>
-                            <span className="sr-only">Last used login method</span>
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </TabsContent>
-              </Tabs>
+                    {loading && (
+                      <Spinner className="mr-2 size-4" aria-hidden="true" />
+                    )}
+                    <span>Sign in</span>
+                    {emailIsLast && (
+                      <>
+                        <Badge className="ml-2" variant="secondary">
+                          Last used
+                        </Badge>
+                        <span className="sr-only">Last used login method</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t" />
