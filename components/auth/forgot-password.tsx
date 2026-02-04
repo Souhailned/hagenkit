@@ -23,7 +23,7 @@ export default function ForgotPasswordAuth() {
     setError(null);
 
     try {
-      await authClient.forgetPassword({
+      await authClient.requestPasswordReset({
         email,
         redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`,
       });
@@ -53,7 +53,7 @@ export default function ForgotPasswordAuth() {
           <div className="absolute inset-0 bg-zinc-900" />
           <div className="relative z-20 flex items-center text-lg font-medium">
             <IconInnerShadowTop className="mr-2 h-6 w-6" />
-            HagenKit
+            DataRAG
           </div>
           <div className="relative z-20 mt-auto">
             <blockquote className="space-y-2">
@@ -162,7 +162,7 @@ export default function ForgotPasswordAuth() {
       <div className="flex min-h-screen flex-col items-center justify-center p-6 md:hidden">
         <div className="flex items-center text-lg font-medium mb-8">
           <IconInnerShadowTop className="mr-2 h-6 w-6" />
-          HagenKit
+          DataRAG
         </div>
 
         <div className="w-full max-w-sm space-y-6">

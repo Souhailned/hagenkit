@@ -1,10 +1,7 @@
+"use client"
+
 import type { Table } from "@tanstack/react-table";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from "lucide-react";
+import { CaretLeft, CaretRight, CaretDoubleLeft, CaretDoubleRight } from "@phosphor-icons/react/dist/ssr"
 
 import { Button } from "@/components/ui/button";
 import {
@@ -73,7 +70,7 @@ export function DataTablePagination<TData>({
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
           >
-            <ChevronsLeft />
+            <CaretDoubleLeft />
           </Button>
           <Button
             aria-label="Go to previous page"
@@ -83,7 +80,7 @@ export function DataTablePagination<TData>({
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            <ChevronLeft />
+            <CaretLeft />
           </Button>
           <Button
             aria-label="Go to next page"
@@ -93,7 +90,7 @@ export function DataTablePagination<TData>({
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            <ChevronRight />
+            <CaretRight />
           </Button>
           <Button
             aria-label="Go to last page"
@@ -103,7 +100,7 @@ export function DataTablePagination<TData>({
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
           >
-            <ChevronsRight />
+            <CaretDoubleRight />
           </Button>
         </div>
       </div>

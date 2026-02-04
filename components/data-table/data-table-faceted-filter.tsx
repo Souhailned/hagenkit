@@ -1,7 +1,7 @@
 "use client";
 
 import type { Column } from "@tanstack/react-table";
-import { Check, PlusCircle, XCircle } from "lucide-react";
+import { Check, PlusCircle, XCircle } from "@phosphor-icons/react/dist/ssr"
 import * as React from "react";
 
 import { Badge } from "@/components/ui/badge";

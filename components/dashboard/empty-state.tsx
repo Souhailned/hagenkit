@@ -1,4 +1,6 @@
-import { RocketIcon, ArrowUpRightIcon } from "lucide-react"
+"use client"
+
+import { Rocket as RocketIcon, ArrowUpRight as ArrowUpRightIcon } from "@phosphor-icons/react/dist/ssr"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -17,7 +19,7 @@ export function DashboardEmptyState() {
         <EmptyMedia variant="icon">
           <RocketIcon />
         </EmptyMedia>
-        <EmptyTitle>Welcome to HagenKit</EmptyTitle>
+        <EmptyTitle>Welcome to DataRAG</EmptyTitle>
         <EmptyDescription>
           This is your dashboard. Get started by adding your first project,
           creating content, or exploring the features available to you.

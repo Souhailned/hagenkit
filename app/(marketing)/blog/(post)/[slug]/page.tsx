@@ -36,7 +36,7 @@ export async function generateMetadata({
   const { title, seoTitle, summary, seoDescription, image } = post;
 
   return constructMetadata({
-    title: `${seoTitle || title} – HagenKit`,
+    title: `${seoTitle || title} – DataRAG`,
     description: seoDescription || summary,
     image,
   });
@@ -61,6 +61,7 @@ export default async function BlogArticle({
     getBlurDataURL(data.image),
     Promise.all(
       imageSources.map(async (src: string) => ({
+        alt: src.split("/").pop()?.replace(/\.[^/.]+$/, "") || "Blog image",
         src,
         blurDataURL: await getBlurDataURL(src),
       }))

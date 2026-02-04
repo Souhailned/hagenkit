@@ -1,4 +1,6 @@
-import { ChevronRight } from "lucide-react";
+"use client"
+
+import { CaretRight } from "@phosphor-icons/react/dist/ssr"
 import Image from "next/image";
 import Link from "next/link";
 
@@ -100,7 +102,7 @@ export default function BlogCard({
                 aria-label={`Read ${data.title}`}
                 className="text-primary group-hover:text-foreground flex items-center gap-1 text-sm font-medium transition-colors duration-200">
                 Read
-                <ChevronRight
+                <CaretRight
                   strokeWidth={2.5}
                   aria-hidden="true"
                   className="size-3.5 translate-y-px duration-200 group-hover:translate-x-0.5"

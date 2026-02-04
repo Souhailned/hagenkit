@@ -84,13 +84,6 @@ Full HTML content logged above.
 In a real scenario, this would be sent via Resend.
 =================================================================
       `);
-      
-      // If it's a magic link, try to extract and log the link specifically for easier access
-      if (templateId === "magic-link" && (data as any).magicLinkUrl) {
-        console.log(`
->>> MAGIC LINK URL: ${(data as any).magicLinkUrl}
-        `);
-      }
 
       return {
         id: "mock-email-id-" + Date.now(),

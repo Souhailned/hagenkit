@@ -3,7 +3,7 @@
 import { Fragment, useMemo } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Slash } from "lucide-react"
+import { CaretRight } from "@phosphor-icons/react/dist/ssr"
 
 import {
   Breadcrumb,
@@ -91,7 +91,7 @@ export function DynamicBreadcrumb() {
               </BreadcrumbItem>
               {!isLast ? (
                 <BreadcrumbSeparator>
-                  <Slash />
+                  <CaretRight />
                 </BreadcrumbSeparator>
               ) : null}
             </Fragment>

@@ -14,12 +14,12 @@ export default function SignUpSkeleton() {
         <div className="absolute inset-0 bg-zinc-900" />
         <div className="relative z-20 flex items-center text-lg font-medium">
           <IconInnerShadowTop className="mr-2 h-6 w-6" />
-          HagenKit
+          DataRAG
         </div>
         <div className="relative z-20 mt-auto">
           <blockquote className="space-y-2">
             <p className="text-lg">
-              &ldquo;HagenKit transformed onboarding for our SaaS studio. We
+              &ldquo;DataRAG transformed onboarding for our SaaS studio. We
               now start every client with robust scaffolding and focus on the
               differentiators.&rdquo;
             </p>

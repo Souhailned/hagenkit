@@ -9,20 +9,7 @@ import {
   NavigationMenuList,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import {
-  Menu,
-  X,
-  Shield,
-  SquareActivity,
-  Sparkles,
-  Cpu,
-  Gem,
-  ShoppingBag,
-  BookOpen,
-  Notebook,
-  Croissant,
-  Smartphone,
-} from "lucide-react";
+import { List as Menu, X, Shield, ChartLineUp as SquareActivity, Sparkle as Sparkles, Cpu, Diamond as Gem, Bag as ShoppingBag, BookOpen, Bread as Croissant, Notebook, Cookie, DeviceMobile as Smartphone } from "@phosphor-icons/react/dist/ssr"
 import { useMedia } from "@/hooks/use-media";
 import {
   Accordion,
@@ -32,6 +19,7 @@ import {
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { siteConfig } from "@/lib/config";
+import { useSession } from "@/lib/auth-client";
 
 interface FeatureLink {
   href: string;
@@ -130,6 +118,7 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
   const isLarge = useMedia("(min-width: 64rem)");
+  const { data: session, isPending } = useSession();
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -202,16 +191,28 @@ export function Header() {
 
             <div className="max-lg:in-data-[state=active]:mt-6 in-data-[state=active]:flex mb-6 hidden w-full flex-wrap items-center justify-end space-y-8 md:flex-nowrap lg:m-0 lg:flex lg:w-fit lg:gap-6 lg:space-y-0 lg:border-transparent lg:bg-transparent lg:p-0 lg:shadow-none dark:shadow-none dark:lg:bg-transparent">
               <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/sign-in">
-                    <span>Login</span>
-                  </Link>
-                </Button>
-                <Button asChild size="sm">
-                  <Link href="/sign-up">
-                    <span>Get Started</span>
-                  </Link>
-                </Button>
+                {isPending ? (
+                  <div className="h-8 w-20 animate-pulse rounded-md bg-muted" />
+                ) : session ? (
+                  <Button asChild size="sm">
+                    <Link href="/dashboard">
+                      <span>Dashboard</span>
+                    </Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href="/sign-in">
+                        <span>Login</span>
+                      </Link>
+                    </Button>
+                    <Button asChild size="sm">
+                      <Link href="/sign-up">
+                        <span>Get Started</span>
+                      </Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>

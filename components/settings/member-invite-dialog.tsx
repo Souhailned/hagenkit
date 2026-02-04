@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { IconUserPlus } from "@tabler/icons-react";
-import { Loader2 } from "lucide-react";
+import { CircleNotch } from "@phosphor-icons/react/dist/ssr"
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -154,7 +154,7 @@ export function MemberInviteDialog({ workspaceId, onInviteSent }: MemberInviteDi
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isLoading && <CircleNotch className="mr-2 h-4 w-4 animate-spin" />}
                   Send Invitation
                 </Button>
               </div>

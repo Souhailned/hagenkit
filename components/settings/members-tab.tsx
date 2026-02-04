@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Link2, Check } from "lucide-react";
+import { CircleNotch, LinkSimple, Check } from "@phosphor-icons/react/dist/ssr"
 import { IconTrash } from "@tabler/icons-react";
 import {
   Card,
@@ -140,7 +140,7 @@ export function MembersTab({ workspaceId, currentUserId }: MembersTabProps) {
         <CardContent>
           {isLoadingMembers ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <CircleNotch className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <MembersDataTable
@@ -163,7 +163,7 @@ export function MembersTab({ workspaceId, currentUserId }: MembersTabProps) {
         <CardContent>
           {isLoadingInvitations ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <CircleNotch className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : invitations.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
@@ -201,7 +201,7 @@ export function MembersTab({ workspaceId, currentUserId }: MembersTabProps) {
                       {copiedInvitationId === invitation.id ? (
                         <Check className="h-4 w-4 text-green-600" />
                       ) : (
-                        <Link2 className="h-4 w-4" />
+                        <LinkSimple className="h-4 w-4" />
                       )}
                     </Button>
                     <Button
@@ -212,7 +212,7 @@ export function MembersTab({ workspaceId, currentUserId }: MembersTabProps) {
                       title="Cancel invitation"
                     >
                       {cancelingInvitationId === invitation.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <CircleNotch className="h-4 w-4 animate-spin" />
                       ) : (
                         <IconTrash className="h-4 w-4 text-destructive" />
                       )}

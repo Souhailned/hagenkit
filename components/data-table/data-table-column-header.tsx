@@ -1,13 +1,7 @@
 "use client";
 
 import type { Column } from "@tanstack/react-table";
-import {
-  ChevronDown,
-  ChevronsUpDown,
-  ChevronUp,
-  EyeOff,
-  X,
-} from "lucide-react";
+import { CaretDown, CaretUpDown, CaretUp, EyeSlash, X } from "@phosphor-icons/react/dist/ssr"
 
 import {
   DropdownMenu,
@@ -46,11 +40,11 @@ export function DataTableColumnHeader<TData, TValue>({
         {label}
         {column.getCanSort() &&
           (column.getIsSorted() === "desc" ? (
-            <ChevronDown />
+            <CaretDown />
           ) : column.getIsSorted() === "asc" ? (
-            <ChevronUp />
+            <CaretUp />
           ) : (
-            <ChevronsUpDown />
+            <CaretUpDown />
           ))}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-28">
@@ -61,7 +55,7 @@ export function DataTableColumnHeader<TData, TValue>({
               checked={column.getIsSorted() === "asc"}
               onClick={() => column.toggleSorting(false)}
             >
-              <ChevronUp />
+              <CaretUp />
               Asc
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
@@ -69,7 +63,7 @@ export function DataTableColumnHeader<TData, TValue>({
               checked={column.getIsSorted() === "desc"}
               onClick={() => column.toggleSorting(true)}
             >
-              <ChevronDown />
+              <CaretDown />
               Desc
             </DropdownMenuCheckboxItem>
             {column.getIsSorted() && (
@@ -89,7 +83,7 @@ export function DataTableColumnHeader<TData, TValue>({
             checked={!column.getIsVisible()}
             onClick={() => column.toggleVisibility(false)}
           >
-            <EyeOff />
+            <EyeSlash />
             Hide
           </DropdownMenuCheckboxItem>
         )}

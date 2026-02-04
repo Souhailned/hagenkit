@@ -1,7 +1,9 @@
+"use client"
+
 import * as React from "react";
 import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu";
 import { cva } from "class-variance-authority";
-import { ChevronDownIcon } from "lucide-react";
+import { CaretDown } from "@phosphor-icons/react/dist/ssr"
 import { cn } from "@/lib/utils";
 
 const NavigationMenu = React.forwardRef<
@@ -72,7 +74,7 @@ function NavigationMenuTrigger({
       {...props}
     >
       {children}{" "}
-      <ChevronDownIcon
+      <CaretDown
         className="relative top-[1px] ml-1.5 size-3 opacity-75 transition duration-300 group-data-[state=open]:translate-y-px"
         aria-hidden="true"
         strokeWidth={2.5}

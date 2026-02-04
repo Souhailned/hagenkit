@@ -1,7 +1,7 @@
 "use client";
 
 import type { Table } from "@tanstack/react-table";
-import { Check, Settings2 } from "lucide-react";
+import { Check, Gear as Settings2 } from "@phosphor-icons/react/dist/ssr"
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {

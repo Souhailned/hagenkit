@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Trash2, Shield, UserCheck, Phone } from "lucide-react";
+import { DotsThree, Pencil, Trash, Shield, UserCheck, Phone } from "@phosphor-icons/react/dist/ssr"
 import { formatDistanceToNow } from "date-fns";
 import { UserEditDialog } from "@/components/admin/user-edit-dialog";
 import { UserDeleteAlert } from "@/components/admin/user-delete-alert";
@@ -222,7 +222,7 @@ export function UsersDataTable({ data, pageCount, total }: UsersDataTableProps) 
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 p-0">
                   <span className="sr-only">Open menu</span>
-                  <MoreHorizontal className="h-4 w-4" />
+                  <DotsThree className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -244,7 +244,7 @@ export function UsersDataTable({ data, pageCount, total }: UsersDataTableProps) 
                   }}
                   className="text-destructive"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash className="h-4 w-4 mr-2" />
                   Delete user
                 </DropdownMenuItem>
               </DropdownMenuContent>

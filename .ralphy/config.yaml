@@ -1,0 +1,84 @@
+# Ralphy Configuration for Horecagrond
+# Horecavastgoed Platform - Autonomous Development Setup
+
+project:
+  name: "Horecagrond"
+  description: "Niche vastgoedplatform voor horecabedrijven"
+  language: "typescript"
+  framework: "nextjs"
+  version: "1.0.0"
+
+# Build & Test Commands
+commands:
+  build: "bun run build"
+  test: "bun run test"
+  lint: "bun run lint"
+  dev: "bun run dev"
+  db:generate: "bun run prisma:generate"
+  db:push: "bun run prisma:push"
+  db:migrate: "bun run prisma:migrate"
+
+# Global Rules - Applied to ALL tasks
+rules:
+  # Architecture Rules
+  - "Follow the existing Next.js 15 App Router patterns"
+  - "All server actions must return ActionResult<T> type: { success: boolean; data?: T; error?: string }"
+  - "Use Zod schemas from lib/validations/ for input validation"
+  - "Dashboard pages MUST use ContentCard pattern from components/dashboard/content-card.tsx"
+  - "Never use PageContainer - always use ContentCard"
+
+  # Database Rules
+  - "All Prisma models must have @@map with snake_case table names"
+  - "Use cascade delete for child relations, SetNull for optional relations"
+  - "Add @@index for all foreign keys and common query patterns"
+  - "Prices must be stored in CENTEN (cents), not euros"
+  - "All models need createdAt and updatedAt timestamps"
+
+  # Styling Rules
+  - "Use CSS variables from globals.css, never hardcode colors"
+  - "Primary color is blue: oklch(0.43 0.215 254.5)"
+  - "Use theme tokens: --foreground, --background, --primary, --border"
+  - "Import components from @/components/ui/ (shadcn)"
+
+  # Code Style Rules
+  - "Use TypeScript strict mode"
+  - "Prefer async Server Components, use 'use client' only when needed"
+  - "Import types with 'import type'"
+  - "Use path aliases: @/* for imports"
+
+  # Security Rules
+  - "Validate user session before any mutation"
+  - "Check workspace/agency membership for protected resources"
+  - "Never expose internal IDs in URLs without slug alternative"
+
+# Boundaries - Files that should NEVER be modified
+boundaries:
+  - "components/ui/*"              # Shadcn components - don't touch
+  - "lib/auth.ts"                  # Auth config - careful
+  - "prisma/migrations/*"          # Never edit migrations manually
+  - "node_modules/*"
+  - ".next/*"
+  - "generated/*"
+
+# Capabilities
+capabilities:
+  browser: false                   # No browser automation needed
+  parallel: true                   # Allow parallel execution
+  max_parallel: 2                  # Max 2 agents at once (safe for DB)
+
+# AI Engine Settings
+engine:
+  default: "claude"
+  model_override: null             # Use default model
+
+# Git Settings
+git:
+  branch_prefix: "ralphy"
+  create_pr: true
+  draft_pr: true                   # Create as draft for review
+  base_branch: "main"
+
+# Progress Tracking
+progress:
+  file: ".ralphy/progress.txt"
+  verbose: true

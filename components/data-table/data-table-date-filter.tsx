@@ -1,7 +1,7 @@
 "use client";
 
 import type { Column } from "@tanstack/react-table";
-import { CalendarIcon, XCircle } from "lucide-react";
+import { Calendar as CalendarIcon, XCircle } from "@phosphor-icons/react/dist/ssr"
 import * as React from "react";
 import type { DateRange } from "react-day-picker";
 

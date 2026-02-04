@@ -7,7 +7,7 @@ import { Metadata } from "next"
 import { constructMetadata } from "@/lib/constructMetadata"
 import BlurImage from "@/lib/blog/blur-image"
 import { formatDate } from "@/lib/utils"
-import { Twitter, Linkedin, Github, Globe } from "lucide-react"
+import { XLogo as Twitter, LinkedinLogo as Linkedin, GithubLogo as Github, Globe } from "@phosphor-icons/react/dist/ssr"
 
 export async function generateStaticParams() {
   return allAuthors.map((author) => ({

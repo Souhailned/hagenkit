@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/app/actions/user";
 import { getCurrentWorkspace } from "@/app/actions/workspace-settings";
 import { SettingsNavigation } from "@/components/settings/settings-navigation";
 import { SettingsContent } from "@/components/settings/settings-content";
+import { ContentCard, ContentCardHeader, ContentCardBody } from "@/components/dashboard/content-card";
 
 export default async function DashboardSettingsPage() {
   const user = await getCurrentUser();
@@ -22,16 +23,9 @@ export default async function DashboardSettingsPage() {
   const isAdmin = isWorkspaceAdmin || isPlatformAdmin;
 
   return (
-    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col gap-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your account and workspace preferences
-          </p>
-        </div>
-
+    <ContentCard>
+      <ContentCardHeader title="Settings" />
+      <ContentCardBody className="p-6">
         {/* Main Content Grid */}
         <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
           {/* Sidebar Navigation */}
@@ -50,7 +44,7 @@ export default async function DashboardSettingsPage() {
             isAdmin={isAdmin}
           />
         </div>
-      </div>
-    </div>
+      </ContentCardBody>
+    </ContentCard>
   );
 }

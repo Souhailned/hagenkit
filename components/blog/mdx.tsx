@@ -16,6 +16,8 @@ import {
   allBlogPosts,
   allChangelogPosts,
   allHelpPosts,
+  type BlogPost,
+  type ChangelogPost,
 } from "content-collections"
 import Link from "next/link"
 
@@ -37,7 +39,7 @@ import { Video } from "./video"
 import ZoomImage from "./zoom-image"
 
 const CustomLink = (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
-  const href = props.href
+  const href = props.href ?? ""
 
   if (href.startsWith("/")) {
     return (
@@ -313,10 +315,10 @@ const components = {
         .filter((post) => post.publishedAt <= props.before)
         .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
         .slice(0, props.count)
-        .map((post: Record<string, unknown>) => (
+        .map((post: BlogPost | ChangelogPost) => (
           <li key={post.slug}>
             <Link
-              href={`/${post.type === "BlogPost" ? "blog" : "changelog"}/${
+              href={`/${post._meta.directory.includes("blog") ? "blog" : "changelog"}/${
                 post.slug
               }`}
               className="group flex items-center justify-between rounded-lg px-2 py-3 transition-colors hover:bg-warm-grey-2/20 active:bg-warm-grey-2/30 sm:px-4"
@@ -365,7 +367,8 @@ const components = {
     }[]
   }) => {
     const MDXImage = (props: React.ImgHTMLAttributes<HTMLImageElement>) => {
-      return <ZoomImage {...props} />
+      if (!props.src || typeof props.src !== "string") return null
+      return <ZoomImage src={props.src} alt={props.alt || ""} />
     }
 
     return (
@@ -524,12 +527,12 @@ interface MDXProps {
 
 export function MDX({ code, images, className }: MDXProps) {
   const MDXImage = (props: React.ImgHTMLAttributes<HTMLImageElement>) => {
-    if (!images) return null
+    if (!images || !props.src || typeof props.src !== "string") return null
     const blurDataURL = images.find(
       (image) => image.src === props.src,
     )?.blurDataURL
 
-    return <ZoomImage {...props} blurDataURL={blurDataURL} />
+    return <ZoomImage src={props.src} alt={props.alt || ""} blurDataURL={blurDataURL} />
   }
 
   return (

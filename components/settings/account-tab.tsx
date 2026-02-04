@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconTrash } from "@tabler/icons-react";
-import { Loader2 } from "lucide-react";
+import { CircleNotch } from "@phosphor-icons/react/dist/ssr"
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -108,7 +108,7 @@ export function AccountTab() {
                 disabled={isDeleting}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isDeleting && <CircleNotch className="mr-2 h-4 w-4 animate-spin" />}
                 Delete Account
               </AlertDialogAction>
             </AlertDialogFooter>

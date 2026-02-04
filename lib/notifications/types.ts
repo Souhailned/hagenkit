@@ -14,7 +14,6 @@ export enum EmailTemplateId {
 
   // Authentication
   PASSWORD_RESET = "password-reset",
-  MAGIC_LINK = "magic-link",
 }
 
 /**
@@ -42,12 +41,6 @@ export type EmailTemplateData = {
   [EmailTemplateId.PASSWORD_RESET]: {
     firstName: string;
     resetUrl: string;
-    expiresInMinutes: number;
-  };
-
-  [EmailTemplateId.MAGIC_LINK]: {
-    firstName: string;
-    magicLinkUrl: string;
     expiresInMinutes: number;
   };
 };

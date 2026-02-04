@@ -1,14 +1,7 @@
 "use client";
 
 import type { Column, ColumnMeta, Table } from "@tanstack/react-table";
-import {
-  CalendarIcon,
-  Check,
-  ChevronsUpDown,
-  GripVertical,
-  ListFilter,
-  Trash2,
-} from "lucide-react";
+import { Calendar as CalendarIcon, Check, CaretUpDown, DotsSixVertical, Funnel, Trash } from "@phosphor-icons/react/dist/ssr"
 import { parseAsStringEnum, useQueryState } from "nuqs";
 import * as React from "react";
 
@@ -227,7 +220,7 @@ export function DataTableFilterList<TData>({
             className="font-normal"
             onKeyDown={onTriggerKeyDown}
           >
-            <ListFilter className="text-muted-foreground" />
+            <Funnel className="text-muted-foreground" />
             Filter
             {filters.length > 0 && (
               <Badge
@@ -436,7 +429,7 @@ function DataTableFilterItem<TData>({
                 {columns.find((column) => column.id === filter.id)?.columnDef
                   .meta?.label ?? "Select field"}
               </span>
-              <ChevronsUpDown className="opacity-50" />
+              <CaretUpDown className="opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent
@@ -534,11 +527,11 @@ function DataTableFilterItem<TData>({
           className="size-8 rounded"
           onClick={() => onFilterRemove(filter.filterId)}
         >
-          <Trash2 />
+          <Trash />
         </Button>
         <SortableItemHandle asChild>
           <Button variant="outline" size="icon" className="size-8 rounded">
-            <GripVertical />
+            <DotsSixVertical />
           </Button>
         </SortableItemHandle>
       </li>

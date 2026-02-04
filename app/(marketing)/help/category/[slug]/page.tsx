@@ -4,7 +4,7 @@ import { POPULAR_ARTICLES, HELP_CATEGORIES } from "@/lib/blog/content";
 import MaxWidthWrapper from "@/components/blog/max-width-wrapper";
 import SearchButton from "@/components/blog/search-button";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { CaretRight } from "@phosphor-icons/react/dist/ssr"
 import HelpArticleLink from "@/components/blog/help-article-link";
 import { Metadata } from "next";
 import { constructMetadata } from "@/lib/constructMetadata";
@@ -29,10 +29,10 @@ export async function generateMetadata({
   const { title, description } = category;
 
   return constructMetadata({
-    title: `${title} – HagenKit Help Center`,
+    title: `${title} – DataRAG Help Center`,
     description:
       description ||
-      "Browse curated guides and how-tos from the HagenKit support team.",
+      "Browse curated guides and how-tos from the DataRAG support team.",
     image: `/api/og/help?title=${encodeURIComponent(
       title
     )}&summary=${encodeURIComponent(description)}`,
@@ -78,7 +78,7 @@ export default async function HelpCategory({
             >
               All Categories
             </Link>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <CaretRight className="h-4 w-4 text-gray-400" />
             <Link
               href={`/help/category/${data.slug}`}
               className="text-sm font-medium text-gray-500 hover:text-gray-800"

@@ -1,9 +1,13 @@
-import { DashboardProEmptyState } from "@/components/dashboard/empty-state-pro"
+import { ContentCard, ContentCardHeader, ContentCardBody } from "@/components/dashboard/content-card";
+import { DashboardProEmptyState } from "@/components/dashboard/empty-state-pro";
 
-export default async function Home() {
+export default async function DashboardPage() {
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] p-8">
-      <DashboardProEmptyState />
-    </div>
-  )
+    <ContentCard>
+      <ContentCardHeader title="Dashboard" />
+      <ContentCardBody className="flex items-center justify-center">
+        <DashboardProEmptyState />
+      </ContentCardBody>
+    </ContentCard>
+  );
 }

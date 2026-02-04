@@ -162,7 +162,7 @@ export function OnboardingFlow({ userName, userEmail }: OnboardingFlowProps) {
                 <div className="relative">
                   <Image
                     src="https://pbs.twimg.com/profile_images/1706595242009387008/_mNR89Xa_400x400.jpg"
-                    alt="Codehagen"
+                    alt="DataRAG"
                     width={96}
                     height={96}
                     className="rounded-full border-4 border-primary/20 shadow-lg"
@@ -229,12 +229,12 @@ export function OnboardingFlow({ userName, userEmail }: OnboardingFlowProps) {
               <p className="px-8 text-center text-sm text-muted-foreground">
                 Need help? Message us{" "}
                 <a
-                  href="https://x.com/codehagen"
+                  href={siteConfig.links.twitter}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline underline-offset-4 hover:text-primary"
                 >
-                  x.com/codehagen
+                  {siteConfig.links.twitter.replace("https://", "")}
                 </a>
               </p>
             </>
@@ -502,12 +502,12 @@ export function OnboardingFlow({ userName, userEmail }: OnboardingFlowProps) {
               <p className="px-8 text-center text-sm text-muted-foreground">
                 Need help? Message us{" "}
                 <a
-                  href="https://x.com/codehagen"
+                  href={siteConfig.links.twitter}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline underline-offset-4 hover:text-primary"
                 >
-                  x.com/codehagen
+                  {siteConfig.links.twitter.replace("https://", "")}
                 </a>
               </p>
             </>

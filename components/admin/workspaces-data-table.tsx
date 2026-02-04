@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Trash2, Users } from "lucide-react";
+import { DotsThree, Pencil, Trash, Users } from "@phosphor-icons/react/dist/ssr"
 import { WorkspaceEditDialog } from "@/components/admin/workspace-edit-dialog";
 import { WorkspaceDeleteAlert } from "@/components/admin/workspace-delete-alert";
 import { format } from "date-fns";
@@ -149,7 +149,7 @@ export function WorkspacesDataTable({ data, pageCount, total }: WorkspacesDataTa
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 p-0">
                   <span className="sr-only">Open menu</span>
-                  <MoreHorizontal className="h-4 w-4" />
+                  <DotsThree className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -171,7 +171,7 @@ export function WorkspacesDataTable({ data, pageCount, total }: WorkspacesDataTa
                   }}
                   className="text-destructive"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash className="h-4 w-4 mr-2" />
                   Delete workspace
                 </DropdownMenuItem>
               </DropdownMenuContent>

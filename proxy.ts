@@ -1,26 +1,27 @@
-// For now, we're using the simpler approach:
-// 1. Sign-up redirects to /onboarding (components/auth/sign-up.tsx)
-// 2. Dashboard layout checks onboardingCompleted (app/dashboard/layout.tsx)
-// This works well for our current use case and is easier to maintain.
+// Next.js 16+ Proxy with full session validation
+// Uses auth.api.getSession() for database-backed session checks
+// Ref: https://www.better-auth.com/docs/integrations/next
 
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionCookie } from "better-auth/cookies";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 
 export async function proxy(request: NextRequest) {
-  const sessionCookie = getSessionCookie(request);
   const { pathname } = request.nextUrl;
 
+  // Get session with full database validation (Next.js 16+ with nodejs runtime)
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
   // Redirect authenticated users away from auth pages
-  if (sessionCookie && ["/sign-in", "/sign-up"].includes(pathname)) {
+  if (session && ["/sign-in", "/sign-up"].includes(pathname)) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Quick redirect for unauthenticated users (cookie check only)
-  // Note: This only checks cookie existence, not validity
-  // Actual authentication verification happens in server components
-  if (!sessionCookie) {
-    // Protected routes that require authentication
-    const protectedPaths = ["/dashboard", "/admin", "/onboarding"];
+  // Redirect unauthenticated users away from protected routes
+  if (!session) {
+    const protectedPaths = ["/dashboard", "/admin", "/onboarding", "/settings", "/app-ideas"];
 
     const isProtectedPath = protectedPaths.some((path) =>
       pathname.startsWith(path)
@@ -35,6 +36,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Note: Next.js 16 proxy always runs on Node.js runtime (no config needed)
   matcher: [
     "/dashboard/:path*",
     "/admin/:path*",

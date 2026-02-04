@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { CircleNotch } from "@phosphor-icons/react/dist/ssr"
 import { useRouter } from "next/navigation";
 import type { WorkspaceDeleteFields } from "@/types/admin";
 
@@ -79,7 +79,7 @@ export function WorkspaceDeleteAlert({ workspace, open, onOpenChange }: Workspac
             disabled={isLoading}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading && <CircleNotch className="mr-2 h-4 w-4 animate-spin" />}
             Delete Workspace
           </AlertDialogAction>
         </AlertDialogFooter>

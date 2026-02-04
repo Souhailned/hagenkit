@@ -12,7 +12,7 @@ model User {
   id            String     @id
   email         String     @unique
   name          String?
-  role          UserRole   @default(user)
+  role          UserRole   @default(seeker)
   status        UserStatus @default(ACTIVE)
   emailVerified Boolean    @default(false)
   image         String?
@@ -39,6 +39,38 @@ model User {
   // Default workspace
   defaultWorkspaceId String?
   defaultWorkspace   Workspace? @relation("UserDefaultWorkspace", fields: [defaultWorkspaceId], references: [id], onDelete: SetNull)
+
+  // Image processing relations
+  imageProjects      ImageProject[]
+  images             Image[]
+
+  // Project management relations
+  projectsCreated    Project[]       @relation("ProjectCreator")
+  projectMemberships ProjectMember[] @relation("ProjectMembership")
+  tasksAssigned      ProjectTask[]   @relation("TaskAssignee")
+  filesUploaded      ProjectFile[]   @relation("ProjectFileUploader")
+
+  // ============================================
+  // HORECAGROND RELATIONS
+  // ============================================
+
+  // Profile Relations (1:1)
+  seekerProfile     SeekerProfile?
+  agentProfile      AgentProfile?
+
+  // Agency Relations
+  agencyMemberships AgencyMember[]
+  agencyInvitations AgencyInvitation[] @relation("AgencyInvitedBy")
+
+  // Property Relations
+  propertiesCreated Property[]        @relation("PropertyCreator")
+  savedProperties   SavedProperty[]
+  inquiriesMade     PropertyInquiry[] @relation("InquirySeeker")
+  inquiriesAssigned PropertyInquiry[] @relation("InquiryAssignee")
+  propertyViews     PropertyView[]
+
+  // Search Alerts
+  searchAlerts      SearchAlert[]
 
   @@map("user")
 }
@@ -110,6 +142,14 @@ model Workspace {
   sessions    Session[]
   defaultForUsers User[] @relation("UserDefaultWorkspace")
 
+  // Image processing relations
+  imageProjects   ImageProject[]
+  images          Image[]
+
+  // Project management relations
+  projects        Project[]
+  projectTags     ProjectTag[]
+
   @@map("workspace")
 }
 
@@ -152,6 +192,547 @@ model WorkspaceInvitation {
   @@map("workspace_invitation")
 }
 
+// ============================================
+// AGENCY MODELS (Horecagrond)
+// ============================================
+
+model Agency {
+  id                String    @id @default(cuid())
+
+  // Basic Info
+  name              String
+  slug              String    @unique
+  description       String?   @db.Text
+  logo              String?             // Logo URL
+
+  // Contact
+  email             String?
+  phone             String?
+  website           String?
+
+  // Address
+  address           String?
+  city              String?
+  postalCode        String?
+  province          String?
+  country           String    @default("NL")
+
+  // Business Registration
+  kvkNumber         String?             // KvK nummer
+  vatNumber         String?             // BTW nummer
+
+  // Verification
+  verified          Boolean   @default(false)
+  verifiedAt        DateTime?
+  verificationNotes String?
+
+  // Subscription
+  plan              AgencyPlan @default(FREE)
+  planExpiresAt     DateTime?
+  stripeCustomerId  String?             // Voor betalingen
+  stripeSubscriptionId String?
+
+  // Limits based on plan
+  maxListings       Int       @default(3)  // FREE = 3
+  maxAgents         Int       @default(1)  // FREE = 1
+
+  // Stats (cached)
+  totalListings     Int       @default(0)
+  activeListings    Int       @default(0)
+  totalDeals        Int       @default(0)
+
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  members           AgencyMember[]
+  invitations       AgencyInvitation[]
+  properties        Property[]
+  agents            AgentProfile[]
+
+  @@map("agency")
+}
+
+model AgencyMember {
+  id          String     @id @default(cuid())
+  role        AgencyRole @default(AGENT)
+  joinedAt    DateTime   @default(now())
+
+  // Relations
+  userId      String
+  agencyId    String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agency      Agency     @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, agencyId])
+  @@index([agencyId])
+  @@index([userId])
+  @@map("agency_member")
+}
+
+model AgencyInvitation {
+  id          String     @id @default(cuid())
+  email       String
+  role        AgencyRole @default(AGENT)
+  token       String     @unique @default(cuid())
+  message     String?              // Persoonlijk bericht
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime   @default(now())
+
+  // Relations
+  agencyId    String
+  invitedById String
+  agency      Agency     @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  invitedBy   User       @relation("AgencyInvitedBy", fields: [invitedById], references: [id])
+
+  @@index([email])
+  @@index([agencyId])
+  @@map("agency_invitation")
+}
+
+// ============================================
+// PROFILE MODELS (Horecagrond)
+// ============================================
+
+model SeekerProfile {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Business Intent
+  businessType      String?             // Wat wil je openen?
+  conceptDescription String?   @db.Text // Beschrijf je concept
+  experienceYears   Int?                // Jaren ervaring in horeca
+  hasBusinessPlan   Boolean   @default(false)
+
+  // Search Preferences
+  budgetMin         Int?                // Minimum budget (centen)
+  budgetMax         Int?                // Maximum budget (centen)
+  preferredCities   String[]            // Voorkeur steden
+  preferredProvinces String[]           // Voorkeur provincies
+  preferredTypes    PropertyType[]      // Voorkeur pand types
+  minSurface        Int?                // Minimum m2
+  maxSurface        Int?                // Maximum m2
+
+  // Required Features
+  mustHaveFeatures  String[]            // Feature keys die must-have zijn
+  niceToHaveFeatures String[]           // Feature keys die nice-to-have zijn
+
+  // Notifications
+  emailAlerts       Boolean   @default(true)
+  pushAlerts        Boolean   @default(false)
+  alertFrequency    AlertFrequency @default(DAILY)
+
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("seeker_profile")
+}
+
+model AgentProfile {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agencyId          String
+  agency            Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  // Professional Info
+  title             String?             // Functietitel
+  phone             String?
+  phonePublic       Boolean   @default(false)
+  bio               String?   @db.Text
+  avatar            String?             // Profielfoto URL
+
+  // Specialization
+  specializations   PropertyType[]      // Specialisaties
+  regions           String[]            // Werkgebied (steden/provincies)
+  languages         String[]            // Gesproken talen
+
+  // Verification
+  verified          Boolean   @default(false)
+  verifiedAt        DateTime?
+  verificationNotes String?
+
+  // Performance Stats (cached, updated periodically)
+  listingsCount     Int       @default(0)
+  activeListings    Int       @default(0)
+  dealsClosedCount  Int       @default(0)
+  avgResponseMinutes Int?               // Gemiddelde reactietijd
+  rating            Float?              // 1-5 rating
+
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([agencyId])
+  @@map("agent_profile")
+}
+
+// ============================================
+// PROPERTY MODELS (Horecagrond)
+// ============================================
+
+model Property {
+  id                String          @id @default(cuid())
+
+  // Ownership
+  agencyId          String
+  agency            Agency          @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  createdById       String
+  createdBy         User            @relation("PropertyCreator", fields: [createdById], references: [id])
+
+  // Basic Info
+  title             String
+  slug              String          @unique
+  description       String?         @db.Text
+  shortDescription  String?         // Voor previews (max 200 chars)
+
+  // Location
+  address           String
+  addressLine2      String?
+  city              String
+  postalCode        String
+  province          String?
+  country           String          @default("NL")
+  latitude          Float?
+  longitude         Float?
+  neighborhood      String?         // Buurt/wijk
+
+  // Pricing
+  priceType         PriceType
+  rentPrice         Int?            // Per maand in CENTEN (dus 4500 euro = 450000)
+  rentPriceMin      Int?            // Voor onderhandelbaar
+  salePrice         Int?            // In CENTEN
+  salePriceMin      Int?            // Voor onderhandelbaar
+  priceNegotiable   Boolean         @default(true)
+  servicesCosts     Int?            // Servicekosten per maand (centen)
+  depositMonths     Int?            // Aantal maanden borg
+
+  // Dimensions
+  surfaceTotal      Int             // Totaal m2
+  surfaceCommercial Int?            // Commercieel/horeca m2
+  surfaceKitchen    Int?            // Keuken m2
+  surfaceStorage    Int?            // Opslag m2
+  surfaceTerrace    Int?            // Terras m2
+  surfaceBasement   Int?            // Kelder m2
+  floors            Int             @default(1)
+  ceilingHeight     Float?          // Plafondhoogte in meters
+
+  // Classification
+  propertyType      PropertyType
+  status            PropertyStatus  @default(DRAFT)
+
+  // Horeca Specifics
+  seatingCapacityInside  Int?       // Zitplaatsen binnen
+  seatingCapacityOutside Int?       // Zitplaatsen buiten/terras
+  standingCapacity       Int?       // Staanplaatsen
+  kitchenType       String?         // "none", "basic", "professional", "industrial"
+  hasBasement       Boolean         @default(false)
+  hasStorage        Boolean         @default(false)
+  hasTerrace        Boolean         @default(false)
+  hasParking        Boolean         @default(false)
+  parkingSpaces     Int?
+
+  // Previous Use
+  previousUse       String?         // Beschrijving vorig gebruik
+  wasHoreca         Boolean         @default(false)
+  previousHorecaType PropertyType?  // Als het horeca was, welk type?
+  yearsHoreca       Int?            // Hoe lang was het horeca?
+
+  // Building Info
+  buildYear         Int?
+  lastRenovation    Int?
+  monumentStatus    Boolean         @default(false)  // Monumentaal pand?
+  energyLabel       String?         // A+++ tot G
+
+  // Scores (AI/Platform berekend)
+  horecaScore       String?         // A+ tot F
+  horecaScoreDetails Json?          // Breakdown van de score
+  locationScore     Int?            // 1-100
+  footfallEstimate  Int?            // Geschatte passanten/dag
+
+  // SEO & Marketing
+  metaTitle         String?
+  metaDescription   String?
+  featured          Boolean         @default(false)  // Homepage featured
+  featuredUntil     DateTime?
+  boostUntil        DateTime?       // Betaalde boost
+
+  // Availability
+  availableFrom     DateTime?
+  availableUntil    DateTime?       // Voor tijdelijke verhuur
+  minimumLeaseTerm  Int?            // Minimum huurtermijn in maanden
+
+  // Publishing
+  publishedAt       DateTime?
+  expiresAt         DateTime?       // Auto-expire listing
+  viewCount         Int             @default(0)      // Cached view count
+  inquiryCount      Int             @default(0)      // Cached inquiry count
+  savedCount        Int             @default(0)      // Cached favorites count
+
+  // Admin
+  adminNotes        String?         @db.Text
+  rejectionReason   String?
+
+  // Timestamps
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  images            PropertyImage[]
+  features          PropertyFeature[]
+  inquiries         PropertyInquiry[]
+  savedBy           SavedProperty[]
+  views             PropertyView[]
+  imageProjects     ImageProject[]  // Link naar AI processing
+
+  // Indexes voor zoeken
+  @@index([agencyId])
+  @@index([createdById])
+  @@index([city])
+  @@index([province])
+  @@index([status])
+  @@index([propertyType])
+  @@index([priceType])
+  @@index([publishedAt])
+  @@index([status, propertyType])
+  @@index([status, city])
+  @@index([rentPrice])
+  @@index([salePrice])
+  @@index([surfaceTotal])
+
+  @@map("property")
+}
+
+model PropertyImage {
+  id              String    @id @default(cuid())
+  propertyId      String
+  property        Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // URLs
+  originalUrl     String              // Originele upload
+  thumbnailUrl    String?             // Thumbnail (300px)
+  mediumUrl       String?             // Medium (800px)
+  largeUrl        String?             // Large (1600px)
+  enhancedUrl     String?             // AI verbeterde versie
+
+  // Metadata
+  type            PropertyImageType @default(INTERIOR)
+  caption         String?
+  altText         String?
+  order           Int       @default(0)
+  isPrimary       Boolean   @default(false)  // Hoofdafbeelding
+
+  // AI Processing
+  aiProcessed     Boolean   @default(false)
+  aiPrompt        String?
+  aiStyle         String?             // Style template gebruikt
+
+  // File Info
+  filename        String?
+  mimeType        String?
+  fileSize        Int?                // Bytes
+  width           Int?
+  height          Int?
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([propertyId])
+  @@index([propertyId, order])
+  @@map("property_image")
+}
+
+model PropertyFeature {
+  id          String          @id @default(cuid())
+  propertyId  String
+  property    Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Feature Definition
+  category    FeatureCategory
+  key         String                    // Bijv: "alcohol_license"
+  value       String?                   // Bijv: "24_hours" of "true"
+  numericValue Int?                     // Voor numerieke waarden
+  booleanValue Boolean?                 // Voor ja/nee waarden
+
+  // Verification
+  verified    Boolean         @default(false)
+  verifiedAt  DateTime?
+  verifiedBy  String?                   // Admin user ID
+  documentUrl String?                   // Bewijs document
+
+  // Display
+  displayOrder Int            @default(0)
+  highlighted  Boolean        @default(false)  // Uitgelicht in listing
+
+  @@unique([propertyId, key])
+  @@index([propertyId])
+  @@index([propertyId, category])
+  @@map("property_feature")
+}
+
+model PropertyInquiry {
+  id              String        @id @default(cuid())
+
+  // Parties
+  propertyId      String
+  property        Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  seekerId        String?       // Null als niet ingelogd
+  seeker          User?         @relation("InquirySeeker", fields: [seekerId], references: [id], onDelete: SetNull)
+
+  // Contact Info (voor niet-ingelogde of aanvullende info)
+  name            String
+  email           String
+  phone           String?
+  company         String?                 // Bedrijfsnaam indien van toepassing
+
+  // Inquiry Content
+  message         String        @db.Text
+  intendedUse     String?                 // "restaurant", "cafe", etc.
+  conceptDescription String?    @db.Text  // Beschrijving van hun concept
+  budget          Int?                    // Budget in centen
+  timeline        String?                 // "asap", "1-3 months", etc.
+  financing       String?                 // "eigen", "bank", "investor"
+
+  // Source Tracking
+  source          InquirySource @default(WEBSITE)
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  referrer        String?
+
+  // Status & Assignment
+  status          InquiryStatus @default(NEW)
+  assignedToId    String?
+  assignedTo      User?         @relation("InquiryAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  // Agent Notes (intern, niet zichtbaar voor seeker)
+  agentNotes      String?       @db.Text
+  qualityScore    Int?                    // 1-5 lead kwaliteit
+  priority        String?                 // "hot", "warm", "cold"
+
+  // Follow-up
+  viewingDate     DateTime?
+  viewingNotes    String?
+  lastContactAt   DateTime?
+  nextFollowUpAt  DateTime?
+  followUpCount   Int           @default(0)
+
+  // Outcome
+  closedAt        DateTime?
+  closedReason    String?                 // Reden van sluiten
+  dealValue       Int?                    // Waarde van deal (indien gewonnen)
+
+  // Timestamps
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([propertyId])
+  @@index([seekerId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("property_inquiry")
+}
+
+model SavedProperty {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyId  String
+  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Optional notes
+  notes       String?   @db.Text
+  folder      String?             // Voor organisatie ("favorites", "maybe", "compare")
+
+  savedAt     DateTime  @default(now())
+
+  @@unique([userId, propertyId])
+  @@index([userId])
+  @@index([propertyId])
+  @@map("saved_property")
+}
+
+model PropertyView {
+  id          String    @id @default(cuid())
+  propertyId  String
+  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  userId      String?             // Null als niet ingelogd
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Session tracking
+  sessionId   String?             // Voor anonymous tracking
+  ipHash      String?             // Gehashte IP voor unique views
+
+  // View details
+  viewedAt    DateTime  @default(now())
+  duration    Int?                // Seconden op pagina
+  source      String?             // "search", "direct", "email", "social"
+  deviceType  String?             // "mobile", "desktop", "tablet"
+
+  // Engagement
+  viewedImages      Boolean @default(false)
+  viewedMap         Boolean @default(false)
+  viewedContact     Boolean @default(false)
+  clickedPhone      Boolean @default(false)
+  clickedEmail      Boolean @default(false)
+  savedProperty     Boolean @default(false)
+  madeInquiry       Boolean @default(false)
+
+  @@index([propertyId])
+  @@index([userId])
+  @@index([viewedAt])
+  @@index([propertyId, viewedAt])
+  @@map("property_view")
+}
+
+model SearchAlert {
+  id            String          @id @default(cuid())
+  userId        String
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Alert Info
+  name          String                    // "Cafe in Amsterdam"
+  active        Boolean         @default(true)
+
+  // Search Criteria (stored as JSON for flexibility)
+  criteria      Json                      // Alle filter criteria
+
+  // Structured criteria for common filters (voor queries)
+  cities        String[]
+  provinces     String[]
+  propertyTypes PropertyType[]
+  priceMin      Int?
+  priceMax      Int?
+  surfaceMin    Int?
+  surfaceMax    Int?
+  priceType     PriceType?
+  mustHaveFeatures String[]
+
+  // Notification Settings
+  frequency     AlertFrequency  @default(DAILY)
+  emailEnabled  Boolean         @default(true)
+  pushEnabled   Boolean         @default(false)
+
+  // Stats
+  lastSentAt    DateTime?
+  matchCount    Int             @default(0)  // Totaal matches ooit
+  lastMatchCount Int            @default(0)  // Matches sinds laatste notificatie
+
+  // Timestamps
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([active])
+  @@map("search_alert")
+}
+
 // Role enum for workspace members
 enum Role {
   OWNER
@@ -162,8 +743,118 @@ enum Role {
 
 // User role enum for application-wide permissions
 enum UserRole {
-  user
-  admin
+  seeker    // Horeca ondernemer die zoekt
+  agent     // Makelaar/aanbieder
+  admin     // Platform beheerder
+}
+
+// ============================================
+// AGENCY ENUMS
+// ============================================
+
+enum AgencyRole {
+  OWNER     // Volledige controle
+  ADMIN     // Kan members beheren
+  AGENT     // Kan listings beheren
+  VIEWER    // Alleen lezen
+}
+
+enum AgencyPlan {
+  FREE        // 3 actieve listings
+  PRO         // Onbeperkt + analytics
+  ENTERPRISE  // Team + API + white-label
+}
+
+// ============================================
+// PROPERTY ENUMS
+// ============================================
+
+enum PropertyType {
+  RESTAURANT
+  CAFE
+  BAR
+  HOTEL
+  DARK_KITCHEN
+  NIGHTCLUB
+  FOOD_COURT
+  FOOD_TRUCK_SPOT
+  CATERING
+  BAKERY
+  OTHER
+}
+
+enum PropertyStatus {
+  DRAFT           // Nog niet gepubliceerd
+  PENDING_REVIEW  // Wacht op admin goedkeuring
+  ACTIVE          // Live en zichtbaar
+  UNDER_OFFER     // In onderhandeling
+  RENTED          // Verhuurd
+  SOLD            // Verkocht
+  ARCHIVED        // Niet meer actief
+  REJECTED        // Afgekeurd door admin
+}
+
+enum PriceType {
+  RENT          // Alleen te huur
+  SALE          // Alleen te koop
+  RENT_OR_SALE  // Beide opties
+}
+
+enum FeatureCategory {
+  LICENSE       // Vergunningen
+  FACILITY      // Faciliteiten (keuken, afzuiging)
+  UTILITY       // Voorzieningen (parkeren, opslag)
+  ACCESSIBILITY // Toegankelijkheid
+}
+
+// ============================================
+// INQUIRY ENUMS
+// ============================================
+
+enum InquiryStatus {
+  NEW               // Nieuwe aanvraag
+  VIEWED            // Bekeken door agent
+  CONTACTED         // Contact opgenomen
+  VIEWING_SCHEDULED // Bezichtiging gepland
+  NEGOTIATING       // In onderhandeling
+  CLOSED_WON        // Deal gesloten
+  CLOSED_LOST       // Niet doorgegaan
+  SPAM              // Spam/ongeldig
+}
+
+enum InquirySource {
+  WEBSITE       // Via platform
+  PHONE         // Telefonisch
+  EMAIL         // Direct email
+  REFERRAL      // Doorverwijzing
+  WALK_IN       // Spontaan bezoek
+}
+
+// ============================================
+// SEARCH ALERT ENUMS
+// ============================================
+
+enum AlertFrequency {
+  INSTANT   // Direct bij match
+  DAILY     // Dagelijkse digest
+  WEEKLY    // Wekelijkse digest
+}
+
+// ============================================
+// PROPERTY IMAGE ENUM
+// ============================================
+
+enum PropertyImageType {
+  EXTERIOR        // Buitenkant
+  INTERIOR        // Binnenkant algemeen
+  KITCHEN         // Keuken
+  TERRACE         // Terras
+  BATHROOM        // Sanitair
+  STORAGE         // Opslag/kelder
+  FLOORPLAN       // Plattegrond
+  LOCATION        // Locatie/buurt
+  RENDER          // AI render/visualisatie
+  OTHER
 }
 
 // User account status enum
@@ -171,4 +862,403 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
   DELETED
+}
+
+// ============================================
+// PROJECT MANAGEMENT MODELS
+// ============================================
+
+// Main Project model for project management
+model Project {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById   String
+  createdBy     User     @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  // Basic info
+  name          String
+  description   String?  @db.Text
+
+  // Status & Priority
+  status        PMProjectStatus @default(BACKLOG)
+  priority      PMPriority      @default(MEDIUM)
+  progress      Int             @default(0) // 0-100 percentage
+
+  // Timing
+  startDate     DateTime?
+  endDate       DateTime?
+  estimate      String?          // "1 month", "2 weeks"
+  deadlineType  PMDeadlineType   @default(NONE)
+
+  // Categorization
+  intent        PMProjectIntent?
+  successType   PMSuccessType    @default(UNDEFINED)
+  structure     PMWorkStructure?
+
+  // Labels & Client
+  typeLabel     String?          // "MVP", "Revamp", "Audit"
+  groupLabel    String?          // Project group
+  label         String?          // "Design", "Development"
+  clientName    String?
+  location      String?
+
+  // Sprint & Sync
+  sprints       String?
+  lastSyncAt    DateTime?
+
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  members       ProjectMember[]
+  tasks         ProjectTask[]
+  deliverables  ProjectDeliverable[]
+  metrics       ProjectMetric[]
+  scopeItems    ProjectScopeItem[]
+  features      ProjectFeature[]
+  files         ProjectFile[]
+  tags          ProjectTagAssignment[]
+
+  @@index([workspaceId])
+  @@index([createdById])
+  @@index([status])
+  @@index([priority])
+  @@index([workspaceId, status])
+  @@map("project")
+}
+
+// Project member (Owner, PIC, Contributors, Stakeholders)
+model ProjectMember {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation("ProjectMembership", fields: [userId], references: [id], onDelete: Cascade)
+
+  role        PMProjectRole    @default(CONTRIBUTOR)
+  access      PMAccessLevel    @default(CAN_EDIT)
+  joinedAt    DateTime         @default(now())
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_member")
+}
+
+// Project tasks
+model ProjectTask {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assigneeId  String?
+  assignee    User?    @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  name        String
+  description String?  @db.Text
+  status      PMTaskStatus @default(TODO)
+  startDate   DateTime?
+  endDate     DateTime?
+  order       Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([projectId, status])
+  @@map("project_task")
+}
+
+// Project deliverables (for deliverable-based success)
+model ProjectDeliverable {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  title       String
+  dueDate     DateTime?
+  completed   Boolean  @default(false)
+  order       Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@map("project_deliverable")
+}
+
+// Project metrics (for metric-based success)
+model ProjectMetric {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name        String
+  target      String?
+  current     String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@map("project_metric")
+}
+
+// Project scope items (in-scope, out-of-scope, expected outcomes)
+model ProjectScopeItem {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  type        PMScopeType
+  content     String
+  order       Int      @default(0)
+
+  createdAt   DateTime @default(now())
+
+  @@index([projectId])
+  @@index([projectId, type])
+  @@map("project_scope_item")
+}
+
+// Project features (P0, P1, P2)
+model ProjectFeature {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  priority    PMFeaturePriority
+  content     String
+  order       Int      @default(0)
+
+  createdAt   DateTime @default(now())
+
+  @@index([projectId])
+  @@index([projectId, priority])
+  @@map("project_feature")
+}
+
+// Project files/attachments
+model ProjectFile {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedById String
+  uploadedBy   User     @relation("ProjectFileUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  name         String
+  url          String
+  size         Int               // Size in bytes
+  type         PMFileType        @default(OTHER)
+
+  uploadedAt   DateTime @default(now())
+
+  @@index([projectId])
+  @@map("project_file")
+}
+
+// Tags for projects (workspace-scoped)
+model ProjectTag {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  name        String
+  color       String?  // Hex color code
+
+  createdAt   DateTime @default(now())
+
+  // Relations
+  projects    ProjectTagAssignment[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+  @@map("project_tag")
+}
+
+// Junction table for Project-Tag many-to-many
+model ProjectTagAssignment {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tagId       String
+  tag         ProjectTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  assignedAt  DateTime @default(now())
+
+  @@unique([projectId, tagId])
+  @@index([projectId])
+  @@index([tagId])
+  @@map("project_tag_assignment")
+}
+
+// ============================================
+// PROJECT MANAGEMENT ENUMS
+// ============================================
+
+enum PMProjectStatus {
+  ACTIVE
+  PLANNED
+  BACKLOG
+  COMPLETED
+  CANCELLED
+}
+
+enum PMPriority {
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum PMDeadlineType {
+  NONE
+  TARGET
+  FIXED
+}
+
+enum PMProjectIntent {
+  DELIVERY
+  EXPERIMENT
+  INTERNAL
+}
+
+enum PMSuccessType {
+  DELIVERABLE
+  METRIC
+  UNDEFINED
+}
+
+enum PMWorkStructure {
+  LINEAR
+  MILESTONES
+  MULTISTREAM
+}
+
+enum PMProjectRole {
+  OWNER
+  PIC         // Person In Charge
+  CONTRIBUTOR
+  STAKEHOLDER
+  SUPPORT
+}
+
+enum PMAccessLevel {
+  FULL_ACCESS
+  CAN_EDIT
+  CAN_VIEW
+}
+
+enum PMTaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum PMScopeType {
+  IN_SCOPE
+  OUT_OF_SCOPE
+  EXPECTED_OUTCOME
+}
+
+enum PMFeaturePriority {
+  P0  // Must-have
+  P1  // Should-have
+  P2  // Nice-to-have
+}
+
+enum PMFileType {
+  PDF
+  ZIP
+  FIGMA
+  DOC
+  IMAGE
+  OTHER
+}
+
+// ============================================
+// AI IMAGE PROCESSING MODELS
+// ============================================
+
+// Project for organizing image processing jobs
+model ImageProject {
+  id              String        @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Optionele link naar Property (Horecagrond)
+  propertyId      String?
+  property        Property?     @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  name            String
+  styleTemplateId String        @default("modern")
+  roomType        String?
+  thumbnailUrl    String?
+
+  status          ProjectStatus @default(PENDING)
+  imageCount      Int           @default(0)
+  completedCount  Int           @default(0)
+
+  images          Image[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([propertyId])
+  @@map("image_project")
+}
+
+// Image record for AI processing
+model Image {
+  id               String      @id @default(cuid())
+  workspaceId      String
+  workspace        Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId        String
+  project          ImageProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  originalImageUrl String
+  resultImageUrl   String?
+  prompt           String      @db.Text
+
+  version          Int         @default(1)
+  parentId         String?
+  parent           Image?      @relation("ImageVersions", fields: [parentId], references: [id], onDelete: SetNull)
+  versions         Image[]     @relation("ImageVersions")
+
+  status           ImageStatus @default(PENDING)
+  errorMessage     String?
+  metadata         Json?
+
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([parentId])
+  @@index([userId])
+  @@map("image")
+}
+
+// Project status enum
+enum ProjectStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// Image status enum
+enum ImageStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }

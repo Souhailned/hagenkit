@@ -42,6 +42,14 @@ export interface DashboardStats {
     active: number; // Last 30 days with login
     trend: number; // Percentage change vs previous period
   };
+  workspaces: {
+    total: number;
+    new: number; // Last 30 days
+  };
+  invitations: {
+    pending: number;
+  };
+  activeNow: number; // Users with active session (last 24h)
 }
 
 export interface RecentUser {
@@ -71,34 +79,69 @@ export async function getDashboardStats(): Promise<
 
   try {
     const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-    // User statistics
+    // Run all queries in parallel for performance
     const [
       totalUsers,
       newUsersLast30Days,
       newUsersPrevious30Days,
       activeUsers,
+      activeSessionUsers,
+      totalWorkspaces,
+      newWorkspaces,
+      pendingInvitations,
     ] = await Promise.all([
-      prisma.user.count(),
+      // Total users (excluding deleted)
+      prisma.user.count({
+        where: { status: { not: "DELETED" } },
+      }),
+      // New users last 30 days
       prisma.user.count({
         where: { createdAt: { gte: thirtyDaysAgo } },
       }),
+      // New users previous 30 days (for comparison)
       prisma.user.count({
         where: {
           createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo },
         },
       }),
+      // Active users (logged in within last 30 days)
       prisma.user.count({
         where: { lastLoginAt: { gte: thirtyDaysAgo } },
+      }),
+      // Users with active session (last 24h) - distinct user IDs
+      prisma.session.findMany({
+        where: {
+          updatedAt: { gte: twentyFourHoursAgo },
+          expiresAt: { gt: now },
+        },
+        select: { userId: true },
+        distinct: ["userId"],
+      }),
+      // Total workspaces
+      prisma.workspace.count(),
+      // New workspaces last 30 days
+      prisma.workspace.count({
+        where: { createdAt: { gte: thirtyDaysAgo } },
+      }),
+      // Pending invitations (not accepted, not expired)
+      prisma.workspaceInvitation.count({
+        where: {
+          acceptedAt: null,
+          expiresAt: { gt: now },
+        },
       }),
     ]);
 
     // Calculate user trend
     const userTrend =
       newUsersPrevious30Days === 0
-        ? 100
+        ? newUsersLast30Days > 0
+          ? 100
+          : 0
         : ((newUsersLast30Days - newUsersPrevious30Days) /
             newUsersPrevious30Days) *
           100;
@@ -110,6 +153,14 @@ export async function getDashboardStats(): Promise<
         active: activeUsers,
         trend: Math.round(userTrend * 10) / 10,
       },
+      workspaces: {
+        total: totalWorkspaces,
+        new: newWorkspaces,
+      },
+      invitations: {
+        pending: pendingInvitations,
+      },
+      activeNow: activeSessionUsers.length,
     };
 
     return { success: true, data: stats };

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { IconTrash } from "@tabler/icons-react";
-import { Loader2 } from "lucide-react";
+import { CircleNotch } from "@phosphor-icons/react/dist/ssr"
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -220,7 +220,7 @@ export function MembersDataTable({
                             disabled={isUpdating || isRemoving}
                           >
                             {isRemoving ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <CircleNotch className="h-4 w-4 animate-spin" />
                             ) : (
                               <IconTrash className="h-4 w-4 text-destructive" />
                             )}

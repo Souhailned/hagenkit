@@ -3,13 +3,13 @@ import MaxWidthWrapper from "@/components/blog/max-width-wrapper"
 import { Metadata } from "next"
 import { constructMetadata } from "@/lib/constructMetadata"
 import BlurImage from "@/lib/blog/blur-image"
-import { Twitter, Linkedin, Github, Mail } from "lucide-react"
+import { XLogo as Twitter, LinkedinLogo as Linkedin, GithubLogo as Github, Envelope as Mail } from "@phosphor-icons/react/dist/ssr"
 import Link from "next/link"
 
 export const metadata: Metadata = constructMetadata({
-  title: "Our Team - Meet the People Behind HagenKit",
+  title: "Our Team - Meet the People Behind DataRAG",
   description:
-    "Meet the talented individuals building the future of collaboration at HagenKit.",
+    "Meet the talented individuals building the future of collaboration at DataRAG.",
 })
 
 const departmentConfig = {

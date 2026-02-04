@@ -1,12 +1,7 @@
 "use client";
 
 import type { ColumnSort, SortDirection, Table } from "@tanstack/react-table";
-import {
-  ArrowDownUp,
-  ChevronsUpDown,
-  GripVertical,
-  Trash2,
-} from "lucide-react";
+import { ArrowsDownUp, CaretUpDown, DotsSixVertical, Trash } from "@phosphor-icons/react/dist/ssr"
 import * as React from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -172,7 +167,7 @@ export function DataTableSortList<TData>({
             className="font-normal"
             onKeyDown={onTriggerKeyDown}
           >
-            <ArrowDownUp className="text-muted-foreground" />
+            <ArrowsDownUp className="text-muted-foreground" />
             Sort
             {sorting.length > 0 && (
               <Badge
@@ -322,7 +317,7 @@ function DataTableSortItem({
               className="w-44 justify-between rounded font-normal"
             >
               <span className="truncate">{columnLabels.get(sort.id)}</span>
-              <ChevronsUpDown className="opacity-50" />
+              <CaretUpDown className="opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent
@@ -380,7 +375,7 @@ function DataTableSortItem({
           className="size-8 shrink-0 rounded"
           onClick={() => onSortRemove(sort.id)}
         >
-          <Trash2 />
+          <Trash />
         </Button>
         <SortableItemHandle asChild>
           <Button
@@ -388,7 +383,7 @@ function DataTableSortItem({
             size="icon"
             className="size-8 shrink-0 rounded"
           >
-            <GripVertical />
+            <DotsSixVertical />
           </Button>
         </SortableItemHandle>
       </li>

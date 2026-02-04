@@ -1,7 +1,7 @@
 "use client";
 
 import type { Table } from "@tanstack/react-table";
-import { Loader, X } from "lucide-react";
+import { CircleNotch, X } from "@phosphor-icons/react/dist/ssr"
 import { AnimatePresence, motion } from "motion/react";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
@@ -105,7 +105,7 @@ function DataTableActionBarAction({
       disabled={disabled || isPending}
       {...props}
     >
-      {isPending ? <Loader className="animate-spin" /> : children}
+      {isPending ? <CircleNotch className="animate-spin" /> : children}
     </Button>
   );
 

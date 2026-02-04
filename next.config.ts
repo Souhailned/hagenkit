@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import { withContentCollections } from "@content-collections/next";
 
 const nextConfig: NextConfig = {
+  output: "standalone", // Enable standalone output for Docker
   images: {
     remotePatterns: [
       {
@@ -41,7 +42,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  typescript: { ignoreBuildErrors: true },
 };
 
 // withContentCollections must be the outermost plugin

@@ -119,3 +119,5 @@ The referenced documentation files (`docs/HORECAGROND-MASTERPLAN.md` and `docs/D
 - PRD.md (42,125 bytes) - Complete project requirements
 - prisma/schema.prisma - Current database schema
 - CLAUDE.md - Project conventions and guidelines
+- [✓] 2026-01-22 22:32 - Update lib/config.ts siteConfig: verander name naar "Horecagrond", description naar horecavastgoed platform beschrijving, update links indien nodig
+- [✓] 2026-01-22 22:32 - Update README.md met: nieuwe project beschrijving (horecavastgoed platform), feature lijst (makelaars, zoekers, AI fotos), tech stack, setup instructies met database setup, environment variables lijst inclusief nieuwe indien nodig

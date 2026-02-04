@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { IconUserCog } from "@tabler/icons-react";
-import { Shield, UserCheck } from "lucide-react";
+import { Shield, UserCheck } from "@phosphor-icons/react/dist/ssr"
 import { formatDistanceToNow } from "date-fns";
 import { impersonateUser } from "@/app/actions/admin/impersonate";
 import { useRouter } from "next/navigation";

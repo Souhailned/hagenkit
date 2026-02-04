@@ -1,4 +1,6 @@
-import { ArrowUpRightIcon, RocketIcon } from "lucide-react"
+"use client"
+
+import { ArrowUpRight, Rocket } from "@phosphor-icons/react/dist/ssr"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -16,11 +18,11 @@ export function DashboardProEmptyState() {
     <Empty>
       <EmptyHeader>
         <EmptyMedia variant="icon">
-          <RocketIcon />
+          <Rocket />
         </EmptyMedia>
-        <EmptyTitle>HagenKit Pro Unlocks More</EmptyTitle>
+        <EmptyTitle>DataRAG Pro Unlocks More</EmptyTitle>
         <EmptyDescription>
-          Activate HagenKit Pro to access advanced analytics, automation, and
+          Activate DataRAG Pro to access advanced analytics, automation, and
           collaboration workflows across your team.
         </EmptyDescription>
       </EmptyHeader>
@@ -32,7 +34,7 @@ export function DashboardProEmptyState() {
             rel="noopener noreferrer"
           >
             {siteConfig.upgrade.label}
-            <ArrowUpRightIcon className="ml-2 h-4 w-4" />
+            <ArrowUpRight className="ml-2 h-4 w-4" />
           </a>
         </Button>
       </EmptyContent>

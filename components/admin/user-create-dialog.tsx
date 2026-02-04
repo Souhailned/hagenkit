@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { CircleNotch } from "@phosphor-icons/react/dist/ssr"
 import { useRouter } from "next/navigation";
 
 interface UserCreateDialogProps {
@@ -212,7 +212,7 @@ export function UserCreateDialog({ children }: UserCreateDialogProps) {
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading && <CircleNotch className="mr-2 h-4 w-4 animate-spin" />}
                 Create User
               </Button>
             </div>

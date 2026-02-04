@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, CaretUpDown } from "@phosphor-icons/react/dist/ssr"
 import * as React from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -164,7 +164,7 @@ function FacetedBadgeList(props: FacetedBadgeListProps) {
         className="flex w-full items-center gap-1 text-muted-foreground"
       >
         {placeholder}
-        <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
+        <CaretUpDown className="ml-auto size-4 shrink-0 opacity-50" />
       </div>
     );
   }

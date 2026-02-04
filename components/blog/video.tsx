@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Play } from "lucide-react"
+import { Play } from "@phosphor-icons/react/dist/ssr"
 
 interface VideoProps {
   src: string

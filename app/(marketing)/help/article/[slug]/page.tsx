@@ -1,7 +1,7 @@
 import SearchButton from "@/components/blog/search-button";
 import MaxWidthWrapper from "@/components/blog/max-width-wrapper";
 import { HelpPost, allHelpPosts } from "content-collections";
-import { ChevronRight } from "lucide-react";
+import { CaretRight } from "@phosphor-icons/react/dist/ssr"
 import { notFound } from "next/navigation";
 import { HELP_CATEGORIES } from "@/lib/blog/content";
 import Link from "next/link";
@@ -39,7 +39,7 @@ export async function generateMetadata({
   const { title, summary } = post;
 
   return constructMetadata({
-    title: `${title} – HagenKit Help Center`,
+    title: `${title} – DataRAG Help Center`,
     description: summary,
     image: `/api/og/help?title=${encodeURIComponent(
       title
@@ -70,6 +70,7 @@ export default async function HelpArticle({
 
   const images = await Promise.all(
     imageSources.map(async (src: string) => ({
+      alt: src.split("/").pop()?.replace(/\.[^/.]+$/, "") || "Article image",
       src,
       blurDataURL: await getBlurDataURL(src),
     }))
@@ -107,14 +108,14 @@ export default async function HelpArticle({
               >
                 All Categories
               </Link>
-              <ChevronRight className="h-4 w-4 text-gray-400" />
+              <CaretRight className="h-4 w-4 text-gray-400" />
               <Link
                 href={`/help/category/${category.slug}`}
                 className="whitespace-nowrap text-sm font-medium text-gray-500 hover:text-gray-800"
               >
                 {category.title}
               </Link>
-              <ChevronRight className="h-4 w-4 text-gray-400" />
+              <CaretRight className="h-4 w-4 text-gray-400" />
               <Link
                 href={`/help/article/${data.slug}`}
                 className="truncate text-sm font-medium text-gray-500 hover:text-gray-800"

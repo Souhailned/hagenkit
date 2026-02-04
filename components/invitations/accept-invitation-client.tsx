@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, XCircle, Mail } from "lucide-react";
+import { CircleNotch, CheckCircle, XCircle, Envelope as Mail } from "@phosphor-icons/react/dist/ssr"
 
 interface AcceptInvitationClientProps {
   token: string;
@@ -67,10 +67,10 @@ export function AcceptInvitationClient({
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             {state === "loading" && (
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <CircleNotch className="h-6 w-6 animate-spin text-primary" />
             )}
             {state === "success" && (
-              <CheckCircle2 className="h-6 w-6 text-green-600" />
+              <CheckCircle className="h-6 w-6 text-green-600" />
             )}
             {state === "error" && <XCircle className="h-6 w-6 text-red-600" />}
           </div>

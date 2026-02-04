@@ -1,4 +1,6 @@
-import { ShieldCheckIcon, ArrowUpRightIcon } from "lucide-react"
+"use client"
+
+import { ShieldCheck as ShieldCheckIcon, ArrowUpRight as ArrowUpRightIcon } from "@phosphor-icons/react/dist/ssr"
 
 import { Button } from "@/components/ui/button"
 import {
