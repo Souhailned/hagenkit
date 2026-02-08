@@ -44,6 +44,7 @@ export interface ProjectTask {
   endDate: Date | null;
   order: number;
   assigneeId: string | null;
+  workstreamId: string | null;
   assignee: {
     id: string;
     name: string | null;
@@ -151,6 +152,35 @@ export interface ProjectListItem {
 }
 
 // ============================================
+// WORKSTREAM & NOTE TYPES
+// ============================================
+
+export interface ProjectWorkstream {
+  id: string;
+  name: string;
+  order: number;
+  tasks: ProjectTask[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ProjectNote {
+  id: string;
+  title: string;
+  content: string | null;
+  noteType: "GENERAL" | "MEETING" | "AUDIO";
+  status: "COMPLETED" | "PROCESSING";
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: {
+    id: string;
+    name: string | null;
+    email: string;
+    image: string | null;
+  };
+}
+
+// ============================================
 // PROJECT DETAIL (full project data)
 // ============================================
 
@@ -193,6 +223,8 @@ export interface ProjectDetail {
   features: ProjectFeature[];
   files: ProjectFile[];
   tags: ProjectTag[];
+  workstreams: ProjectWorkstream[];
+  notes: ProjectNote[];
 }
 
 // ============================================

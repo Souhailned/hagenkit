@@ -188,3 +188,63 @@ New design labels → existing routes:
 ❌ Don't use `SiteHeader` - Header is inside ContentCard
 ❌ Don't hardcode colors - Use CSS variables
 ❌ Don't apply custom fonts to body
+
+---
+
+## Skill Auto-Activation (VERPLICHT)
+
+**Bij ELKE opdracht (toevoegen, aanpassen, verwijderen, bouwen, debuggen) MOET Claude EERST de relevante skill(s) activeren via de Skill tool voordat er code wordt geschreven.**
+
+### Mapping: opdracht → skill
+
+| Opdracht gaat over... | Activeer skill |
+|------------------------|----------------|
+| UI componenten, styling, layout | `shadcn-ui` + `frontend-design` |
+| Dashboard pagina's maken/aanpassen | `dashboard-page-creator` |
+| UI review, accessibility, UX audit | `web-design-guidelines` |
+| React performance, rendering | `react-best-practices` |
+| Next.js routing, SSR, app router | `nextjs16-skills` |
+| Project structuur, folders | `nextjs-saas-structure` |
+| Authenticatie, sessies, rollen | `better-auth-best-practices` |
+| API endpoints, server actions | `backend-development:api-design-principles` |
+| Architectuur, refactoring | `backend-development:architecture-patterns` |
+| Prisma schema, database changes | `prisma-orm-v7-skills` |
+| Data fetching, caching, queries | `tanstack-query` |
+| Email templates, Resend | `resend-integration-skills` |
+| AI features, SDK integratie | `ai-sdk-6-skills` |
+| Workflows, background jobs | `backend-development:workflow-orchestration-patterns` |
+
+### Regels
+1. **Altijd activeren VOOR implementatie** — de skill geeft context en best practices
+2. **Meerdere skills combineren** als de opdracht meerdere domeinen raakt (bijv. nieuwe dashboard pagina = `dashboard-page-creator` + `shadcn-ui`)
+3. **Bij twijfel: activeer** — liever een skill te veel dan te weinig
+4. **Planning skill** — bij complexe taken met >5 stappen, activeer ook `planning-with-files`
+
+---
+
+## Future AI Features Roadmap
+
+Gebaseerd op de AI-first horeca makelaardij strategie (zie `docs/Makelaardij software AI.pdf`).
+
+### Phase 1 - Core Platform (HIGH priority)
+- **Public Marketplace** (`/aanbod`): Upgrade naar interactieve marktplaats met smart search
+- **Semantic Search**: Vector DB integratie (Upstash/Pinecone) voor natural language property search
+- **Location Intelligence Widget**: Per-property data (voetgangersstroom, demografie, concurrentie)
+
+### Phase 2 - AI Generation (MEDIUM priority)
+- **Virtual Staging ("Droom" Slider)**: AI-gegenereerde interieur concepten via fal.ai (infra klaar)
+- **One-Click Listing Generator**: Auto-genereer listings voor 3 doelgroepen + SWOT + social posts
+- **Automated Valuation Model (AVM)**: Goodwill/inventaris pricing model op historische data
+- **AI Pre-qualification Chatbot**: 24/7 lead kwalificatie op publieke site
+
+### Phase 3 - Advanced (LOW priority)
+- **Deal Room**: NDA-gated document room met AI Q&A chatbot
+- **Matching Engine**: Actief user profiling + proactieve push notificaties
+- **AI Document Analysis**: OCR + LLM contract risico scanning
+- **Financial Health Check**: AI analyse van jaarcijfers voor trend detectie
+
+### Technical Stack voor AI Features
+- Text & Analysis: OpenAI API via Trigger.dev background tasks
+- Image Generation: fal.ai (al geintegreerd)
+- Vector Search: Upstash Vector DB
+- Embeddings: PostgreSQL met pgvector of Upstash

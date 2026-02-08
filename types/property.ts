@@ -100,14 +100,14 @@ export const PropertyFeatureLabels: Record<PropertyFeature, string> = {
 };
 
 // Sort options for property listings
-export type SortOption = "newest" | "price_asc" | "price_desc" | "area_desc";
+export type SortOption = "newest" | "price_low_high" | "price_high_low" | "area";
 
 // Sort option labels for display (Dutch)
 export const SortOptionLabels: Record<SortOption, string> = {
   newest: "Nieuwste",
-  price_asc: "Prijs laag-hoog",
-  price_desc: "Prijs hoog-laag",
-  area_desc: "Oppervlakte",
+  price_low_high: "Prijs (laag-hoog)",
+  price_high_low: "Prijs (hoog-laag)",
+  area: "Oppervlakte",
 };
 
 /**

@@ -1,0 +1,830 @@
+# Progress Log
+
+## Task: Create Backup Branch
+
+**Date:** 2026-01-22
+
+### Completed:
+- Created backup branch `backup/pre-horecagrond` from commit `fc5cc0b`
+- Pushed backup branch to remote origin
+- Branch preserves the state before Horecagrond refactoring begins
+
+### Branch Details:
+- **Branch name:** `backup/pre-horecagrond`
+- **Base commit:** `fc5cc0b` (refactor: Update references from Social Forge to HagenKit)
+- **Remote:** Pushed to `origin/backup/pre-horecagrond`
+
+### Notes:
+- This backup allows rollback if needed during the Horecagrond migration
+- No tests applicable for this git operation task
+
+---
+
+## 2026-01-22 - Prisma Client Generation
+
+### Task: Run bun run prisma:generate om Prisma client te genereren met nieuwe models
+
+### Completed:
+- Ran `bun run prisma:generate` successfully
+- Prisma Client (7.3.0) generated to ./generated/prisma in 23ms
+- Schema loaded from prisma/schema.prisma
+
+### Generated Models:
+- User, Session, Account, Verification, Workspace, WorkspaceMember, WorkspaceInvitation
+
+### Generated Enums:
+- Role (OWNER, ADMIN, MEMBER, VIEWER)
+- UserRole (user, admin)
+- UserStatus (ACTIVE, SUSPENDED, DELETED)
+
+### Status: COMPLETED
+
+---
+
+## 2026-01-22: Property Validation Schemas
+
+### Completed
+- Created `lib/validations/property.ts` with comprehensive Zod schemas
+- Created `lib/validations/__tests__/property.test.ts` with 43 passing tests
+
+---
+
+## 2026-01-22: Seeker Profile Validation Schemas
+
+### Completed
+- Created `lib/validations/seeker-profile.ts` with Zod schemas
+- Created `lib/validations/__tests__/seeker-profile.test.ts` with 33 tests
+
+---
+
+## 2026-01-22: Onboarding Components
+
+### Seeker Steps
+Created `components/onboarding/seeker-steps/`:
+- StepBusinessType.tsx, StepBudget.tsx, StepPreferences.tsx, StepComplete.tsx, types.ts, index.ts
+
+### Agent Steps
+Created `components/onboarding/agent-steps/`:
+- StepAgencyInfo.tsx, StepAgentProfile.tsx, StepFirstProperty.tsx, StepComplete.tsx, types.ts, index.ts
+
+### Status
+- Build: ✅ Passes
+- Lint: ✅ No errors in new files
+
+---
+
+## 2026-01-22: Create Seeker Dashboard Component (PRD Task 9.2)
+
+### Summary
+Implemented the seeker dashboard component for horeca entrepreneurs searching for locations. The dashboard displays personalized property recommendations, recently viewed properties, and new matches based on user preferences and search alerts.
+
+### Files Created
+
+#### 1. `types/property.ts`
+**Purpose:** Type definitions for properties and seeker preferences
+
+**Key exports:**
+- `PropertyType` - Enum for horeca property types (RESTAURANT, CAFE, BAR, etc.)
+- `PropertyStatus` - Enum for property statuses (ACTIVE, DRAFT, etc.)
+- `PriceType` - Enum for pricing types (RENT, SALE, RENT_OR_SALE)
+- `PropertyListItem` - Interface for property card data
+- `SeekerPreferences` - Interface for user search preferences
+- `SeekerRecommendations` - Interface for dashboard data response
+
+#### 2. `app/actions/seeker-profile.ts`
+**Purpose:** Server actions for seeker profile and recommendations
+
+**Key functions:**
+- `getSeekerRecommendations()` - Fetches personalized recommendations for the logged-in user
+- `getSeekerPreferences()` - Gets the user's search preferences
+
+**Notes:**
+- Uses mock data since Property and SeekerProfile Prisma models are not yet available
+- Includes TODO comments for when the database models are ready
+- Mock properties include realistic Dutch horeca listings
+
+#### 3. `components/dashboard/property-card.tsx`
+**Purpose:** Reusable property card component for grids
+
+**Key exports:**
+- `PropertyCard` - Main card component with:
+  - Property image with hover zoom effect
+  - Type badge and featured badge
+  - Horeca score indicator (A+ to F)
+  - Price display with rent/sale type
+  - Key stats (surface, seating, terrace, kitchen)
+  - Agency info and view/save counts
+- `PropertyCardSkeleton` - Loading state placeholder
+
+**Features:**
+- Responsive design with theme tokens
+- Accessible with proper focus states
+- Smooth hover transitions
+- Links to property detail page
+
+#### 4. `components/dashboard/seeker-empty-state.tsx`
+**Purpose:** Empty state components for the seeker dashboard
+
+**Key exports:**
+- `SeekerNoPreferencesState` - Full-page empty state when no preferences are set
+- `SeekerSectionEmptyState` - Section-level empty state with customizable content
+
+#### 5. `components/dashboard/seeker-dashboard.tsx`
+**Purpose:** Main seeker dashboard server component
+
+**Key exports:**
+- `SeekerDashboard` - Server component that fetches and displays:
+  - Welcome header with action buttons
+  - "Aanbevolen voor jou" section (personalized recommendations)
+  - "Recent bekeken" section (recently viewed properties)
+  - "Nieuwe matches" section (properties matching alerts)
+- `SeekerDashboardSkeleton` - Loading state for the entire dashboard
+
+**Features:**
+- Server component for optimal performance
+- Conditional rendering based on user preferences
+- Error state handling
+- Section headers with badges and navigation links
+
+### Design Decisions
+
+#### 1. Server Component Architecture
+The dashboard is a server component that fetches data on the server, improving initial load performance and SEO.
+
+#### 2. Mock Data Strategy
+Since the Prisma models for Property and SeekerProfile aren't available yet, the action uses realistic mock data. The code includes TODO comments showing exactly how to integrate with the real database when ready.
+
+#### 3. Blue Theme Consistency
+All components use CSS variables (`--primary`, `--muted`, etc.) and avoid hardcoded colors, following the project's blue theme guidelines.
+
+#### 4. Dutch Language UI
+All user-facing text is in Dutch to match the target market (Dutch horeca entrepreneurs).
+
+#### 5. Horeca Score Visualization
+Property cards display the "Horeca Score" (A+ to F) with color-coded badges, making it easy for users to quickly assess property quality.
+
+### Testing Notes
+
+- **Lint:** All new files pass ESLint with no errors
+- **TypeScript:** All new files compile without type errors
+- **Components:** Ready for visual testing when integrated into the dashboard page
+
+### Next Steps
+
+1. The dashboard page (`app/dashboard/page.tsx`) needs to be updated to render `SeekerDashboard` for users with the "seeker" role (PRD Task 9.3)
+2. When the Prisma models are migrated, update `getSeekerRecommendations` to use real database queries
+3. Add analytics tracking for property views and recommendations
+
+---
+
+## 2026-01-22: Property Detail Page (app/dashboard/panden/[id])
+
+### Completed Task
+Implemented the property detail page (`app/dashboard/panden/[id]/page.tsx`) with full tabs navigation and edit functionality.
+
+### Files Created
+
+#### Core Files
+1. `app/dashboard/panden/[id]/page.tsx` - Async server component that fetches property by ID
+2. `lib/validations/property.ts` - Complete property validation schemas and types
+3. `app/actions/property.ts` - Server actions for property CRUD operations with mock data
+
+#### Component Files
+4. `components/property/property-detail-content.tsx` - Main detail content with header, stats, and tabs
+5. `components/property/property-detail-skeleton.tsx` - Loading skeleton component
+6. `components/property/tabs/property-algemeen-tab.tsx` - Edit form for all property fields
+7. `components/property/tabs/property-fotos-tab.tsx` - Image gallery with upload, reorder, delete, AI enhance
+8. `components/property/tabs/property-kenmerken-tab.tsx` - Feature editor per category
+9. `components/property/tabs/property-statistieken-tab.tsx` - Charts for views/inquiries over time
+
+### Features Implemented
+
+#### Header
+- Property title with status badge
+- Address and property type display
+- Price display with proper formatting
+- Quick stats bar (views, inquiries, saved, conversion rate)
+- Publish/Unpublish button based on status
+- Delete button with confirmation dialog
+- More actions dropdown menu
+
+#### Tab 1: Algemeen (General)
+Collapsible sections for:
+- **Basis Info**: Title, property type, short/long description
+- **Locatie**: Address fields, city, postal code, province, neighborhood
+- **Prijzen**: Price type (rent/sale/both), prices in euros, service costs, deposit
+- **Afmetingen**: Total surface, commercial, kitchen, storage, terrace, basement, floors, ceiling height
+- **Horeca Details**: Seating capacity (inside/outside), standing capacity, kitchen type, amenities checkboxes
+- **Gebouw**: Build year, last renovation, energy label, monument status
+
+#### Tab 2: Foto's (Photos)
+- Drag-and-drop upload zone
+- Image gallery with drag-to-reorder functionality
+- Set primary image
+- Edit image metadata (caption, alt text, type)
+- Delete images with confirmation
+- AI enhance button (placeholder for integration)
+- Lightbox view with navigation
+
+#### Tab 3: Kenmerken (Features)
+Four categories of features:
+- **Vergunningen (Licenses)**: Alcohol, terrace, music, late night, food licenses
+- **Faciliteiten (Facilities)**: Professional kitchen, extraction, cold storage, etc.
+- **Voorzieningen (Utilities)**: AC, heating, WiFi, security, POS system
+- **Toegankelijkheid (Accessibility)**: Wheelchair access, elevator, public transport
+
+Each feature can be:
+- Toggled on/off
+- Given a value (string/number where applicable)
+- Highlighted for the listing
+- Shows verified status
+
+#### Tab 4: Statistieken (Statistics)
+- Period selector (7, 14, 30 days)
+- Chart type selector (area, line, bar)
+- Stats cards with trend indicators
+- Main chart showing views and inquiries over time
+- Top performing days list
+- Conversion analysis with tips
+
+### Technical Details
+
+#### Data Flow
+- Server component fetches property using `getProperty` action
+- Client components use server actions for updates
+- Mock data provided for development (database schema not yet implemented)
+- All prices stored in cents, displayed in euros
+
+#### Validation
+- Complete Zod schemas for all property fields
+- Type definitions for Property, PropertyImage, PropertyFeature
+- Dutch labels for all property types, statuses, and features
+
+#### UI Components Used
+- Tabs, TabsList, TabsTrigger, TabsContent
+- Card, CardHeader, CardContent, CardTitle
+- Collapsible, Accordion
+- Form fields (Input, Textarea, Select, Checkbox)
+- Badge for status display
+- Charts (AreaChart, LineChart, BarChart from recharts)
+- Dialog, AlertDialog for modals
+- Dropdown menus for actions
+
+### Build Status
+- ✅ Build passes without errors
+- ✅ Lint passes without errors in new files
+- ✅ TypeScript types are correct
+
+### Next Steps (Not part of this task)
+1. Implement actual database schema for Property model
+2. Connect actions to real database
+3. Implement image upload to Supabase
+4. Connect AI enhancement to existing image processing flow
+5. Add real-time stats from PropertyView model
+
+---
+
+## 2026-01-22: PropertyWizard Component (FASE 2.1 / PRD Task 9.6)
+
+### Summary
+Created a complete multi-step modal wizard for creating horecavastgoed (hospitality real estate) listings.
+
+### Files Created
+
+1. **components/property-wizard/types.ts**
+   - PropertyType enum (RESTAURANT, CAFE, BAR, HOTEL, DARK_KITCHEN, etc.)
+   - PriceType enum (RENT, SALE, RENT_OR_SALE)
+   - FeatureCategory enum (LICENSE, FACILITY, UTILITY)
+   - PropertyImageType enum for photo categorization
+   - Complete feature definitions with Dutch labels
+   - WizardPhoto type for upload handling
+   - PropertyWizardData interface for form state
+   - WIZARD_STEPS configuration for 7-step flow
+
+2. **components/property-wizard/wizard-stepper.tsx (WizardStepper)**
+   - Vertical stepper navigation for desktop (sidebar)
+   - Horizontal progress dots for mobile
+   - Step completion tracking with checkmarks
+   - Clickable navigation to completed/current steps
+   - Progress bar indicator
+
+3. **Step Components** (`components/property-wizard/steps/`)
+   - **StepBasicInfo**: Title input, property type grid selection, description textarea
+   - **StepLocation**: Address, city with autocomplete suggestions (Dutch cities), postal code, province select, optional GPS coordinates, geolocation API
+   - **StepPricing**: Price type radio selection (rent/sale/both), conditional price fields, service costs, deposit months, negotiable toggle
+   - **StepDimensions**: Total surface (required), room breakdown (commercial, kitchen, storage, terrace, basement), floors counter, ceiling height
+   - **StepFeatures**: Grouped checkboxes for licenses, facilities, utilities with category headers, selection counters, select all/deselect all
+   - **StepPhotos**: Drag-drop upload zone, preview grid, drag-to-reorder, set primary, AI enhance toggle per photo, max 20 photos
+   - **StepReview**: Summary of all data, validation status, edit links per section, completeness indicator
+
+4. **components/property-wizard/PropertyWizard.tsx**
+   - Modal-based dialog using shadcn/ui Dialog
+   - State management for wizard data and step progression
+   - Step validation logic with error messages
+   - Save as draft functionality ("Bewaar als Concept")
+   - Publish with validation check ("Publiceer")
+   - Responsive layout (sidebar on desktop, collapsed on mobile)
+
+5. **components/property-wizard/index.ts** - Public exports
+6. **components/property-wizard/README.md** - Usage documentation
+
+### Technical Details
+- Uses shadcn/ui components (Dialog, Button, Input, Label, Textarea, RadioGroup, Checkbox, Select, Switch, ScrollArea, Badge, Collapsible, Progress)
+- Uses @tabler/icons-react for icons
+- TypeScript with full type safety
+- Mobile-first responsive design
+- Dutch language UI labels
+- CSS variables for theming consistency
+- React best practices: useCallback for memoized handlers, useMemo for derived state
+- Accessibility: Proper ARIA labels, keyboard navigation, focus management
+
+### Validation & Build Status
+- ✅ Build passes successfully
+- ✅ Lint passes (only pre-existing warnings in other files)
+- ✅ TypeScript types are correct
+- Fixed ESLint errors: Escaped apostrophes in Dutch text, added eslint-disable for blob URL img tags
+
+---
+
+## 2026-01-22: Update Landing Page (Marketing Page)
+
+**Status:** Completed
+
+### What was done:
+
+1. **Hero Section**
+   - New headline: "Vind de perfecte horecalocatie"
+   - Animated pulsing badge showing available listings count
+   - Subtext highlighting platform stats (properties, agents, cities)
+   - Two prominent CTAs: "Bekijk Aanbod" and "Ik ben Makelaar"
+   - Trust indicators (Gratis zoeken, Direct contact, Dagelijks nieuwe panden)
+   - Decorative Dutch tile-inspired background pattern
+   - SVG underline animation on the keyword "horecalocatie"
+
+2. **Featured Listings Section**
+   - Mock data for 4 featured properties (Café, Restaurant, Hotel, Dark Kitchen)
+   - Property cards with:
+     - Property type badge with icon
+     - Price overlay on image placeholder
+     - Title, city, surface area
+     - Feature tags (seating capacity, terrace)
+   - Responsive 4-column grid (sm: 2 cols, lg: 4 cols)
+   - "Bekijk alle panden" link
+
+3. **How It Works Section**
+   - 3-step process: Zoek & Filter → Plan Bezichtiging → Onderteken Deal
+   - Icon-based step indicators with numbered badges
+   - Desktop connector lines between steps
+   - Responsive grid layout
+
+4. **Stats Section**
+   - Three stat cards with hover effects:
+     - 847+ Horecapanden
+     - 126 Gecertificeerde Makelaars
+     - 42 Steden in Nederland
+   - Gradient background with primary color accents
+
+5. **Makelaar CTA Banner**
+   - Eye-catching full-width banner with primary gradient
+   - Headline: "Bereik duizenden horecaondernemers"
+   - "Start Gratis" and "Meer informatie" CTAs
+   - Feature highlights (eerste 3 panden gratis, lead notificaties, AI foto)
+   - Decorative blur effects and tile pattern overlay
+
+### Technical Details:
+- File modified: `app/(marketing)/page.tsx`
+- Used existing shadcn/ui components: Button, Badge
+- Lucide icons for visual elements
+- Dutch locale formatting for prices (Intl.NumberFormat)
+- Fully responsive design with mobile-first approach
+- CSS theme tokens used throughout (no hardcoded colors)
+
+### Notes:
+- Featured properties use mock data until `getFeaturedProperties` action is implemented (Phase 4.4)
+- Stats are hardcoded until database queries are available
+- Links to `/aanbod` and `/makelaars` pages will need corresponding page implementations
+
+---
+
+## 2026-01-22: PRD 10.2 - Zoekpagina (Aanbod)
+
+### Completed: 2026-01-22
+
+#### Summary
+Implemented the public property listings page (`/aanbod`) with a two-column desktop layout, filter sidebar, active filter chips, property cards grid, pagination, and mobile-responsive filters via Sheet drawer. Uses URL search params for shareable filter state and SSR for initial data loading.
+
+#### Files Created
+
+**Validation Schema:**
+- `lib/validations/property.ts` - PropertyType, PropertyStatus, PriceType enums, filter and create schemas with Dutch labels
+
+**Server Action:**
+- `app/actions/property-search.ts` - searchProperties, getFeaturedProperties, getRecentProperties, getPropertyCities actions with mock data
+
+**Components (components/property/):**
+- `property-card.tsx` - Property card with image, price, title, location, features
+- `property-filters.tsx` - Sticky sidebar filter component (location, type, price, surface, features)
+- `active-filters.tsx` - Filter chips with remove buttons
+- `property-skeleton.tsx` - Loading skeletons (card, grid, filters, full page)
+- `property-empty-state.tsx` - Empty state with suggestions
+- `mobile-filters-sheet.tsx` - Mobile filter drawer using Sheet
+- `property-listings-client.tsx` - Main client component with URL sync, pagination, sorting
+- `index.ts` - Barrel exports
+- `README.md` - Component documentation
+
+**Pages:**
+- `app/(marketing)/aanbod/page.tsx` - Main page with SSR data fetching
+- `app/(marketing)/aanbod/loading.tsx` - Loading UI
+
+#### Features Implemented
+1. Two-column desktop layout (sticky filter sidebar + results)
+2. Filter sections: Location (city badges), Type (checkboxes), Price (min/max inputs), Surface (min/max), Features (checkboxes)
+3. Active filter chips above results with remove buttons
+4. Results header with count and sort dropdown (Nieuwste, Prijs laag-hoog, Prijs hoog-laag, Oppervlakte)
+5. Property cards grid with responsive columns
+6. Pagination with page numbers
+7. Mobile: Filters in Sheet/drawer
+8. Loading skeletons for all states
+9. Empty state with suggestions
+10. URL search params for filters (shareable)
+11. SSR with searchProperties action
+
+#### URL Parameters Supported
+- cities, types, priceMin, priceMax, surfaceMin, surfaceMax
+- terrace, kitchen, parking, storage, basement (boolean flags)
+- features (comma-separated)
+- sortBy, sortOrder, page
+
+#### Build Status
+- Build: PASS
+- Lint: PASS (no errors in new files)
+
+---
+
+## 2026-01-22/23: PRD 10.3 - Property Detail Page (app/(marketing)/aanbod/[slug])
+
+### Summary
+Built the public property detail page with SEO, image gallery, contact form, and structured data.
+
+### Completed Items
+
+#### 1. Property Actions (app/actions/property.ts)
+- `getPropertyBySlug`: Fetches property with all relations (images, features, agency, creator)
+- `getSimilarProperties`: Returns related properties based on type and city
+- `recordPropertyView`: Tracks unique property views with IP hashing
+- `createPropertyInquiry`: Creates inquiry records with validation
+
+#### 2. Property Validation (lib/validations/property.ts)
+- `propertyInquirySchema`: Validates contact form submissions
+- `propertyViewSchema`: Validates view tracking data
+
+#### 3. Property Components (components/property/)
+- `PropertyImageGallery`: Carousel with Embla + lightbox dialog, keyboard navigation
+- `PropertyInquiryForm`: React Hook Form + Zod validation with all required fields
+- `PropertyViewTracker`: Client-side view tracking on page load
+- `PropertyCard`: Card component for similar properties display
+
+#### 4. Property Detail Page (app/(marketing)/aanbod/[slug]/page.tsx)
+- Async server component with `generateMetadata` for SEO
+- Hero section with image gallery carousel
+- Key stats bar (price, surface, type, status)
+- Two-column layout:
+  - Left: Description, details grid, features by category, location, agent card
+  - Right: Sticky contact form, availability info, stats
+- Breadcrumbs with proper navigation
+- Similar properties section
+- Property view tracking on load
+
+#### 5. Structured Data (lib/property/structured-data.tsx)
+- `generatePropertyStructuredData`: RealEstateListing schema.org data
+- `generatePropertyBreadcrumbStructuredData`: Breadcrumb schema
+- `generateAgencyStructuredData`: RealEstateAgent schema
+- `generateLocalBusinessStructuredData`: LocalBusiness schema
+- `PropertyStructuredData`: Component to inject JSON-LD
+
+#### 6. Utility Functions (lib/property/utils.ts)
+- Price formatting (cents to euros)
+- Surface formatting
+- Availability date formatting
+- Lease term formatting
+- Label constants for types, statuses, features
+- Color mappings for scores and energy labels
+
+#### 7. Tests (__tests__/property/)
+- `property-utils.test.ts`: Tests for all utility functions
+- `property-validation.test.ts`: Tests for Zod schemas
+- `structured-data.test.ts`: Tests for structured data generation
+
+### Files Created/Modified
+- app/actions/property.ts
+- lib/validations/property.ts
+- lib/property/utils.ts
+- lib/property/structured-data.tsx
+- components/property/property-image-gallery.tsx
+- components/property/property-inquiry-form.tsx
+- components/property/property-view-tracker.tsx
+- components/property/property-card.tsx
+- components/property/index.ts
+- app/(marketing)/aanbod/[slug]/page.tsx
+- app/(marketing)/aanbod/README.md
+- __tests__/property/property-utils.test.ts
+- __tests__/property/property-validation.test.ts
+- __tests__/property/structured-data.test.ts
+
+### Verification
+- ✅ All lint checks pass for new files
+- ✅ All 55 tests pass
+- ✅ Build passes
+
+### Design Notes
+- Used blue primary color theme as per project guidelines
+- Followed shadcn/ui component patterns
+- Implemented Dutch (NL) localization for all text
+- Mobile-responsive design with sticky contact form on desktop
+
+### Next Steps
+1. Implement actual Prisma models (Phase 1 of PRD)
+2. Replace mock data in actions with real database queries
+3. Add generateStaticParams() when database is populated
+4. Implement email notifications for inquiries
+5. Add testing framework and write unit tests
+
+---
+
+## 2026-01-22/23: Agency Detail Page (makelaars/[slug])
+
+### Completed Tasks
+
+#### 1. Types & Data Layer
+- Created `types/agency.ts` with TypeScript types:
+  - `Agency`, `AgencyWithDetails` - agency organization data
+  - `AgentProfile` - individual agent profiles
+  - `Property`, `PropertyImage` - property listings
+  - Enums: `PropertyType`, `PropertyStatus`, `PriceType`, `AgencyPlan`
+
+- Created `app/actions/agency.ts` with server actions:
+  - `getAgency(slug)` - fetch agency by slug with agents
+  - `getPropertiesByAgency(agencyId, options)` - fetch properties for agency
+  - `getAllAgencySlugs()` - for static generation
+  - Includes mock data (ready for Prisma integration when models exist)
+
+#### 2. Components
+- Created `components/property/property-card.tsx`:
+  - Displays property with image, title, location, price, features
+  - Responsive design with hover effects
+  - Includes skeleton loader
+  - Uses theme tokens, no hardcoded colors
+
+- Created `components/agency/agent-card.tsx`:
+  - Displays agent profile with avatar, name, rating
+  - Shows specializations, languages, bio
+  - Contact links (email, phone, LinkedIn, Twitter)
+  - Verified badge and deal count
+  - Includes skeleton loader
+
+- Added README.md files for both component folders
+
+#### 3. Page Implementation
+- Created `app/(marketing)/makelaars/[slug]/page.tsx`:
+  - Async server component with SSG support
+  - `generateStaticParams()` for static generation
+  - `generateMetadata()` for dynamic SEO
+
+  **Sections:**
+  1. **Header** - Agency logo, name, description, verified badge, quick stats
+  2. **Team** - Grid of AgentCards
+  3. **Listings** - Grid of PropertyCards (active properties)
+  4. **Contact** - Full contact info, CTA buttons, KvK/BTW info
+
+#### 4. SEO & Structured Data
+- Created `app/(marketing)/makelaars/[slug]/structured-data.tsx`:
+  - `generateAgencyStructuredData()` - RealEstateAgent schema
+  - `generateAgentStructuredData()` - Person schema for employees
+  - `generateBreadcrumbStructuredData()` - navigation breadcrumbs
+  - `generateLocalBusinessStructuredData()` - enhanced local SEO
+  - `StructuredData` component for JSON-LD injection
+
+#### 5. Utilities
+- Added `formatCurrency()` to `lib/utils.ts` for Dutch currency formatting
+
+### Files Created/Modified
+
+#### New Files
+- `types/agency.ts`
+- `app/actions/agency.ts`
+- `components/property/property-card.tsx`
+- `components/property/README.md`
+- `components/agency/agent-card.tsx`
+- `components/agency/README.md`
+- `app/(marketing)/makelaars/[slug]/page.tsx`
+- `app/(marketing)/makelaars/[slug]/structured-data.tsx`
+
+#### Modified Files
+- `lib/utils.ts` - added formatCurrency function
+
+### Build Verification
+- ESLint: No errors in new files (0 errors, 0 warnings after fix)
+- Build: Successful compilation with Turbopack
+- Static page generated: `/makelaars/horecagrond-makelaars`
+
+### Notes
+- Mock data used for agencies/properties (Prisma models not yet in schema)
+- Actions contain TODO comments for Prisma integration
+- No test framework configured in project - skipped test writing
+- Pre-existing lint warnings in codebase not addressed (out of scope)
+
+### Future Work
+- Add Prisma models for Agency, AgentProfile, Property
+- Replace mock data with actual database queries
+- Add makelaars index page (/makelaars)
+- Add property detail page (/panden/[slug])
+- Add search/filter functionality
+
+---
+
+## 2026-01-23: Merge Conflict Resolution
+
+### Task
+Resolved merge conflicts from branch `ralphy/agent-57-1769116977360-n08lj3-frontend-design-shadcn-ui-maak-app-marketing-aanbo`
+
+### Files Resolved
+1. `app/(marketing)/aanbod/[slug]/page.tsx` - Kept HEAD's comprehensive implementation with PropertyImageGallery, PropertyInquiryForm
+2. `app/actions/property.ts` - Already resolved (no remaining conflicts)
+3. `lib/property/structured-data.tsx` - Merged both implementations, keeping all functions and adding StructuredData alias
+4. `progress.txt` - Merged both progress logs combining all entries from both branches
+
+### Resolution Strategy
+- HEAD versions had more complete implementations
+- Merged functionality from both branches where applicable
+- Added compatibility aliases (e.g., StructuredData for PropertyStructuredData)
+
+---
+
+## 2026-01-22 - Horeca Score Calculator Implementation
+
+### Task
+Maak lib/horeca-score.ts: export calculateHorecaScore(property, features) functie
+
+### Completed
+
+#### lib/horeca-score.ts
+Created comprehensive horeca property scoring module with:
+
+**Exports:**
+- `calculateHorecaScore(property, features)` - Main scoring function
+- `getScoreColor(grade)` - UI color helper for grade badges
+- `getNumericScoreColor(score)` - UI color helper for progress bars
+
+**Score Factors (with weights):**
+1. **Location (30%)** - footfall estimate, neighborhood rating, transport distance, parking, tourist area, visibility
+2. **Licenses (20%)** - alcohol, terrace, late night, food service, gaming, catering, event permits
+3. **Facilities (20%)** - kitchen type, extraction system, cold storage, cellar, seating capacity, toilets, staff area
+4. **Condition (15%)** - build year, renovation year, ratings (overall, electrical, plumbing, HVAC), energy label
+5. **Price/Quality (15%)** - rent vs market, revenue potential, key money, lease duration
+
+**Return Object:**
+- `overallScore`: Grade from A+ to F
+- `numericScore`: 0-100
+- `breakdown`: Per-factor details with score, weight, grade, and details
+- `suggestions`: Prioritized improvement recommendations
+- `calculatedAt`: Timestamp
+
+**Types Exported:**
+- `ScoreGrade`, `ScoreFactorKey`, `LocationData`, `LicenseData`, `FacilitiesData`
+- `ConditionData`, `PriceQualityData`, `HorecaProperty`, `HorecaFeatures`
+- `ScoreFactorResult`, `ScoreSuggestion`, `HorecaScoreResult`, `ScoreColorScheme`
+- `KitchenType`, `ExtractionType`
+
+#### lib/horeca-score.test.ts
+Comprehensive test suite covering:
+- Minimal/empty data handling
+- Location scoring (high/low scenarios)
+- License scoring (all/none/weighted)
+- Facilities scoring (professional/basic)
+- Condition scoring (new vs old properties)
+- Price/quality scoring
+- Overall score calculation
+- Suggestion generation
+- UI helper functions (getScoreColor, getNumericScoreColor)
+
+### Verification
+- [x] ESLint passes on new files
+- [x] TypeScript compiles (our module is type-safe)
+- [ ] Tests require vitest to be installed (blocked by Node version mismatch with Prisma)
+
+### Notes
+- Test framework (vitest) could not be installed due to Prisma preinstall hook blocking on Node v23.11.0
+- Tests are ready to run once Node version is updated or Prisma constraint is resolved
+- Run tests with: `npx vitest run lib/horeca-score.test.ts`
+
+---
+
+## 2026-01-22: Created lib/slug.ts
+
+### Task
+Maak lib/slug.ts: export generateSlug(title) functie die URL-safe slug maakt. Lowercase, replace spaces met hyphens, remove special chars, trim hyphens. Export generateUniqueSlug(title, checkExists) async functie die suffix toevoegt als slug al bestaat (bijv "cafe-amsterdam-2")
+
+### Completed
+- Created `lib/slug.ts` with two exported functions:
+  - `generateSlug(title: string): string` - Converts title to URL-safe slug
+    - Converts to lowercase
+    - Normalizes and removes accented characters (café → cafe)
+    - Removes special characters (keeps alphanumeric and hyphens)
+    - Replaces spaces with hyphens
+    - Collapses multiple consecutive hyphens
+    - Trims leading/trailing hyphens
+  - `generateUniqueSlug(title: string, checkExists: (slug: string) => Promise<boolean>): Promise<string>`
+    - Returns base slug if available
+    - Appends numeric suffix (-2, -3, etc.) if slug already exists
+    - Handles edge case of empty titles with "item-N" fallback
+
+- Created `lib/__tests__/slug.test.ts` with 15 test cases covering:
+  - Lowercase conversion
+  - Space to hyphen replacement
+  - Special character removal
+  - Accented character handling (café, naïve, über)
+  - Hyphen trimming and collapsing
+  - Empty/whitespace input handling
+  - Number preservation
+  - Complex real-world titles
+  - Unique slug generation with suffix increments
+  - Async checkExists behavior
+
+### Test Results
+All 15 tests pass with Node's built-in test runner.
+
+### Files Changed
+- `lib/slug.ts` (new)
+- `lib/__tests__/slug.test.ts` (new)
+- `progress.txt` (new)
+
+---
+
+## Task: Admin Agencies Page (PRD Task 12.1)
+
+**Date:** 2026-01-22
+**Status:** Completed
+
+### Implemented Features
+
+1. **Admin Agency Types** (`types/admin.ts`)
+   - Added `AgencyPlan` type (FREE, PRO, ENTERPRISE)
+   - Added `AdminAgency` interface with all required fields
+   - Added `AgencyEditFields` and `AgencyDeleteFields` types
+   - Added `AdminAgencyDetail` interface for modal view with members and activity
+
+2. **Server Actions** (`app/actions/admin/agencies.ts`)
+   - `getAgencies()` - Paginated list with search, sort, verified filter, plan filter
+   - `getAgencyById()` - Detailed agency info with members and activity
+   - `updateAgencyVerified()` - Toggle verification status
+   - `updateAgencyPlan()` - Change subscription plan
+   - `getAgencyOwnerId()` - Get owner for impersonation
+   - Note: Currently using Workspace model as base (Agency model pending in schema)
+
+3. **Data Table Component** (`components/admin/agencies-data-table.tsx`)
+   - Columns: Name (with avatar), Slug, Owner Email, Plan, Verified Status, Listings Count, Members Count, Created Date
+   - Actions dropdown: View Details, Verify/Unverify toggle, Change Plan submenu, Impersonate Owner
+   - Filters: Plan (FREE/PRO/ENTERPRISE), Verified Status (true/false)
+   - Search: By agency name
+   - Pagination: Built-in via useDataTable hook
+   - Row click: Opens detail modal
+
+4. **Detail Modal** (`components/admin/agency-detail-modal.tsx`)
+   - Overview tab: Stats (members, listings, invitations), Owner info, Dates
+   - Members tab: List of all members with roles and join dates
+   - Activity tab: Recent activity timeline
+   - Loading states and error handling
+
+5. **Admin Page** (`app/(admin)/admin/agencies/page.tsx`)
+   - Uses ContentCard pattern (standard container layout)
+   - Header with "Agencies" title and description
+   - Suspense with skeleton loading
+   - Server-side data fetching with filters from URL params
+
+6. **Navigation** (`components/admin-sidebar.tsx`)
+   - Added "Agencies" nav item with IconBuilding icon
+   - Placed after "Workspace Management" in the sidebar
+
+### Technical Notes
+
+- The implementation uses `Workspace` model as the base since the `Agency` model from PRD hasn't been added to the Prisma schema yet
+- `verified`, `plan`, and `listings` fields are simulated/placeholder values
+- When the Agency model is added to schema, the server actions will need minimal updates to use real fields
+- All patterns follow existing admin pages (users, workspaces, impersonate)
+
+### Files Created/Modified
+
+**Created:**
+- `app/(admin)/admin/agencies/page.tsx`
+- `app/actions/admin/agencies.ts`
+- `components/admin/agencies-data-table.tsx`
+- `components/admin/agency-detail-modal.tsx`
+
+**Modified:**
+- `types/admin.ts` - Added agency types
+- `components/admin-sidebar.tsx` - Added Agencies nav item
+
+### Build Status
+
+- Lint: Passed (no errors in new files)
+- Build: Passed (agencies page included in output)

@@ -216,7 +216,7 @@ export async function createWorkspace(input: CreateWorkspaceInput): Promise<Acti
     console.error("Error creating workspace:", error);
 
     if (error.name === "ZodError") {
-      return { success: false, error: error.errors[0]?.message ?? "Validation failed" };
+      return { success: false, error: error.issues[0]?.message ?? "Validation failed" };
     }
 
     return { success: false, error: "Failed to create workspace" };
@@ -284,7 +284,7 @@ export async function updateWorkspace(input: UpdateWorkspaceInput): Promise<Acti
     console.error("Error updating workspace:", error);
 
     if (error.name === "ZodError") {
-      return { success: false, error: error.errors[0]?.message ?? "Validation failed" };
+      return { success: false, error: error.issues[0]?.message ?? "Validation failed" };
     }
 
     return { success: false, error: "Failed to update workspace" };
@@ -329,7 +329,7 @@ export async function deleteWorkspace(input: DeleteWorkspaceInput): Promise<Acti
     console.error("Error deleting workspace:", error);
 
     if (error.name === "ZodError") {
-      return { success: false, error: error.errors[0]?.message ?? "Validation failed" };
+      return { success: false, error: error.issues[0]?.message ?? "Validation failed" };
     }
 
     return { success: false, error: "Failed to delete workspace" };

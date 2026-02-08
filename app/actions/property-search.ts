@@ -345,7 +345,7 @@ export async function searchProperties(
     if (validated.search) {
       const searchLower = validated.search.toLowerCase();
       filteredProperties = filteredProperties.filter(
-        (p) =>
+        (p: any) =>
           p.title.toLowerCase().includes(searchLower) ||
           p.shortDescription?.toLowerCase().includes(searchLower) ||
           p.city.toLowerCase().includes(searchLower) ||
@@ -359,7 +359,7 @@ export async function searchProperties(
 
       // City filter
       if (filters.cities && filters.cities.length > 0) {
-        filteredProperties = filteredProperties.filter((p) =>
+        filteredProperties = filteredProperties.filter((p: any) =>
           filters.cities!.some(
             (city) => p.city.toLowerCase() === city.toLowerCase()
           )
@@ -369,7 +369,7 @@ export async function searchProperties(
       // Province filter
       if (filters.provinces && filters.provinces.length > 0) {
         filteredProperties = filteredProperties.filter(
-          (p) =>
+          (p: any) =>
             p.province &&
             filters.provinces!.some(
               (prov) => p.province!.toLowerCase() === prov.toLowerCase()
@@ -379,7 +379,7 @@ export async function searchProperties(
 
       // Property type filter
       if (filters.propertyTypes && filters.propertyTypes.length > 0) {
-        filteredProperties = filteredProperties.filter((p) =>
+        filteredProperties = filteredProperties.filter((p: any) =>
           filters.propertyTypes!.includes(p.propertyType)
         );
       }
@@ -387,7 +387,7 @@ export async function searchProperties(
       // Price type filter
       if (filters.priceType) {
         filteredProperties = filteredProperties.filter(
-          (p) =>
+          (p: any) =>
             p.priceType === filters.priceType ||
             p.priceType === "RENT_OR_SALE"
         );
@@ -395,13 +395,13 @@ export async function searchProperties(
 
       // Price range filter (using rent or sale price based on priceType)
       if (filters.priceMin !== undefined) {
-        filteredProperties = filteredProperties.filter((p) => {
+        filteredProperties = filteredProperties.filter((p: any) => {
           const price = p.rentPrice ?? p.salePrice ?? 0;
           return price >= filters.priceMin!;
         });
       }
       if (filters.priceMax !== undefined) {
-        filteredProperties = filteredProperties.filter((p) => {
+        filteredProperties = filteredProperties.filter((p: any) => {
           const price = p.rentPrice ?? p.salePrice ?? Infinity;
           return price <= filters.priceMax!;
         });
@@ -410,29 +410,29 @@ export async function searchProperties(
       // Surface filter
       if (filters.surfaceMin !== undefined) {
         filteredProperties = filteredProperties.filter(
-          (p) => p.surfaceTotal >= filters.surfaceMin!
+          (p: any) => p.surfaceTotal >= filters.surfaceMin!
         );
       }
       if (filters.surfaceMax !== undefined) {
         filteredProperties = filteredProperties.filter(
-          (p) => p.surfaceTotal <= filters.surfaceMax!
+          (p: any) => p.surfaceTotal <= filters.surfaceMax!
         );
       }
 
       // Feature filters
       if (filters.hasTerrace !== undefined) {
         filteredProperties = filteredProperties.filter(
-          (p) => p.hasTerrace === filters.hasTerrace
+          (p: any) => p.hasTerrace === filters.hasTerrace
         );
       }
       if (filters.hasKitchen !== undefined) {
         filteredProperties = filteredProperties.filter(
-          (p) => p.hasKitchen === filters.hasKitchen
+          (p: any) => p.hasKitchen === filters.hasKitchen
         );
       }
       if (filters.hasParking !== undefined) {
         filteredProperties = filteredProperties.filter(
-          (p) => p.hasParking === filters.hasParking
+          (p: any) => p.hasParking === filters.hasParking
         );
       }
     }
@@ -534,7 +534,7 @@ export async function getRecentProperties(
  */
 export async function getPropertyCities(): Promise<ActionResult<string[]>> {
   try {
-    const cities = [...new Set(MOCK_PROPERTIES.map((p) => p.city))].sort();
+    const cities = [...new Set(MOCK_PROPERTIES.map((p: any) => p.city))].sort();
     return { success: true, data: cities };
   } catch {
     return { success: false, error: "Kon steden niet laden" };

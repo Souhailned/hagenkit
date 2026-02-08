@@ -230,13 +230,13 @@ export async function getRecentActivity(): Promise<
 
     // Combine and format activities
     const activities: ActivityItem[] = [
-      ...recentUsers.map((user) => ({
+      ...recentUsers.map((user: any) => ({
         id: `user-${user.id}`,
         type: "user_registered" as const,
         description: `User "${user.name || user.email}" registered`,
         timestamp: user.createdAt,
       })),
-      ...recentWorkspaces.map((workspace) => ({
+      ...recentWorkspaces.map((workspace: any) => ({
         id: `workspace-${workspace.id}`,
         type: "workspace_created" as const,
         description: `Workspace "${workspace.name}" created`,

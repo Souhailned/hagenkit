@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { WizardSteps, type WizardStep } from "./types";
+import { WIZARD_STEPS, type WizardStep } from "./types";
 import {
   FileText,
   MapPin,
@@ -23,9 +23,9 @@ const iconMap = {
 } as const;
 
 interface WizardStepperProps {
-  currentStep: WizardStep;
-  onStepClick: (step: WizardStep) => void;
-  completedSteps: Set<WizardStep>;
+  currentStep: number;
+  onStepClick: (stepId: number) => void;
+  completedSteps: Set<number>;
   className?: string;
 }
 
@@ -37,7 +37,7 @@ export function WizardStepper({
 }: WizardStepperProps) {
   return (
     <nav className={cn("flex flex-col gap-1", className)} aria-label="Wizard progress">
-      {WizardSteps.map((step) => {
+      {WIZARD_STEPS.map((step) => {
         const Icon = iconMap[step.icon as keyof typeof iconMap];
         const isActive = step.id === currentStep;
         const isCompleted = completedSteps.has(step.id);
@@ -87,7 +87,7 @@ export function WizardStepper({
                 {step.title}
               </span>
               <span className="text-xs text-muted-foreground hidden sm:block">
-                Stap {step.id} van {WizardSteps.length}
+                Stap {step.id} van {WIZARD_STEPS.length}
               </span>
             </span>
 
@@ -108,8 +108,8 @@ export function WizardStepperMobile({
   completedSteps,
   className,
 }: Omit<WizardStepperProps, "onStepClick">) {
-  const currentStepData = WizardSteps.find((s) => s.id === currentStep);
-  const progress = ((currentStep - 1) / (WizardSteps.length - 1)) * 100;
+  const currentStepData = WIZARD_STEPS.find((s) => s.id === currentStep);
+  const progress = ((currentStep - 1) / (WIZARD_STEPS.length - 1)) * 100;
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
@@ -123,7 +123,7 @@ export function WizardStepperMobile({
 
       {/* Step indicators */}
       <div className="flex items-center justify-between">
-        {WizardSteps.map((step) => {
+        {WIZARD_STEPS.map((step) => {
           const isActive = step.id === currentStep;
           const isCompleted = completedSteps.has(step.id);
 
@@ -147,7 +147,7 @@ export function WizardStepperMobile({
       <p className="text-center text-sm font-medium">
         {currentStepData?.title}
         <span className="ml-2 text-muted-foreground">
-          ({currentStep}/{WizardSteps.length})
+          ({currentStep}/{WIZARD_STEPS.length})
         </span>
       </p>
     </div>

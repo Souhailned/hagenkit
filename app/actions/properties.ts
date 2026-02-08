@@ -19,6 +19,23 @@ import {
 } from "@/lib/data/mock-properties";
 
 /**
+ * Helper to get effective price for sorting
+ * Returns rentPrice for RENT, salePrice for SALE, or whichever exists for RENT_OR_SALE
+ */
+function getEffectivePrice(property: Property): number {
+  switch (property.priceType) {
+    case "RENT":
+      return property.rentPrice || 0;
+    case "SALE":
+      return property.salePrice || 0;
+    case "RENT_OR_SALE":
+      return property.rentPrice || property.salePrice || 0;
+    default:
+      return 0;
+  }
+}
+
+/**
  * Search and filter properties with pagination
  * Supports SSR with URL search params
  */
@@ -50,7 +67,7 @@ export async function searchProperties(
     if (search && search.trim()) {
       const searchLower = search.toLowerCase().trim();
       filtered = filtered.filter(
-        (p) =>
+        (p: any) =>
           p.title.toLowerCase().includes(searchLower) ||
           p.description.toLowerCase().includes(searchLower) ||
           p.city.toLowerCase().includes(searchLower) ||
@@ -60,54 +77,54 @@ export async function searchProperties(
 
     // Apply city filter
     if (cities && cities.length > 0) {
-      filtered = filtered.filter((p) => cities.includes(p.city));
+      filtered = filtered.filter((p: any) => cities.includes(p.city));
     }
 
     // Apply type filter
     if (types && types.length > 0) {
-      filtered = filtered.filter((p) =>
+      filtered = filtered.filter((p: any) =>
         types.includes(p.type as PropertyType)
       );
     }
 
     // Apply price filter
     if (priceMin !== undefined) {
-      filtered = filtered.filter((p) => p.price >= priceMin);
+      filtered = filtered.filter((p: any) => (p.price || 0) >= priceMin);
     }
     if (priceMax !== undefined) {
-      filtered = filtered.filter((p) => p.price <= priceMax);
+      filtered = filtered.filter((p: any) => (p.price || 0) <= priceMax);
     }
 
     // Apply area filter
     if (areaMin !== undefined) {
-      filtered = filtered.filter((p) => p.area >= areaMin);
+      filtered = filtered.filter((p: any) => (p.area || p.surfaceTotal || 0) >= areaMin);
     }
     if (areaMax !== undefined) {
-      filtered = filtered.filter((p) => p.area <= areaMax);
+      filtered = filtered.filter((p: any) => (p.area || p.surfaceTotal || 0) <= areaMax);
     }
 
     // Apply features filter
     if (features && features.length > 0) {
-      filtered = filtered.filter((p) =>
+      filtered = filtered.filter((p: any) =>
         features.every((f) => p.features.includes(f as PropertyFeature))
       );
     }
 
     // Apply sorting
     switch (sortBy) {
-      case SortOption.NEWEST:
+      case "newest":
         filtered.sort(
           (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
         );
         break;
-      case SortOption.PRICE_LOW_HIGH:
-        filtered.sort((a, b) => a.price - b.price);
+      case "price_low_high":
+        filtered.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
         break;
-      case SortOption.PRICE_HIGH_LOW:
-        filtered.sort((a, b) => b.price - a.price);
+      case "price_high_low":
+        filtered.sort((a, b) => getEffectivePrice(b) - getEffectivePrice(a));
         break;
-      case SortOption.AREA:
-        filtered.sort((a, b) => b.area - a.area);
+      case "area":
+        filtered.sort((a, b) => (b.surfaceTotal || 0) - (a.surfaceTotal || 0));
         break;
     }
 
@@ -157,8 +174,8 @@ export async function getFilterOptions(): Promise<
     const popularFeatures = getPopularFeatures();
 
     // Get price and area ranges from data
-    const prices = mockProperties.map((p) => p.price);
-    const areas = mockProperties.map((p) => p.area);
+    const prices = mockProperties.map((p: any) => p.price || 0);
+    const areas = mockProperties.map((p: any) => p.area || p.surfaceTotal || 0);
 
     const { PropertyTypeLabels, PropertyFeatureLabels } = await import(
       "@/types/property"
@@ -206,7 +223,7 @@ export async function getPropertyBySlug(
   slug: string
 ): Promise<ActionResult<Property | null>> {
   try {
-    const property = mockProperties.find((p) => p.slug === slug);
+    const property = mockProperties.find((p: any) => p.slug === slug);
 
     return {
       success: true,

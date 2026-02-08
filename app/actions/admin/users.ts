@@ -192,8 +192,8 @@ export async function createUser(input: CreateUserInput): Promise<ActionResult<a
         id: userId,
         email: validatedData.email,
         name: validatedData.name,
-        role: validatedData.role ?? "USER",
-        status: validatedData.status ?? "ACTIVE",
+        role: (validatedData.role as any) ?? "seeker",
+        status: (validatedData.status as any) ?? "active",
         phone: validatedData.phone || null,
         image: validatedData.image || null,
       },
@@ -216,7 +216,7 @@ export async function createUser(input: CreateUserInput): Promise<ActionResult<a
     console.error("Error creating user:", error);
 
     if (error.name === "ZodError") {
-      return { success: false, error: error.errors[0]?.message ?? "Validation failed" };
+      return { success: false, error: error.issues[0]?.message ?? "Validation failed" };
     }
 
     return { success: false, error: "Failed to create user" };
@@ -285,7 +285,7 @@ export async function updateUser(input: UpdateUserInput): Promise<ActionResult<a
     console.error("Error updating user:", error);
 
     if (error.name === "ZodError") {
-      return { success: false, error: error.errors[0]?.message ?? "Validation failed" };
+      return { success: false, error: error.issues[0]?.message ?? "Validation failed" };
     }
 
     return { success: false, error: "Failed to update user" };
@@ -331,7 +331,7 @@ export async function deleteUser(input: DeleteUserInput): Promise<ActionResult> 
     console.error("Error deleting user:", error);
 
     if (error.name === "ZodError") {
-      return { success: false, error: error.errors[0]?.message ?? "Validation failed" };
+      return { success: false, error: error.issues[0]?.message ?? "Validation failed" };
     }
 
     return { success: false, error: "Failed to delete user" };

@@ -1,9 +1,13 @@
 import { task, logger } from "@trigger.dev/sdk";
 import { fal } from "@fal-ai/client";
 import prisma from "@/lib/prisma";
-import { uploadImage, getExtensionFromContentType, generateImagePath } from "@/lib/supabase";
+import {
+  uploadImage,
+  getExtensionFromContentType,
+  generateImagePath,
+} from "@/lib/supabase";
+import { recomputeImageProjectCounters } from "@/lib/image-project-state";
 
-// Configure Fal.ai
 fal.config({
   credentials: process.env.FAL_API_KEY!,
 });
@@ -14,7 +18,7 @@ export interface ProcessImagePayload {
 
 export const processImageTask = task({
   id: "process-image",
-  maxDuration: 300, // 5 minutes
+  maxDuration: 300,
   retry: {
     maxAttempts: 3,
     minTimeoutInMs: 1000,
@@ -27,9 +31,6 @@ export const processImageTask = task({
     logger.info("Starting image processing", { imageId });
 
     try {
-      // Step 1: Fetch image from database
-      logger.info("Fetching image from database", { step: 1, progress: 10 });
-
       const image = await prisma.image.findUnique({
         where: { id: imageId },
         include: {
@@ -48,18 +49,21 @@ export const processImageTask = task({
         return { success: true, skipped: true };
       }
 
-      // Update status to processing
       await prisma.image.update({
         where: { id: imageId },
-        data: { status: "PROCESSING" },
+        data: {
+          status: "PROCESSING",
+          metadata: {
+            ...(image.metadata as object),
+            startedAt: new Date().toISOString(),
+            model: "fal-ai/nano-banana-pro",
+          },
+        },
       });
-
-      // Step 2: Upload original image to Fal.ai
-      logger.info("Uploading image to Fal.ai", { step: 2, progress: 25 });
 
       const originalImageResponse = await fetch(image.originalImageUrl);
       if (!originalImageResponse.ok) {
-        throw new Error("Failed to fetch original image");
+        throw new Error(`Failed to fetch original image: ${originalImageResponse.status}`);
       }
 
       const originalImageBlob = await originalImageResponse.blob();
@@ -68,9 +72,6 @@ export const processImageTask = task({
       });
 
       const falImageUrl = await fal.storage.upload(originalImageFile);
-
-      // Step 3: Call AI model
-      logger.info("Processing with AI model", { step: 3, progress: 50 });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await (fal as any).subscribe("fal-ai/nano-banana-pro", {
@@ -81,39 +82,36 @@ export const processImageTask = task({
           output_format: "jpeg",
         },
         logs: true,
-        onQueueUpdate: (update: { status: string; logs?: { message: string }[] }) => {
-          if (update.status === "IN_PROGRESS") {
-            logger.info("AI processing in progress", {
-              logs: update.logs?.map((l) => l.message),
-            });
-          }
-        },
       });
 
-      // Handle response - could be wrapped or direct
-      const resultData = "data" in result ? result.data : result;
-      const images = resultData.images || resultData.output || [];
+      const output = (result as { data?: unknown }).data ?? result;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const images = ((output as any)?.images || (output as any)?.output || []) as
+        | Array<{ url?: string; content_type?: string } | string>
+        | undefined;
 
-      if (!images || images.length === 0) {
+      if (!images?.length) {
         throw new Error("No result image generated");
       }
 
-      const resultImage = images[0];
-      const resultImageUrl =
-        typeof resultImage === "string" ? resultImage : resultImage.url;
+      const first = images[0];
+      const resultImageUrl = typeof first === "string" ? first : first.url;
+      const contentType =
+        typeof first === "string" ? "image/jpeg" : first.content_type || "image/jpeg";
 
-      // Step 4: Save result to Supabase
-      logger.info("Saving result to Supabase", { step: 4, progress: 80 });
+      if (!resultImageUrl) {
+        throw new Error("Result image URL missing");
+      }
 
       const resultResponse = await fetch(resultImageUrl);
       if (!resultResponse.ok) {
-        throw new Error("Failed to fetch result image");
+        throw new Error(`Failed to fetch result image: ${resultResponse.status}`);
       }
 
       const resultBlob = await resultResponse.blob();
       const resultBuffer = Buffer.from(await resultBlob.arrayBuffer());
-      const contentType = resultBlob.type || "image/jpeg";
-      const extension = getExtensionFromContentType(contentType);
+      const normalizedContentType = resultBlob.type || contentType;
+      const extension = getExtensionFromContentType(normalizedContentType);
 
       const resultPath = generateImagePath(
         image.project.workspaceId,
@@ -123,14 +121,10 @@ export const processImageTask = task({
         extension
       );
 
-      const publicUrl = await uploadImage(resultBuffer, resultPath, contentType);
-
+      const publicUrl = await uploadImage(resultBuffer, resultPath, normalizedContentType);
       if (!publicUrl) {
         throw new Error("Failed to upload result image to Supabase");
       }
-
-      // Step 5: Update database
-      logger.info("Updating database", { step: 5, progress: 100 });
 
       await prisma.image.update({
         where: { id: imageId },
@@ -140,37 +134,16 @@ export const processImageTask = task({
           errorMessage: null,
           metadata: {
             ...(image.metadata as object),
-            processedAt: new Date().toISOString(),
+            completedAt: new Date().toISOString(),
             status: "completed",
+            model: "fal-ai/nano-banana-pro",
           },
         },
       });
 
-      // Update project completed count
-      await prisma.imageProject.update({
-        where: { id: image.project.id },
-        data: {
-          completedCount: { increment: 1 },
-        },
-      });
+      await recomputeImageProjectCounters(image.project.id);
 
-      // Check if all images are completed
-      const project = await prisma.imageProject.findUnique({
-        where: { id: image.project.id },
-        select: { imageCount: true, completedCount: true },
-      });
-
-      if (project && project.completedCount >= project.imageCount) {
-        await prisma.imageProject.update({
-          where: { id: image.project.id },
-          data: { status: "COMPLETED" },
-        });
-      }
-
-      logger.info("Image processing completed", {
-        imageId,
-        resultUrl: publicUrl,
-      });
+      logger.info("Image processing completed", { imageId, resultUrl: publicUrl });
 
       return {
         success: true,
@@ -183,14 +156,21 @@ export const processImageTask = task({
         error: error instanceof Error ? error.message : String(error),
       });
 
-      // Update image status to failed
-      await prisma.image.update({
+      const failedImage = await prisma.image.update({
         where: { id: imageId },
         data: {
           status: "FAILED",
           errorMessage: error instanceof Error ? error.message : "Processing failed",
+          metadata: {
+            failedAt: new Date().toISOString(),
+          },
+        },
+        select: {
+          projectId: true,
         },
       });
+
+      await recomputeImageProjectCounters(failedImage.projectId);
 
       throw error;
     }

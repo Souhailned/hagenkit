@@ -50,6 +50,12 @@ function getPropertyTypeLabel(type: PropertyType): string {
     FOOD_COURT: "Food Court",
     CATERING: "Catering",
     BAKERY: "Bakkerij",
+    SNACKBAR: "Snackbar",
+    PARTYCENTRUM: "Partycentrum",
+    GRANDCAFE: "Grand Café",
+    LUNCHROOM: "Lunchroom",
+    PIZZERIA: "Pizzeria",
+    BRASSERIE: "Brasserie",
     OTHER: "Overig",
   };
   return labels[type] || type;
@@ -197,7 +203,7 @@ export function PropertyCard({
                 <span>{totalSeating} zitpl.</span>
               </div>
             )}
-            {property.hasTermace && (
+            {property.hasTerrace && (
               <div className="flex items-center gap-1.5 text-emerald-600">
                 <TreeDeciduousIcon className="h-3.5 w-3.5" />
                 <span>Terras</span>

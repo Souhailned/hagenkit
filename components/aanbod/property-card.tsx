@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Property, PropertyTypeLabels, PropertyFeatureLabels } from "@/types/property";
+import { Property, PropertyTypeLabels, PropertyFeatureLabels, PriceType } from "@/types/property";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -12,6 +12,22 @@ import {
   ArrowUpRight,
   Sparkles,
 } from "lucide-react";
+
+/**
+ * Helper to get effective price based on priceType
+ */
+function getEffectivePrice(property: Property): number {
+  switch (property.priceType) {
+    case "RENT":
+      return property.rentPrice || 0;
+    case "SALE":
+      return property.salePrice || 0;
+    case "RENT_OR_SALE":
+      return property.rentPrice || property.salePrice || 0;
+    default:
+      return 0;
+  }
+}
 
 interface PropertyCardProps {
   property: Property;
@@ -24,9 +40,9 @@ export function PropertyCard({ property, className, priority = false }: Property
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: 0,
-  }).format(property.price);
+  }).format(getEffectivePrice(property) / 100); // Convert cents to euros
 
-  const priceLabel = property.priceType === "huur" ? "/maand" : "";
+  const priceLabel = property.priceType === "RENT" || property.priceType === "RENT_OR_SALE" ? "/maand" : "";
 
   return (
     <Link
@@ -43,8 +59,8 @@ export function PropertyCard({ property, className, priority = false }: Property
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         {property.images[0] ? (
           <Image
-            src={property.images[0]}
-            alt={property.title}
+            src={property.images[0].thumbnailUrl || property.images[0].originalUrl}
+            alt={property.images[0].altText || property.title}
             fill
             priority={priority}
             className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
@@ -85,7 +101,7 @@ export function PropertyCard({ property, className, priority = false }: Property
             variant="outline"
             className="border-white/30 bg-black/40 text-white backdrop-blur-sm"
           >
-            {PropertyTypeLabels[property.type]}
+            {PropertyTypeLabels[property.propertyType]}
           </Badge>
         </div>
 
@@ -121,7 +137,7 @@ export function PropertyCard({ property, className, priority = false }: Property
         <div className="mt-4 flex items-center gap-4 text-sm">
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Maximize2 className="h-4 w-4" />
-            <span>{property.area} m²</span>
+            <span>{property.surfaceTotal} m²</span>
           </div>
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Tag className="h-4 w-4" />
@@ -130,7 +146,7 @@ export function PropertyCard({ property, className, priority = false }: Property
         </div>
 
         {/* Features preview */}
-        {property.features.length > 0 && (
+        {property.features && property.features.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {property.features.slice(0, 3).map((feature) => (
               <span

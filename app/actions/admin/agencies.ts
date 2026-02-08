@@ -124,7 +124,7 @@ export async function getAgencies(params?: {
     // Transform workspaces to agency format
     // Note: verified and plan fields are simulated since Workspace doesn't have them
     // These will be real fields when Agency model is added
-    const agencies: AdminAgency[] = workspaces.map((workspace) => ({
+    const agencies: AdminAgency[] = workspaces.map((workspace: any) => ({
       id: workspace.id,
       name: workspace.name,
       slug: workspace.slug,
@@ -147,10 +147,10 @@ export async function getAgencies(params?: {
     let filteredAgencies = agencies;
     if (params?.verified !== undefined && params.verified !== "") {
       const verifiedFilter = params.verified === "true";
-      filteredAgencies = filteredAgencies.filter((a) => a.verified === verifiedFilter);
+      filteredAgencies = filteredAgencies.filter((a: any) => a.verified === verifiedFilter);
     }
     if (params?.plan) {
-      filteredAgencies = filteredAgencies.filter((a) => a.plan === params.plan);
+      filteredAgencies = filteredAgencies.filter((a: any) => a.plan === params.plan);
     }
 
     const pageCount = Math.ceil(total / pageSize);
@@ -212,11 +212,11 @@ export async function getAgencyById(id: string): Promise<ActionResult<AdminAgenc
     }
 
     // Find owner
-    const owner = workspace.members.find((m) => m.role === "OWNER")?.user ?? null;
+    const owner = workspace.members.find((m: any) => m.role === "OWNER")?.user ?? null;
 
     // Build recent activity from member joins
     // In a real implementation, this would come from an activity log table
-    const recentActivity = workspace.members.slice(0, 5).map((member) => ({
+    const recentActivity = workspace.members.slice(0, 5).map((member: any) => ({
       id: member.id,
       type: "member_joined" as const,
       description: `${member.user.name || member.user.email} joined as ${member.role}`,

@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useTransition, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import type { Property } from "@/types/agency";
 import { ArrowUpDown, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -372,7 +373,7 @@ export function PropertyListingsClient({
             {data.items.map((property, index) => (
               <PropertyCard
                 key={property.id}
-                property={property}
+                property={property as unknown as Property}
                 priority={index < 3}
               />
             ))}

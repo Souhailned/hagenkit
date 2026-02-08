@@ -18,12 +18,95 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-type ProjectDetailContentProps = {
-  project: Project
+// Tab components
+import { WorkstreamTab } from "@/components/projects/WorkstreamTab"
+import { ProjectTasksTab } from "@/components/projects/ProjectTasksTab"
+import { NotesTab } from "@/components/projects/NotesTab"
+import { AssetsFilesTab } from "@/components/projects/AssetsFilesTab"
+
+// ---------------------------------------------------------------------------
+// Exported types for page-level data mapping
+// ---------------------------------------------------------------------------
+
+export type WorkstreamData = {
+  id: string
+  name: string
+  order: number
+  tasks: TaskData[]
 }
 
-export function ProjectDetailContent({ project }: ProjectDetailContentProps) {
+export type TaskData = {
+  id: string
+  name: string
+  status: "TODO" | "IN_PROGRESS" | "DONE"
+  assigneeId: string | null
+  workstreamId: string | null
+  assignee: { id: string; name: string | null; image: string | null } | null
+  endDate: Date | null
+  order: number
+}
+
+export type NoteData = {
+  id: string
+  title: string
+  content: string | null
+  noteType: "GENERAL" | "MEETING" | "AUDIO"
+  status: "COMPLETED" | "PROCESSING"
+  createdAt: Date
+  updatedAt: Date
+  createdBy: {
+    id: string
+    name: string | null
+    email: string
+    image: string | null
+  }
+}
+
+export type FileData = {
+  id: string
+  name: string
+  url: string
+  size: number
+  type: "PDF" | "ZIP" | "FIGMA" | "DOC" | "IMAGE" | "OTHER"
+  uploadedAt: Date
+  uploadedBy: {
+    id: string
+    name: string | null
+    email: string
+  }
+}
+
+export type MemberData = {
+  id: string
+  name: string | null
+  image: string | null
+}
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
+type ProjectDetailContentProps = {
+  project: Project
+  projectId?: string
+  workstreams?: WorkstreamData[]
+  notes?: NoteData[]
+  files?: FileData[]
+  allTasks?: TaskData[]
+  members?: MemberData[]
+}
+
+export function ProjectDetailContent({
+  project,
+  projectId,
+  workstreams,
+  notes,
+  files,
+  allTasks,
+  members,
+}: ProjectDetailContentProps) {
   const [showMeta, setShowMeta] = useState(true)
+  const resolvedProjectId = projectId || project.id
 
   const copyLink = useCallback(async () => {
     if (!navigator.clipboard) {
@@ -115,6 +198,9 @@ export function ProjectDetailContent({ project }: ProjectDetailContentProps) {
     url: "#",
   })) || []
 
+  // Workstream info for TasksTab
+  const workstreamInfos = (workstreams || []).map(ws => ({ id: ws.id, name: ws.name }))
+
   return (
     <div className="flex flex-1 flex-col min-w-0 m-2 border border-border rounded-lg">
       <div className="flex items-center justify-between gap-4 px-4 py-4">
@@ -180,27 +266,58 @@ export function ProjectDetailContent({ project }: ProjectDetailContentProps) {
                   </TabsContent>
 
                   <TabsContent value="workstream">
-                    <div className="rounded-lg border border-dashed border-border/70 bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
-                      Workstream section is upcoming.
-                    </div>
+                    {workstreams ? (
+                      <WorkstreamTab
+                        projectId={resolvedProjectId}
+                        workstreams={workstreams}
+                        allTasks={allTasks || []}
+                      />
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-border/70 bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
+                        Workstream section is upcoming.
+                      </div>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="tasks">
-                    <div className="rounded-lg border border-dashed border-border/70 bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
-                      Tasks section is upcoming.
-                    </div>
+                    {allTasks ? (
+                      <ProjectTasksTab
+                        projectId={resolvedProjectId}
+                        tasks={allTasks}
+                        workstreams={workstreamInfos}
+                        members={members || []}
+                      />
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-border/70 bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
+                        Tasks section is upcoming.
+                      </div>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="notes">
-                    <div className="rounded-lg border border-dashed border-border/70 bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
-                      Notes section is upcoming.
-                    </div>
+                    {notes ? (
+                      <NotesTab
+                        projectId={resolvedProjectId}
+                        notes={notes}
+                      />
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-border/70 bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
+                        Notes section is upcoming.
+                      </div>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="assets">
-                    <div className="rounded-lg border border-dashed border-border/70 bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
-                      Assets &amp; Files section is upcoming.
-                    </div>
+                    {files ? (
+                      <AssetsFilesTab
+                        projectId={resolvedProjectId}
+                        files={files}
+                      />
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-border/70 bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
+                        Assets &amp; Files section is upcoming.
+                      </div>
+                    )}
                   </TabsContent>
                 </Tabs>
               </div>

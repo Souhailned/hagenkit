@@ -89,30 +89,42 @@ export async function deleteProjectImages(
   projectId: string
 ): Promise<boolean> {
   const basePath = `${workspaceId}/${projectId}`;
+  const candidates = [`${basePath}/original`, `${basePath}/result`, basePath];
+  const filePaths = new Set<string>();
 
-  // List all files in the project folder
-  const { data: files, error: listError } = await supabase.storage
-    .from(STORAGE_BUCKET)
-    .list(basePath, { limit: 1000 });
+  for (const folder of candidates) {
+    const { data: files, error: listError } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .list(folder, { limit: 1000 });
 
-  if (listError) {
-    console.error("[supabase:deleteProjectImages] List error:", listError);
-    return false;
+    if (listError) {
+      console.error("[supabase:deleteProjectImages] List error:", listError);
+      continue;
+    }
+
+    for (const file of files || []) {
+      if (file.name && !file.name.endsWith("/")) {
+        filePaths.add(`${folder}/${file.name}`);
+      }
+    }
   }
 
-  if (!files || files.length === 0) {
+  if (filePaths.size === 0) {
     return true;
   }
 
-  // Delete all files
-  const filePaths = files.map((file) => `${basePath}/${file.name}`);
-  const { error: deleteError } = await supabase.storage
-    .from(STORAGE_BUCKET)
-    .remove(filePaths);
+  // Supabase remove supports batches; keep chunks conservative.
+  const paths = Array.from(filePaths);
+  for (let i = 0; i < paths.length; i += 100) {
+    const chunk = paths.slice(i, i + 100);
+    const { error: deleteError } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .remove(chunk);
 
-  if (deleteError) {
-    console.error("[supabase:deleteProjectImages] Delete error:", deleteError);
-    return false;
+    if (deleteError) {
+      console.error("[supabase:deleteProjectImages] Delete error:", deleteError);
+      return false;
+    }
   }
 
   return true;

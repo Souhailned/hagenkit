@@ -29,6 +29,8 @@ interface ImageCardProps {
   onDelete?: () => void;
   onView?: () => void;
   onCompare?: () => void;
+  onEdit?: () => void;
+  onVersions?: () => void;
   disabled?: boolean;
 }
 
@@ -65,10 +67,13 @@ export function ImageCard({
   onDelete,
   onView,
   onCompare,
+  onEdit,
+  onVersions,
   disabled,
 }: ImageCardProps) {
   const roomTypes = getRoomTypes();
   const metadata = image.metadata as { roomType?: string } | null;
+  const runMetadata = image.metadata as { runId?: string } | null;
   const currentRoomType = metadata?.roomType || "";
   const status = statusConfig[image.status];
   const displayUrl = image.resultImageUrl || image.originalImageUrl;
@@ -139,6 +144,18 @@ export function ImageCard({
               Compare
             </Button>
           )}
+          {hasResult && onEdit && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+            >
+              Edit
+            </Button>
+          )}
         </div>
       </div>
 
@@ -188,6 +205,12 @@ export function ImageCard({
                 Retry
               </DropdownMenuItem>
             )}
+            {onVersions && (
+              <DropdownMenuItem onClick={onVersions}>
+                <Eye className="mr-2 h-4 w-4" />
+                Versions
+              </DropdownMenuItem>
+            )}
             {onDelete && (
               <DropdownMenuItem
                 onClick={onDelete}
@@ -206,6 +229,14 @@ export function ImageCard({
         <div className="border-t bg-red-50 px-2 py-1 dark:bg-red-900/20">
           <p className="truncate text-xs text-red-600 dark:text-red-400">
             {image.errorMessage}
+          </p>
+        </div>
+      )}
+
+      {runMetadata?.runId && image.status === "PROCESSING" && (
+        <div className="border-t bg-blue-50 px-2 py-1 dark:bg-blue-900/20">
+          <p className="truncate text-xs text-blue-700 dark:text-blue-300">
+            run: {runMetadata.runId}
           </p>
         </div>
       )}

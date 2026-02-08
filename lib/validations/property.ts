@@ -15,6 +15,12 @@ export const PropertyType = {
   FOOD_COURT: "FOOD_COURT",
   CATERING: "CATERING",
   BAKERY: "BAKERY",
+  SNACKBAR: "SNACKBAR",
+  PARTYCENTRUM: "PARTYCENTRUM",
+  GRANDCAFE: "GRANDCAFE",
+  LUNCHROOM: "LUNCHROOM",
+  PIZZERIA: "PIZZERIA",
+  BRASSERIE: "BRASSERIE",
   OTHER: "OTHER",
 } as const;
 
@@ -70,6 +76,12 @@ export const propertyTypeEnum = z.enum([
   "FOOD_COURT",
   "CATERING",
   "BAKERY",
+  "SNACKBAR",
+  "PARTYCENTRUM",
+  "GRANDCAFE",
+  "LUNCHROOM",
+  "PIZZERIA",
+  "BRASSERIE",
   "OTHER",
 ]);
 
@@ -243,7 +255,7 @@ export const createPropertySchema = z.object({
 
   // Optional scores
   horecaScore: z.string().optional(),
-  horecaScoreDetails: z.record(z.unknown()).optional(),
+  horecaScoreDetails: z.record(z.string(), z.unknown()).optional(),
   locationScore: z.number().int().min(0).max(100).optional(),
   footfallEstimate: z.number().int().nonnegative().optional(),
 
@@ -273,6 +285,41 @@ export const updatePropertySchema = createPropertySchema.partial().extend({
   adminNotes: z.string().optional(),
   rejectionReason: z.string().optional(),
 });
+
+// ============================================================================
+// Search Properties Schema (legacy support)
+// ============================================================================
+
+// Search properties schema for backward compatibility
+export const searchPropertiesSchema = z.object({
+  page: z.number().int().positive().default(1),
+  pageSize: z.number().int().positive().max(100).default(12),
+  sortBy: z.enum(["newest", "price_low_high", "price_high_low", "area"]).default("newest"),
+  search: z.string().max(200).optional(),
+  cities: z.array(z.string()).optional(),
+  types: z.array(propertyTypeEnum).optional(),
+  priceMin: z.number().int().nonnegative().optional(),
+  priceMax: z.number().int().nonnegative().optional(),
+  areaMin: z.number().int().nonnegative().optional(),
+  areaMax: z.number().int().nonnegative().optional(),
+  features: z.array(z.string()).optional(),
+});
+
+export type SearchPropertiesInput = z.infer<typeof searchPropertiesSchema>;
+
+// ============================================================================
+// Sort Options Enum (for legacy compatibility)
+// ============================================================================
+
+export const SortOption = {
+  NEWEST: "newest",
+  PRICE_LOW_HIGH: "price_low_high",
+  PRICE_HIGH_LOW: "price_high_low",
+  AREA: "area",
+} as const;
+
+const sortOptionEnum = z.enum(["newest", "price_low_high", "price_high_low", "area"]);
+export type SortOption = z.infer<typeof sortOptionEnum>;
 
 // ============================================================================
 // Additional Action Schemas
@@ -410,6 +457,10 @@ export interface Property {
   servicesCosts?: number;
   depositMonths?: number;
 
+  // Legacy pricing properties (for backward compatibility)
+  price?: number; // Derived from rentPrice or salePrice based on priceType
+  area?: number; // Alias for surfaceTotal
+
   // Dimensions
   surfaceTotal: number;
   surfaceCommercial?: number;
@@ -423,6 +474,9 @@ export interface Property {
   // Classification
   propertyType: PropertyType;
   status: PropertyStatus;
+
+  // Legacy type property (for backward compatibility)
+  type: PropertyType; // Alias for propertyType
 
   // Horeca specifics
   seatingCapacityInside?: number;
@@ -482,7 +536,11 @@ export interface Property {
 
   // Relations
   images?: PropertyImage[];
-  features?: PropertyFeature[];
+  propertyFeatures?: PropertyFeature[]; // Renamed to avoid conflict
+  
+  // Legacy features property (for backward compatibility)
+  features?: string[]; // Array of feature keys for easier filtering
+
   agency?: {
     id: string;
     name: string;
@@ -511,6 +569,12 @@ export const propertyTypeLabels: Record<PropertyType, string> = {
   FOOD_COURT: "Food Court",
   CATERING: "Catering",
   BAKERY: "Bakkerij",
+  SNACKBAR: "Snackbar",
+  PARTYCENTRUM: "Partycentrum",
+  GRANDCAFE: "Grand Café",
+  LUNCHROOM: "Lunchroom",
+  PIZZERIA: "Pizzeria",
+  BRASSERIE: "Brasserie",
   OTHER: "Overig",
 };
 

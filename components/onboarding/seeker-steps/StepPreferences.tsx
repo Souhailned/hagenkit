@@ -59,18 +59,18 @@ export function StepPreferences({ data, onUpdate }: StepProps<PreferencesData>) 
   );
 
   const handleSelectAllPopular = useCallback(() => {
-    const allPopular = popularCities.map((c) => c.value);
+    const allPopular = popularCities.map((c) => c.value) as City[];
     const hasAllPopular = allPopular.every((c) => data.cities.includes(c));
 
     if (hasAllPopular) {
       // Deselect all popular
       onUpdate({
         ...data,
-        cities: data.cities.filter((c) => !allPopular.includes(c)),
+        cities: data.cities.filter((c) => !(allPopular as string[]).includes(c)),
       });
     } else {
       // Select all popular
-      const merged = [...new Set([...data.cities, ...allPopular])];
+      const merged = [...new Set([...data.cities, ...allPopular])] as City[];
       onUpdate({ ...data, cities: merged });
     }
   }, [data, onUpdate, popularCities]);

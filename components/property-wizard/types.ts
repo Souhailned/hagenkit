@@ -187,13 +187,14 @@ export const INITIAL_WIZARD_DATA: PropertyWizardData = {
 
 // Step definitions
 export const WIZARD_STEPS = [
-  { id: 1, key: "basic", title: "Basis", description: "Naam, type & beschrijving" },
-  { id: 2, key: "location", title: "Locatie", description: "Adres & coördinaten" },
-  { id: 3, key: "pricing", title: "Prijs", description: "Huur- of koopprijs" },
-  { id: 4, key: "dimensions", title: "Afmetingen", description: "Oppervlakte & indeling" },
-  { id: 5, key: "features", title: "Kenmerken", description: "Vergunningen & faciliteiten" },
-  { id: 6, key: "photos", title: "Foto's", description: "Afbeeldingen uploaden" },
-  { id: 7, key: "review", title: "Overzicht", description: "Controleer & publiceer" },
+  { id: 1, key: "basic", title: "Basis", description: "Naam, type & beschrijving", icon: "FileText" },
+  { id: 2, key: "location", title: "Locatie", description: "Adres & coördinaten", icon: "MapPin" },
+  { id: 3, key: "pricing", title: "Prijs", description: "Huur- of koopprijs", icon: "DollarSign" },
+  { id: 4, key: "dimensions", title: "Afmetingen", description: "Oppervlakte & indeling", icon: "Ruler" },
+  { id: 5, key: "features", title: "Kenmerken", description: "Vergunningen & faciliteiten", icon: "Settings" },
+  { id: 6, key: "photos", title: "Foto's", description: "Afbeeldingen uploaden", icon: "Camera" },
+  { id: 7, key: "review", title: "Overzicht", description: "Controleer & publiceer", icon: "CheckCircle" },
 ] as const;
 
 export type WizardStepKey = (typeof WIZARD_STEPS)[number]["key"];
+export type WizardStep = (typeof WIZARD_STEPS)[number];

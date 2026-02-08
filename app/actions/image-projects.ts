@@ -165,8 +165,14 @@ export async function deleteImageProject(
     // Import deleteProjectImages dynamically to avoid circular deps
     const { deleteProjectImages } = await import("@/lib/supabase");
 
-    // Delete images from storage first
-    await deleteProjectImages(context.workspaceId, projectId);
+    // Attempt storage cleanup first. We proceed with DB delete even on partial storage failure.
+    const storageDeleted = await deleteProjectImages(context.workspaceId, projectId);
+    if (!storageDeleted) {
+      console.warn("[deleteImageProject] Storage cleanup partially failed", {
+        workspaceId: context.workspaceId,
+        projectId,
+      });
+    }
 
     // Delete project (cascades to images in DB)
     await prisma.imageProject.delete({

@@ -71,7 +71,7 @@ export function PropertyKenmerkenTab({ property }: PropertyKenmerkenTabProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [features, setFeatures] = useState<PropertyFeature[]>(
-    property.features || []
+    (property.features || []) as unknown as PropertyFeature[]
   );
   const [hasChanges, setHasChanges] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([

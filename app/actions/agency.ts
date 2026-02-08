@@ -384,7 +384,7 @@ export async function getAgency(
     //   }
     // });
 
-    const agency = mockAgencies.find((a) => a.slug === slug);
+    const agency = mockAgencies.find((a: any) => a.slug === slug);
 
     if (!agency) {
       return {
@@ -497,10 +497,10 @@ export async function getPropertiesByAgency(
     //   take: options?.limit
     // });
 
-    let properties = mockProperties.filter((p) => p.agencyId === agencyId);
+    let properties = mockProperties.filter((p: any) => p.agencyId === agencyId);
 
     if (options?.status === "ACTIVE") {
-      properties = properties.filter((p) => p.status === "ACTIVE");
+      properties = properties.filter((p: any) => p.status === "ACTIVE");
     }
 
     if (options?.limit) {
@@ -583,5 +583,5 @@ export async function getAllAgencySlugs(): Promise<string[]> {
   // });
   // return agencies.map(a => a.slug);
 
-  return mockAgencies.filter((a) => a.verified).map((a) => a.slug);
+  return mockAgencies.filter((a: any) => a.verified).map((a: any) => a.slug);
 }

@@ -31,7 +31,7 @@ export async function getCurrentUser(): Promise<CurrentUser> {
       },
     });
 
-    return user;
+    return user as CurrentUser;
   } catch (error) {
     console.error("Error fetching current user:", error);
     return null;

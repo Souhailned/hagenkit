@@ -13,7 +13,14 @@ import {
   generateImagePath,
   deleteImage as deleteStorageImage,
 } from "@/lib/supabase";
-import { generatePrompt, type StyleTemplateId, type RoomTypeId } from "@/lib/prompts";
+import { recomputeImageProjectCounters } from "@/lib/image-project-state";
+import {
+  generatePrompt,
+  type StyleTemplateId,
+  type RoomTypeId,
+} from "@/lib/prompts";
+
+export type EditMode = "remove" | "add";
 
 // Get current user's active workspace
 async function getActiveWorkspace() {
@@ -22,7 +29,9 @@ async function getActiveWorkspace() {
   });
 
   // Type assertion for custom session fields from Prisma schema
-  const sessionData = session?.session as { activeWorkspaceId?: string } | undefined;
+  const sessionData = session?.session as
+    | { activeWorkspaceId?: string }
+    | undefined;
 
   if (!session?.user?.id || !sessionData?.activeWorkspaceId) {
     return null;
@@ -32,6 +41,16 @@ async function getActiveWorkspace() {
     userId: session.user.id,
     workspaceId: sessionData.activeWorkspaceId,
   };
+}
+
+function extractStoragePath(url: string): string | null {
+  try {
+    const { pathname } = new URL(url);
+    const match = pathname.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)$/);
+    return match?.[1] ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // Create signed upload URLs for direct client upload
@@ -81,7 +100,6 @@ export async function createSignedUploadUrls(
       };
     }
 
-    // Generate signed URLs for each file
     const results = await Promise.all(
       files.map(async (file) => {
         const imageId = crypto.randomUUID();
@@ -130,7 +148,6 @@ export async function recordUploadedImages(
       return { success: false, error: "Not authenticated or no active workspace" };
     }
 
-    // Get project with style template
     const project = await prisma.imageProject.findFirst({
       where: {
         id: projectId,
@@ -142,7 +159,6 @@ export async function recordUploadedImages(
       return { success: false, error: "Project not found" };
     }
 
-    // Create image records
     const imageRecords = images.map((img) => {
       const roomType = img.roomType || project.roomType;
       const prompt = generatePrompt(
@@ -171,17 +187,20 @@ export async function recordUploadedImages(
       data: imageRecords,
     });
 
-    // Update project thumbnail and counts
     const firstImage = imageRecords[0];
-    await prisma.imageProject.update({
-      where: { id: projectId },
-      data: {
-        thumbnailUrl: project.thumbnailUrl || firstImage?.originalImageUrl,
-        imageCount: { increment: images.length },
-      },
-    });
+    if (!project.thumbnailUrl && firstImage?.originalImageUrl) {
+      await prisma.imageProject.update({
+        where: { id: projectId },
+        data: {
+          thumbnailUrl: firstImage.originalImageUrl,
+        },
+      });
+    }
+
+    await recomputeImageProjectCounters(projectId);
 
     revalidatePath(`/dashboard/images/${projectId}`);
+    revalidatePath("/dashboard/images");
     return { success: true, data: { recordedCount: images.length } };
   } catch (error) {
     console.error("[recordUploadedImages] Error:", error);
@@ -190,7 +209,9 @@ export async function recordUploadedImages(
 }
 
 // Get all images for a project
-export async function getProjectImages(projectId: string): Promise<ActionResult<Image[]>> {
+export async function getProjectImages(
+  projectId: string
+): Promise<ActionResult<Image[]>> {
   try {
     const context = await getActiveWorkspace();
     if (!context) {
@@ -202,13 +223,56 @@ export async function getProjectImages(projectId: string): Promise<ActionResult<
         projectId,
         workspaceId: context.workspaceId,
       },
-      orderBy: [{ version: "asc" }, { createdAt: "desc" }],
+      orderBy: [{ createdAt: "desc" }],
     });
 
     return { success: true, data: images };
   } catch (error) {
     console.error("[getProjectImages] Error:", error);
     return { success: false, error: "Failed to fetch images" };
+  }
+}
+
+export async function getImageVersions(
+  imageId: string
+): Promise<ActionResult<Image[]>> {
+  try {
+    const context = await getActiveWorkspace();
+    if (!context) {
+      return { success: false, error: "Not authenticated or no active workspace" };
+    }
+
+    const image = await prisma.image.findFirst({
+      where: {
+        id: imageId,
+        workspaceId: context.workspaceId,
+      },
+      select: {
+        id: true,
+        parentId: true,
+        projectId: true,
+      },
+    });
+
+    if (!image) {
+      return { success: false, error: "Image not found" };
+    }
+
+    const rootId = image.parentId || image.id;
+
+    const versions = await prisma.image.findMany({
+      where: {
+        projectId: image.projectId,
+        workspaceId: context.workspaceId,
+        OR: [{ id: rootId }, { parentId: rootId }],
+      },
+      orderBy: [{ version: "asc" }],
+    });
+
+    return { success: true, data: versions };
+  } catch (error) {
+    console.error("[getImageVersions] Error:", error);
+    return { success: false, error: "Failed to load versions" };
   }
 }
 
@@ -223,7 +287,6 @@ export async function updateImageRoomType(
       return { success: false, error: "Not authenticated or no active workspace" };
     }
 
-    // Get current image with project
     const image = await prisma.image.findFirst({
       where: {
         id: imageId,
@@ -240,13 +303,11 @@ export async function updateImageRoomType(
       return { success: false, error: "Image not found" };
     }
 
-    // Regenerate prompt with new room type
     const newPrompt = generatePrompt(
       image.project.styleTemplateId as StyleTemplateId,
       roomType as RoomTypeId
     );
 
-    // Update image
     const updatedImage = await prisma.image.update({
       where: { id: imageId },
       data: {
@@ -277,7 +338,6 @@ export async function bulkUpdateImageRoomTypes(
       return { success: false, error: "Not authenticated or no active workspace" };
     }
 
-    // Get images with their projects
     const images = await prisma.image.findMany({
       where: {
         id: { in: imageIds },
@@ -290,9 +350,8 @@ export async function bulkUpdateImageRoomTypes(
       },
     });
 
-    // Update each image
     await Promise.all(
-      images.map(async (image) => {
+      images.map(async (image: any) => {
         const newPrompt = generatePrompt(
           image.project.styleTemplateId as StyleTemplateId,
           roomType as RoomTypeId
@@ -311,7 +370,6 @@ export async function bulkUpdateImageRoomTypes(
       })
     );
 
-    // Revalidate all affected projects
     const projectIds = [...new Set(images.map((img) => img.project.id))];
     projectIds.forEach((id) => revalidatePath(`/dashboard/images/${id}`));
 
@@ -332,13 +390,12 @@ export async function startProjectProcessing(
       return { success: false, error: "Not authenticated or no active workspace" };
     }
 
-    // Get pending images
     const pendingImages = await prisma.image.findMany({
       where: {
         projectId,
         workspaceId: context.workspaceId,
         status: "PENDING",
-        parentId: null, // Only root images
+        parentId: null,
       },
     });
 
@@ -346,7 +403,6 @@ export async function startProjectProcessing(
       return { success: true, data: { processedCount: 0 } };
     }
 
-    // Validate all have room types
     const imagesWithoutRoomType = pendingImages.filter((img) => {
       const metadata = img.metadata as { roomType?: string } | null;
       return !metadata?.roomType;
@@ -359,36 +415,52 @@ export async function startProjectProcessing(
       };
     }
 
-    // Import trigger task dynamically
     const { processImageTask } = await import("@/trigger/process-image");
 
-    // Trigger processing for each image
-    for (const image of pendingImages) {
-      const handle = await processImageTask.trigger({ imageId: image.id });
+    let processedCount = 0;
 
-      // Update image status
-      await prisma.image.update({
-        where: { id: image.id },
+    for (const image of pendingImages) {
+      const claimed = await prisma.image.updateMany({
+        where: {
+          id: image.id,
+          status: "PENDING",
+        },
         data: {
           status: "PROCESSING",
           metadata: {
             ...(image.metadata as object),
-            runId: handle.id,
+            queuedAt: new Date().toISOString(),
           },
         },
       });
+
+      if (claimed.count === 0) {
+        continue;
+      }
+
+      const handle = await processImageTask.trigger({ imageId: image.id });
+
+      await prisma.image.update({
+        where: { id: image.id },
+        data: {
+          metadata: {
+            ...(image.metadata as object),
+            runId: handle.id,
+            startedAt: new Date().toISOString(),
+            model: "fal-ai/nano-banana-pro",
+          },
+        },
+      });
+
+      processedCount += 1;
     }
 
-    // Update project status
-    await prisma.imageProject.update({
-      where: { id: projectId },
-      data: { status: "PROCESSING" },
-    });
+    await recomputeImageProjectCounters(projectId);
 
     revalidatePath(`/dashboard/images/${projectId}`);
     revalidatePath("/dashboard/images");
 
-    return { success: true, data: { processedCount: pendingImages.length } };
+    return { success: true, data: { processedCount } };
   } catch (error) {
     console.error("[startProjectProcessing] Error:", error);
     return { success: false, error: "Failed to start processing" };
@@ -417,7 +489,21 @@ export async function retryImageProcessing(
       return { success: false, error: "Image not found or not in failed state" };
     }
 
-    // Import trigger task dynamically
+    const claimed = await prisma.image.updateMany({
+      where: {
+        id: imageId,
+        status: "FAILED",
+      },
+      data: {
+        status: "PROCESSING",
+        errorMessage: null,
+      },
+    });
+
+    if (claimed.count === 0) {
+      return { success: false, error: "Image already being retried" };
+    }
+
     const { processImageTask } = await import("@/trigger/process-image");
 
     const handle = await processImageTask.trigger({ imageId });
@@ -425,20 +511,123 @@ export async function retryImageProcessing(
     await prisma.image.update({
       where: { id: imageId },
       data: {
-        status: "PROCESSING",
-        errorMessage: null,
         metadata: {
           ...(image.metadata as object),
           runId: handle.id,
+          startedAt: new Date().toISOString(),
+          model: "fal-ai/nano-banana-pro",
         },
       },
     });
+
+    await recomputeImageProjectCounters(image.projectId);
 
     revalidatePath(`/dashboard/images/${image.projectId}`);
     return { success: true, data: { runId: handle.id } };
   } catch (error) {
     console.error("[retryImageProcessing] Error:", error);
     return { success: false, error: "Failed to retry processing" };
+  }
+}
+
+// Trigger inpaint task and create new image version
+export async function triggerInpaintTask(
+  imageId: string,
+  prompt: string,
+  mode: EditMode,
+  maskDataUrl?: string
+): Promise<ActionResult<{ runId: string; newImageId: string }>> {
+  try {
+    const context = await getActiveWorkspace();
+    if (!context) {
+      return { success: false, error: "Not authenticated or no active workspace" };
+    }
+
+    const image = await prisma.image.findFirst({
+      where: {
+        id: imageId,
+        workspaceId: context.workspaceId,
+      },
+    });
+
+    if (!image) {
+      return { success: false, error: "Image not found" };
+    }
+
+    if (mode === "remove" && !maskDataUrl) {
+      return { success: false, error: "Mask is required for remove mode" };
+    }
+
+    const rootId = image.parentId || image.id;
+
+    const latestVersion = await prisma.image.findFirst({
+      where: {
+        projectId: image.projectId,
+        workspaceId: context.workspaceId,
+        OR: [{ id: rootId }, { parentId: rootId }],
+      },
+      orderBy: [{ version: "desc" }],
+      select: {
+        version: true,
+      },
+    });
+
+    const nextVersion = (latestVersion?.version || image.version || 1) + 1;
+    const sourceImageUrl = image.resultImageUrl || image.originalImageUrl;
+
+    const placeholder = await prisma.image.create({
+      data: {
+        workspaceId: image.workspaceId,
+        userId: image.userId,
+        projectId: image.projectId,
+        originalImageUrl: sourceImageUrl,
+        resultImageUrl: null,
+        prompt,
+        version: nextVersion,
+        parentId: rootId,
+        status: "PROCESSING",
+        errorMessage: null,
+        metadata: {
+          editedFrom: image.id,
+          editMode: mode,
+          queuedAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    const { inpaintImageTask } = await import("@/trigger/inpaint-image");
+
+    const handle = await inpaintImageTask.trigger({
+      imageId,
+      newImageId: placeholder.id,
+      prompt,
+      mode,
+      maskDataUrl,
+    });
+
+    await prisma.image.update({
+      where: { id: placeholder.id },
+      data: {
+        metadata: {
+          ...(placeholder.metadata as object),
+          runId: handle.id,
+          startedAt: new Date().toISOString(),
+          model:
+            mode === "remove"
+              ? "fal-ai/flux-pro/v1/fill"
+              : "fal-ai/nano-banana-pro/edit",
+        },
+      },
+    });
+
+    revalidatePath(`/dashboard/images/${image.projectId}`);
+    return {
+      success: true,
+      data: { runId: handle.id, newImageId: placeholder.id },
+    };
+  } catch (error) {
+    console.error("[triggerInpaintTask] Error:", error);
+    return { success: false, error: "Failed to start image edit" };
   }
 }
 
@@ -457,43 +646,61 @@ export async function deleteProjectImage(
         id: imageId,
         workspaceId: context.workspaceId,
       },
+      select: {
+        id: true,
+        projectId: true,
+        parentId: true,
+        originalImageUrl: true,
+        resultImageUrl: true,
+      },
     });
 
     if (!image) {
       return { success: false, error: "Image not found" };
     }
 
-    // Delete from storage
-    const originalPath = new URL(image.originalImageUrl).pathname.replace(
-      /^\/storage\/v1\/object\/public\/[^/]+\//,
-      ""
-    );
-    await deleteStorageImage(originalPath);
+    const descendants = image.parentId
+      ? []
+      : await prisma.image.findMany({
+          where: {
+            parentId: image.id,
+            workspaceId: context.workspaceId,
+          },
+          select: {
+            id: true,
+            originalImageUrl: true,
+            resultImageUrl: true,
+          },
+        });
 
-    if (image.resultImageUrl) {
-      const resultPath = new URL(image.resultImageUrl).pathname.replace(
-        /^\/storage\/v1\/object\/public\/[^/]+\//,
-        ""
-      );
-      await deleteStorageImage(resultPath);
+    const imagesToDelete = [image, ...descendants];
+
+    for (const entry of imagesToDelete) {
+      const originalPath = extractStoragePath(entry.originalImageUrl);
+      if (originalPath) {
+        await deleteStorageImage(originalPath);
+      }
+
+      if (entry.resultImageUrl) {
+        const resultPath = extractStoragePath(entry.resultImageUrl);
+        if (resultPath) {
+          await deleteStorageImage(resultPath);
+        }
+      }
     }
 
-    // Delete from database
-    await prisma.image.delete({
-      where: { id: imageId },
+    await prisma.image.deleteMany({
+      where: image.parentId
+        ? { id: image.id }
+        : {
+            OR: [{ id: image.id }, { parentId: image.id }],
+          },
     });
 
-    // Update project counts
-    await prisma.imageProject.update({
-      where: { id: image.projectId },
-      data: {
-        imageCount: { decrement: 1 },
-        completedCount:
-          image.status === "COMPLETED" ? { decrement: 1 } : undefined,
-      },
-    });
+    await recomputeImageProjectCounters(image.projectId);
 
     revalidatePath(`/dashboard/images/${image.projectId}`);
+    revalidatePath("/dashboard/images");
     return { success: true };
   } catch (error) {
     console.error("[deleteProjectImage] Error:", error);
@@ -517,30 +724,10 @@ export async function updateImage(
       data: data as Prisma.ImageUpdateInput,
     });
 
-    // If completed, update project counts
-    if (data.status === "COMPLETED") {
-      await prisma.imageProject.update({
-        where: { id: image.projectId },
-        data: {
-          completedCount: { increment: 1 },
-        },
-      });
-
-      // Check if all images are completed
-      const project = await prisma.imageProject.findUnique({
-        where: { id: image.projectId },
-        select: { imageCount: true, completedCount: true },
-      });
-
-      if (project && project.completedCount >= project.imageCount) {
-        await prisma.imageProject.update({
-          where: { id: image.projectId },
-          data: { status: "COMPLETED" },
-        });
-      }
-    }
+    await recomputeImageProjectCounters(image.projectId);
 
     revalidatePath(`/dashboard/images/${image.projectId}`);
+    revalidatePath("/dashboard/images");
     return { success: true, data: image };
   } catch (error) {
     console.error("[updateImage] Error:", error);

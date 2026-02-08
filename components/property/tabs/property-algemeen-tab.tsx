@@ -123,7 +123,8 @@ export function PropertyAlgemeenTab({ property }: PropertyAlgemeenTabProps) {
   });
 
   const form = useForm<AlgemeenFormValues>({
-    resolver: zodResolver(algemeenFormSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(algemeenFormSchema) as any,
     defaultValues: {
       // Basic Info
       title: property.title,

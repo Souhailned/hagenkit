@@ -7,6 +7,7 @@ import {
   SearchIcon,
 } from "lucide-react";
 
+import type { PropertyListItem } from "@/types/property";
 import { getSeekerRecommendations } from "@/app/actions/seeker-profile";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -202,7 +203,7 @@ export async function SeekerDashboard() {
           linkLabel="Bekijk alle panden"
         />
         <PropertyCardsGrid
-          properties={recommended}
+          properties={recommended as PropertyListItem[]}
           emptyState={
             <SeekerSectionEmptyState
               title="Nog geen aanbevelingen"
@@ -222,7 +223,7 @@ export async function SeekerDashboard() {
           linkLabel="Bekijk favorieten"
         />
         <PropertyCardsGrid
-          properties={recentlyViewed}
+          properties={recentlyViewed as PropertyListItem[]}
           emptyState={
             <SeekerSectionEmptyState
               title="Nog geen bekeken panden"
@@ -243,7 +244,7 @@ export async function SeekerDashboard() {
           linkLabel="Beheer alerts"
         />
         <PropertyCardsGrid
-          properties={newMatches}
+          properties={newMatches as PropertyListItem[]}
           emptyState={
             <SeekerSectionEmptyState
               title="Geen nieuwe matches"

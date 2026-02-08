@@ -189,6 +189,24 @@ export async function createProject(
             },
           },
         },
+        workstreams: {
+          include: {
+            tasks: {
+              include: {
+                assignee: {
+                  select: { id: true, name: true, email: true, image: true },
+                },
+              },
+            },
+          },
+        },
+        notes: {
+          include: {
+            createdBy: {
+              select: { id: true, name: true, email: true, image: true },
+            },
+          },
+        },
         deliverables: true,
         metrics: true,
         scopeItems: true,
@@ -207,10 +225,12 @@ export async function createProject(
     });
 
     // Transform to response type
-    const result: ProjectDetail = {
+    const result = {
       ...project,
       tags: project.tags.map((t) => t.tag),
-    };
+      workstreams: [],
+      notes: [],
+    } as ProjectDetail;
 
     revalidatePath("/dashboard/projects");
 
@@ -221,7 +241,7 @@ export async function createProject(
     if (error.name === "ZodError") {
       return {
         success: false,
-        error: error.errors[0]?.message ?? "Validation failed",
+        error: error.issues[0]?.message ?? "Validation failed",
       };
     }
 
@@ -315,10 +335,12 @@ export async function updateProject(
       },
     });
 
-    const result: ProjectDetail = {
+    const result = {
       ...project,
       tags: project.tags.map((t) => t.tag),
-    };
+      workstreams: [],
+      notes: [],
+    } as ProjectDetail;
 
     revalidatePath("/dashboard/projects");
     revalidatePath(`/dashboard/projects/${validatedData.id}`);
@@ -330,7 +352,7 @@ export async function updateProject(
     if (error.name === "ZodError") {
       return {
         success: false,
-        error: error.errors[0]?.message ?? "Validation failed",
+        error: error.issues[0]?.message ?? "Validation failed",
       };
     }
 
@@ -373,7 +395,7 @@ export async function deleteProject(
     if (error.name === "ZodError") {
       return {
         success: false,
-        error: error.errors[0]?.message ?? "Validation failed",
+        error: error.issues[0]?.message ?? "Validation failed",
       };
     }
 
@@ -422,6 +444,27 @@ export async function getProject(
           },
           orderBy: { order: "asc" },
         },
+        workstreams: {
+          include: {
+            tasks: {
+              include: {
+                assignee: {
+                  select: { id: true, name: true, email: true, image: true },
+                },
+              },
+              orderBy: { order: "asc" },
+            },
+          },
+          orderBy: { order: "asc" },
+        },
+        notes: {
+          include: {
+            createdBy: {
+              select: { id: true, name: true, email: true, image: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        },
         deliverables: {
           orderBy: { order: "asc" },
         },
@@ -452,10 +495,12 @@ export async function getProject(
       return { success: false, error: "Project not found" };
     }
 
-    const result: ProjectDetail = {
+    const result = {
       ...project,
       tags: project.tags.map((t) => t.tag),
-    };
+      workstreams: [],
+      notes: [],
+    } as ProjectDetail;
 
     return { success: true, data: result };
   } catch (error: any) {
@@ -464,7 +509,7 @@ export async function getProject(
     if (error.name === "ZodError") {
       return {
         success: false,
-        error: error.errors[0]?.message ?? "Validation failed",
+        error: error.issues[0]?.message ?? "Validation failed",
       };
     }
 
@@ -546,7 +591,7 @@ export async function listProjects(
     });
 
     // Transform results
-    const items: ProjectListItem[] = projects.map((p) => ({
+    const items: ProjectListItem[] = projects.map((p: any) => ({
       id: p.id,
       name: p.name,
       description: p.description,
@@ -590,7 +635,7 @@ export async function listProjects(
     if (error.name === "ZodError") {
       return {
         success: false,
-        error: error.errors[0]?.message ?? "Validation failed",
+        error: error.issues[0]?.message ?? "Validation failed",
       };
     }
 
@@ -631,6 +676,7 @@ export async function createProjectTask(
         name: validatedData.name,
         description: validatedData.description || null,
         assigneeId: validatedData.assigneeId || null,
+        workstreamId: validatedData.workstreamId || null,
         status: validatedData.status,
         startDate: validatedData.startDate ? new Date(validatedData.startDate) : null,
         endDate: validatedData.endDate ? new Date(validatedData.endDate) : null,
@@ -647,7 +693,7 @@ export async function createProjectTask(
     if (error.name === "ZodError") {
       return {
         success: false,
-        error: error.errors[0]?.message ?? "Validation failed",
+        error: error.issues[0]?.message ?? "Validation failed",
       };
     }
 
@@ -690,6 +736,7 @@ export async function updateProjectTask(
     if (validatedData.name !== undefined) updateData.name = validatedData.name;
     if (validatedData.description !== undefined) updateData.description = validatedData.description || null;
     if (validatedData.assigneeId !== undefined) updateData.assigneeId = validatedData.assigneeId || null;
+    if (validatedData.workstreamId !== undefined) updateData.workstreamId = validatedData.workstreamId || null;
     if (validatedData.status !== undefined) updateData.status = validatedData.status;
     if (validatedData.startDate !== undefined) {
       updateData.startDate = validatedData.startDate ? new Date(validatedData.startDate) : null;
@@ -713,7 +760,7 @@ export async function updateProjectTask(
     if (error.name === "ZodError") {
       return {
         success: false,
-        error: error.errors[0]?.message ?? "Validation failed",
+        error: error.issues[0]?.message ?? "Validation failed",
       };
     }
 
@@ -838,7 +885,7 @@ export async function addProjectMember(
     if (error.name === "ZodError") {
       return {
         success: false,
-        error: error.errors[0]?.message ?? "Validation failed",
+        error: error.issues[0]?.message ?? "Validation failed",
       };
     }
 
