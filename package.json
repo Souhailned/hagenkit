@@ -14,7 +14,8 @@
     "prisma:migrate": "bunx prisma migrate dev",
     "prisma:generate": "bunx prisma generate",
     "trigger": "bunx trigger.dev@latest dev",
-    "trigger:deploy": "bunx trigger.dev@latest deploy"
+    "trigger:deploy": "bunx trigger.dev@latest deploy",
+    "build:commit": "./scripts/build-and-commit.sh"
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",
