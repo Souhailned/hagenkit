@@ -140,3 +140,49 @@ export function generateImagePath(
 ): string {
   return `${workspaceId}/${projectId}/${type}/${imageId}.${extension}`;
 }
+
+// ============================================================================
+// Video Storage Functions
+// ============================================================================
+
+// Generate storage path for a video
+export function getVideoPath(
+  workspaceId: string,
+  videoProjectId: string,
+  filename: string
+): string {
+  return `${workspaceId}/videos/${videoProjectId}/${filename}`;
+}
+
+// Upload video file
+export async function uploadVideo(
+  file: Buffer | Blob,
+  path: string,
+  contentType: string = "video/mp4"
+): Promise<string | null> {
+  const { error } = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .upload(path, file, {
+      contentType,
+      upsert: true,
+    });
+
+  if (error) {
+    console.error("[supabase:uploadVideo] Error:", error);
+    return null;
+  }
+
+  return getPublicUrl(path);
+}
+
+// Delete a video
+export async function deleteVideo(path: string): Promise<boolean> {
+  const { error } = await supabase.storage.from(STORAGE_BUCKET).remove([path]);
+
+  if (error) {
+    console.error("[supabase:deleteVideo] Error:", error);
+    return false;
+  }
+
+  return true;
+}

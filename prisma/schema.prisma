@@ -1320,3 +1320,54 @@ enum ImageStatus {
   COMPLETED
   FAILED
 }
+
+// ============================================
+// VIDEO PROCESSING MODELS
+// ============================================
+
+model VideoProject {
+  id                  String   @id @default(cuid())
+  workspaceId         String
+  status              String   @default("pending")
+  clipCount           Int      @default(0)
+  estimatedCost       Int      @default(0)
+  actualCost          Int      @default(0)
+  generateNativeAudio Boolean  @default(false)
+  musicVolume         Float    @default(0.3)
+  videoVolume         Float    @default(1.0)
+  aspectRatio         String   @default("16:9")
+  duration            Float?
+  thumbnailUrl        String?
+  finalVideoUrl       String?
+  errorMessage        String?
+  metadata            Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  clips               VideoClip[]
+
+  @@index([workspaceId])
+  @@map("video_project")
+}
+
+model VideoClip {
+  id                String       @id @default(cuid())
+  videoProjectId    String
+  imageId           String
+  sourceImageUrl    String
+  endImageUrl       String?
+  roomLabel         String?
+  roomType          String?
+  motionPrompt      String?
+  status            String       @default("pending")
+  clipUrl           String?
+  transitionType    String?
+  transitionClipUrl String?
+  duration          Float        @default(5)
+  sequenceOrder     Int          @default(0)
+  errorMessage      String?
+  videoProject      VideoProject @relation(fields: [videoProjectId], references: [id], onDelete: Cascade)
+
+  @@index([videoProjectId])
+  @@index([imageId])
+  @@map("video_clip")
+}

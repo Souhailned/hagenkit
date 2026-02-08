@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { CircleNotch } from "@phosphor-icons/react/dist/ssr";
 import { toast } from "sonner";
-import type { Image } from "@/generated/prisma/client";
+import type { Image } from "@/generated/prisma";
 
 type EditMode = "remove" | "add";
 

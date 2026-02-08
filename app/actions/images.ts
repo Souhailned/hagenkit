@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types/actions";
-import type { Image, ImageStatus, Prisma } from "@/generated/prisma/client";
+import type { Image, ImageStatus, Prisma } from "@/generated/prisma";
 import {
   createSignedUploadUrl,
   getPublicUrl,

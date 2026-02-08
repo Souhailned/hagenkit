@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CheckCircle, Clock, CircleNotch, WarningCircle, DotsThreeVertical, Trash, Image as ImageIcon } from "@phosphor-icons/react/dist/ssr"
 import { formatDistanceToNow } from "date-fns";
-import type { ImageProject, ProjectStatus } from "@/generated/prisma/client";
+import type { ImageProject, ProjectStatus } from "@/generated/prisma";
 
 interface ProjectCardProps {
   project: ImageProject;

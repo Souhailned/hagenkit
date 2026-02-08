@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types/actions";
-import type { ImageProject, ProjectStatus } from "@/generated/prisma/client";
+import type { ImageProject, ProjectStatus } from "@/generated/prisma";
 
 // Get current user's active workspace
 async function getActiveWorkspace() {
