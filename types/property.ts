@@ -53,8 +53,25 @@ export type PropertyStatus =
   | "ARCHIVED"
   | "REJECTED";
 
+export const PropertyStatusLabels: Record<PropertyStatus, string> = {
+  DRAFT: "Concept",
+  PENDING_REVIEW: "In Review",
+  ACTIVE: "Actief",
+  UNDER_OFFER: "Onder Bod",
+  RENTED: "Verhuurd",
+  SOLD: "Verkocht",
+  ARCHIVED: "Gearchiveerd",
+  REJECTED: "Afgewezen",
+};
+
 // Price type enum
 export type PriceType = "RENT" | "SALE" | "RENT_OR_SALE";
+
+export const PriceTypeLabels: Record<PriceType, string> = {
+  RENT: "Te Huur",
+  SALE: "Te Koop",
+  RENT_OR_SALE: "Te Huur of Koop",
+};
 
 // Alert frequency enum
 export type AlertFrequency = "INSTANT" | "DAILY" | "WEEKLY";
@@ -99,6 +116,16 @@ export const PropertyFeatureLabels: Record<PropertyFeature, string> = {
   WHEELCHAIR_ACCESSIBLE: "Rolstoeltoegankelijk",
 };
 
+// Feature category for detailed feature records
+export type FeatureCategory = "LICENSE" | "FACILITY" | "UTILITY" | "ACCESSIBILITY";
+
+export const FeatureCategoryLabels: Record<FeatureCategory, string> = {
+  LICENSE: "Vergunningen",
+  FACILITY: "Faciliteiten",
+  UTILITY: "Voorzieningen",
+  ACCESSIBILITY: "Bereikbaarheid",
+};
+
 // Sort options for property listings
 export type SortOption = "newest" | "price_low_high" | "price_high_low" | "area";
 
@@ -115,15 +142,77 @@ export const SortOptionLabels: Record<SortOption, string> = {
  */
 export interface PropertyImage {
   id: string;
+  propertyId?: string;
   originalUrl: string;
-  thumbnailUrl?: string;
-  mediumUrl?: string;
-  largeUrl?: string;
+  thumbnailUrl?: string | null;
+  mediumUrl?: string | null;
+  largeUrl?: string | null;
   type: PropertyImageType;
-  caption?: string;
-  altText?: string;
+  caption?: string | null;
+  altText?: string | null;
   order: number;
   isPrimary: boolean;
+  width?: number | null;
+  height?: number | null;
+}
+
+/**
+ * Detailed feature record (full DB model)
+ */
+export interface PropertyFeatureRecord {
+  id: string;
+  propertyId: string;
+  category: FeatureCategory;
+  key: string;
+  value?: string | null;
+  numericValue?: number | null;
+  booleanValue?: boolean | null;
+  verified: boolean;
+  highlighted: boolean;
+  displayOrder: number;
+}
+
+/**
+ * Agency model
+ */
+export interface Agency {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  logo?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  address?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  province?: string | null;
+  verified: boolean;
+}
+
+/**
+ * Agent profile model
+ */
+export interface AgentProfile {
+  id: string;
+  userId: string;
+  agencyId: string;
+  title?: string | null;
+  phone?: string | null;
+  phonePublic: boolean;
+  bio?: string | null;
+  avatar?: string | null;
+  specializations: PropertyType[];
+  regions: string[];
+  languages: string[];
+  verified: boolean;
+  user?: {
+    id: string;
+    name?: string | null;
+    email: string;
+    image?: string | null;
+  };
 }
 
 /**
@@ -133,72 +222,83 @@ export interface Property {
   id: string;
   slug: string;
   title: string;
-  description?: string;
-  shortDescription?: string;
+  description?: string | null;
+  shortDescription?: string | null;
 
   // Location
   address: string;
-  addressLine2?: string;
+  addressLine2?: string | null;
   city: string;
   postalCode: string;
-  province?: string;
+  province?: string | null;
   country: string;
-  latitude?: number;
-  longitude?: number;
-  neighborhood?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  neighborhood?: string | null;
 
   // Pricing (in cents)
   priceType: PriceType;
-  rentPrice?: number;
-  rentPriceMin?: number;
-  salePrice?: number;
-  salePriceMin?: number;
+  rentPrice?: number | null;
+  rentPriceMin?: number | null;
+  salePrice?: number | null;
+  salePriceMin?: number | null;
   priceNegotiable: boolean;
-  servicesCosts?: number;
-  depositMonths?: number;
+  servicesCosts?: number | null;
+  depositMonths?: number | null;
 
   // Dimensions (in m²)
   surfaceTotal: number;
-  surfaceCommercial?: number;
-  surfaceKitchen?: number;
-  surfaceStorage?: number;
-  surfaceTerrace?: number;
-  surfaceBasement?: number;
+  surfaceCommercial?: number | null;
+  surfaceKitchen?: number | null;
+  surfaceStorage?: number | null;
+  surfaceTerrace?: number | null;
+  surfaceBasement?: number | null;
   floors: number;
-  ceilingHeight?: number;
+  ceilingHeight?: number | null;
 
   // Classification
   propertyType: PropertyType;
   status: PropertyStatus;
 
   // Horeca specifics
-  seatingCapacityInside?: number;
-  seatingCapacityOutside?: number;
-  standingCapacity?: number;
-  kitchenType?: string;
+  seatingCapacityInside?: number | null;
+  seatingCapacityOutside?: number | null;
+  standingCapacity?: number | null;
+  kitchenType?: string | null;
   hasBasement: boolean;
   hasStorage: boolean;
   hasTerrace: boolean;
   hasParking: boolean;
-  parkingSpaces?: number;
+  parkingSpaces?: number | null;
 
   // Building info
-  buildYear?: number;
-  lastRenovation?: number;
-  energyLabel?: string;
+  buildYear?: number | null;
+  lastRenovation?: number | null;
+  monumentStatus?: boolean;
+  energyLabel?: string | null;
 
   // Scores
-  horecaScore?: string;
-  locationScore?: number;
+  horecaScore?: string | null;
+  horecaScoreDetails?: Record<string, unknown> | null;
+  locationScore?: number | null;
+  footfallEstimate?: number | null;
 
-  // Images
+  // SEO
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  featured: boolean;
+
+  // Availability
+  availableFrom?: Date | null;
+  minimumLeaseTerm?: number | null;
+
+  // Images & Features
   images: PropertyImage[];
-
-  // Features for filtering
   features?: PropertyFeature[];
+  featureRecords?: PropertyFeatureRecord[];
 
   // Timestamps
-  publishedAt?: Date;
+  publishedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 
@@ -211,12 +311,16 @@ export interface Property {
   isFeatured?: boolean;
   isNew?: boolean;
 
-  // Agency info (for display)
-  agency?: {
+  // Relations
+  agencyId?: string;
+  createdById?: string;
+  agency?: Agency | { id: string; name: string; slug: string; logo?: string };
+  creator?: {
     id: string;
-    name: string;
-    slug: string;
-    logo?: string;
+    name?: string | null;
+    email: string;
+    image?: string | null;
+    agentProfile?: AgentProfile | null;
   };
 }
 
@@ -403,40 +507,74 @@ export interface SearchPropertiesResult {
   pageSize: number;
 }
 
-/**
- * Helper to format price in euros
- */
-export function formatPrice(priceInCents: number): string {
+// --- Feature definitions for property detail pages ---
+
+export interface FeatureDefinition {
+  key: string;
+  label: string;
+  category: FeatureCategory;
+  valueType: "boolean" | "string" | "number";
+  icon?: string;
+}
+
+export const FEATURE_DEFINITIONS: FeatureDefinition[] = [
+  // Licenses
+  { key: "alcohol_license", label: "Alcoholvergunning", category: "LICENSE", valueType: "boolean", icon: "Wine" },
+  { key: "terrace_license", label: "Terrasvergunning", category: "LICENSE", valueType: "boolean", icon: "Sun" },
+  { key: "night_license", label: "Nachtvergunning", category: "LICENSE", valueType: "boolean", icon: "Moon" },
+  { key: "music_license", label: "Muziekvergunning", category: "LICENSE", valueType: "boolean", icon: "Music" },
+  { key: "exploitation_license", label: "Exploitatievergunning", category: "LICENSE", valueType: "boolean", icon: "FileCheck" },
+
+  // Facilities
+  { key: "professional_kitchen", label: "Professionele Keuken", category: "FACILITY", valueType: "boolean", icon: "ChefHat" },
+  { key: "extraction_system", label: "Afzuiginstallatie", category: "FACILITY", valueType: "boolean", icon: "Wind" },
+  { key: "cold_storage", label: "Koeling", category: "FACILITY", valueType: "boolean", icon: "Snowflake" },
+  { key: "storage_room", label: "Opslagruimte", category: "FACILITY", valueType: "boolean", icon: "Package" },
+  { key: "basement", label: "Kelder", category: "FACILITY", valueType: "boolean", icon: "ArrowDown" },
+  { key: "terrace", label: "Terras", category: "FACILITY", valueType: "boolean", icon: "Umbrella" },
+  { key: "bar", label: "Bar", category: "FACILITY", valueType: "boolean", icon: "Beer" },
+  { key: "toilets", label: "Toiletten", category: "FACILITY", valueType: "number", icon: "Bath" },
+
+  // Utilities
+  { key: "air_conditioning", label: "Airconditioning", category: "UTILITY", valueType: "boolean", icon: "Thermometer" },
+  { key: "heating", label: "Verwarming", category: "UTILITY", valueType: "boolean", icon: "Flame" },
+  { key: "wifi", label: "WiFi", category: "UTILITY", valueType: "boolean", icon: "Wifi" },
+  { key: "alarm_system", label: "Alarmsysteem", category: "UTILITY", valueType: "boolean", icon: "Bell" },
+  { key: "camera_system", label: "Camerasysteem", category: "UTILITY", valueType: "boolean", icon: "Camera" },
+  { key: "pos_system", label: "Kassasysteem", category: "UTILITY", valueType: "boolean", icon: "CreditCard" },
+
+  // Accessibility
+  { key: "wheelchair_accessible", label: "Rolstoeltoegankelijk", category: "ACCESSIBILITY", valueType: "boolean", icon: "Accessibility" },
+  { key: "parking", label: "Parkeerplaatsen", category: "ACCESSIBILITY", valueType: "number", icon: "Car" },
+  { key: "public_transport", label: "OV Nabij", category: "ACCESSIBILITY", valueType: "boolean", icon: "Train" },
+  { key: "loading_dock", label: "Laaddok", category: "ACCESSIBILITY", valueType: "boolean", icon: "Truck" },
+];
+
+// --- Helper functions ---
+
+export function formatPrice(cents: number | null | undefined): string {
+  if (cents == null) return "Op aanvraag";
   return new Intl.NumberFormat("nl-NL", {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(priceInCents / 100);
+  }).format(cents / 100);
 }
 
-/**
- * Helper to format surface area
- */
-export function formatSurface(surfaceInM2: number): string {
-  return `${surfaceInM2} m²`;
+export function formatSurface(sqm: number | null | undefined): string {
+  if (sqm == null) return "-";
+  return `${sqm} m²`;
 }
 
-/**
- * Helper to get property type label in Dutch
- */
 export function getPropertyTypeLabel(type: PropertyType): string {
   return PropertyTypeLabels[type] || type;
 }
 
-/**
- * Helper to get price type label in Dutch
- */
 export function getPriceTypeLabel(type: PriceType): string {
-  const labels: Record<PriceType, string> = {
-    RENT: "Te Huur",
-    SALE: "Te Koop",
-    RENT_OR_SALE: "Huur/Koop",
-  };
-  return labels[type] || type;
+  return PriceTypeLabels[type] || type;
+}
+
+export function getFeatureDefinition(key: string): FeatureDefinition | undefined {
+  return FEATURE_DEFINITIONS.find((f) => f.key === key);
 }

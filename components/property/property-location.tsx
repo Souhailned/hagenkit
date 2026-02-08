@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { Property } from "@/lib/types/property";
+import type { Property } from "@/types/property";
 
 interface PropertyLocationProps {
   property: Property;

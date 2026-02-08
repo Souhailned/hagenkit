@@ -4,13 +4,13 @@ import { MapPin, Ruler, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { Property } from "@/lib/types/property";
+import type { Property } from "@/types/property";
 import {
   formatPrice,
   formatSurface,
   PropertyTypeLabels,
   PriceTypeLabels,
-} from "@/lib/types/property";
+} from "@/types/property";
 
 interface SimilarPropertiesProps {
   properties: Property[];

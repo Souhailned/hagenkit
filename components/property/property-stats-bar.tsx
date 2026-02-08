@@ -8,14 +8,14 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { Property } from "@/lib/types/property";
+import type { Property } from "@/types/property";
 import {
   formatPrice,
   formatSurface,
   PropertyTypeLabels,
   PriceTypeLabels,
   PropertyStatusLabels,
-} from "@/lib/types/property";
+} from "@/types/property";
 
 interface PropertyStatsBarProps {
   property: Property;

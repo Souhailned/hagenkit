@@ -28,11 +28,11 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { PropertyFeature, FeatureCategory } from "@/lib/types/property";
+import type { PropertyFeatureRecord, FeatureCategory } from "@/types/property";
 import {
   FeatureCategoryLabels,
   getFeatureDefinition,
-} from "@/lib/types/property";
+} from "@/types/property";
 
 // Icon mapping for features
 const featureIcons: Record<string, LucideIcon> = {
@@ -62,7 +62,7 @@ const featureIcons: Record<string, LucideIcon> = {
 };
 
 interface PropertyFeaturesProps {
-  features: PropertyFeature[];
+  features: PropertyFeatureRecord[];
   className?: string;
 }
 
@@ -75,7 +75,7 @@ export function PropertyFeatures({ features, className }: PropertyFeaturesProps)
     }
     acc[category].push(feature);
     return acc;
-  }, {} as Record<FeatureCategory, PropertyFeature[]>);
+  }, {} as Record<FeatureCategory, PropertyFeatureRecord[]>);
 
   // Sort features within each category by displayOrder
   Object.keys(groupedFeatures).forEach((category) => {
@@ -92,7 +92,7 @@ export function PropertyFeatures({ features, className }: PropertyFeaturesProps)
     "ACCESSIBILITY",
   ];
 
-  const getIcon = (feature: PropertyFeature): LucideIcon => {
+  const getIcon = (feature: PropertyFeatureRecord): LucideIcon => {
     const definition = getFeatureDefinition(feature.key);
     if (definition?.icon && featureIcons[definition.icon]) {
       return featureIcons[definition.icon];
@@ -100,7 +100,7 @@ export function PropertyFeatures({ features, className }: PropertyFeaturesProps)
     return Check; // Default icon
   };
 
-  const getDisplayValue = (feature: PropertyFeature): string => {
+  const getDisplayValue = (feature: PropertyFeatureRecord): string => {
     if (feature.booleanValue === true) {
       return feature.value || "Ja";
     }
@@ -113,7 +113,7 @@ export function PropertyFeatures({ features, className }: PropertyFeaturesProps)
     return feature.value || "-";
   };
 
-  const getFeatureLabel = (feature: PropertyFeature): string => {
+  const getFeatureLabel = (feature: PropertyFeatureRecord): string => {
     const definition = getFeatureDefinition(feature.key);
     return definition?.label || feature.key.replace(/_/g, " ");
   };

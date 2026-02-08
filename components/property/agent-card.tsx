@@ -12,8 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { Agency, AgentProfile, PropertyType } from "@/lib/types/property";
-import { PropertyTypeLabels } from "@/lib/types/property";
+import type { Agency, AgentProfile, PropertyType } from "@/types/property";
+import { PropertyTypeLabels } from "@/types/property";
 
 interface AgentCardProps {
   agent?: {

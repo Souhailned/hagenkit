@@ -19,7 +19,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
-import type { PropertyImage } from "@/lib/types/property";
+import type { PropertyImage } from "@/types/property";
 
 interface PropertyGalleryProps {
   images: PropertyImage[];
