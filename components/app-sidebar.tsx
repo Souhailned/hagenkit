@@ -44,6 +44,7 @@ import {
   CaretRight,
   CaretUpDown,
   Image,
+  VideoCamera,
   ShieldCheck,
   Buildings,
   UserCircle,
@@ -73,6 +74,7 @@ const navItemIcons: Record<NavItemId, React.ComponentType<{ className?: string }
   clients: Users,
   performance: ChartBar,
   images: Image,
+  videos: VideoCamera,
 }
 
 const footerItemIcons: Record<SidebarFooterItemId, React.ComponentType<{ className?: string }>> = {
@@ -129,6 +131,7 @@ export function AppSidebar({
     if (id === "clients") return "/dashboard/team"             // Team page
     if (id === "performance") return "/dashboard/analytics"    // Analytics page
     if (id === "images") return "/dashboard/images"            // Images page
+    if (id === "videos") return "/dashboard/videos"            // Videos page
     return "#"
   }
 
@@ -139,6 +142,7 @@ export function AppSidebar({
     if (id === "clients") return pathname.startsWith("/dashboard/team")
     if (id === "performance") return pathname.startsWith("/dashboard/analytics")
     if (id === "images") return pathname.startsWith("/dashboard/images")
+    if (id === "videos") return pathname.startsWith("/dashboard/videos")
     return false
   }
 
