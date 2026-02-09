@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types/actions";
 import type { VideoProject, Prisma } from "@/generated/prisma";
+import { generateVideoTask } from "@/trigger/video-orchestrator";
 
 // Get current user's active workspace
 async function getActiveWorkspace() {
@@ -175,5 +176,58 @@ export async function deleteVideoProject(
   } catch (error) {
     console.error("[deleteVideoProject] Error:", error);
     return { success: false, error: "Failed to delete project" };
+  }
+}
+
+// Start video generation (trigger orchestrator)
+export async function startVideoGeneration(
+  projectId: string
+): Promise<ActionResult<{ runId: string }>> {
+  try {
+    const context = await getActiveWorkspace();
+    if (!context) {
+      return { success: false, error: "Not authenticated or no active workspace" };
+    }
+
+    // Verify project exists and belongs to workspace
+    const project = await prisma.videoProject.findFirst({
+      where: {
+        id: projectId,
+        workspaceId: context.workspaceId,
+      },
+      include: { clips: { select: { id: true } } },
+    });
+
+    if (!project) {
+      return { success: false, error: "Project not found" };
+    }
+
+    if (project.clips.length === 0) {
+      return { success: false, error: "No clips in this project" };
+    }
+
+    // Don't allow re-triggering if already processing
+    if (["generating", "compiling"].includes(project.status)) {
+      return { success: false, error: "Generation is already in progress" };
+    }
+
+    // Update status to processing
+    await prisma.videoProject.update({
+      where: { id: projectId },
+      data: { status: "processing", errorMessage: null },
+    });
+
+    // Trigger the orchestrator task
+    const handle = await generateVideoTask.trigger({
+      videoProjectId: projectId,
+    });
+
+    revalidatePath(`/dashboard/videos/${projectId}`);
+    revalidatePath("/dashboard/videos");
+
+    return { success: true, data: { runId: handle.id } };
+  } catch (error) {
+    console.error("[startVideoGeneration] Error:", error);
+    return { success: false, error: "Failed to start video generation" };
   }
 }
