@@ -14,16 +14,33 @@ async function getActiveWorkspace() {
     headers: await headers(),
   });
 
-  // Type assertion for custom session fields from Prisma schema
-  const sessionData = session?.session as { activeWorkspaceId?: string } | undefined;
+  if (!session?.user?.id) {
+    return null;
+  }
 
-  if (!session?.user?.id || !sessionData?.activeWorkspaceId) {
+  // Try session's activeWorkspaceId first
+  const sessionData = session.session as { activeWorkspaceId?: string } | undefined;
+  if (sessionData?.activeWorkspaceId) {
+    return {
+      userId: session.user.id,
+      workspaceId: sessionData.activeWorkspaceId,
+    };
+  }
+
+  // Fallback: get user's first workspace membership
+  const membership = await prisma.workspaceMember.findFirst({
+    where: { userId: session.user.id },
+    select: { workspaceId: true },
+    orderBy: { joinedAt: "asc" },
+  });
+
+  if (!membership) {
     return null;
   }
 
   return {
     userId: session.user.id,
-    workspaceId: sessionData.activeWorkspaceId,
+    workspaceId: membership.workspaceId,
   };
 }
 
