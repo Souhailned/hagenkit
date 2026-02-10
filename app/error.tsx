@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Warning, ArrowsClockwise } from "@phosphor-icons/react/dist/ssr"
+import { AlertTriangle, RefreshCw } from "lucide-react"
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +30,7 @@ export default function Error({
       <Empty className="border-none">
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <Warning className="text-destructive" />
+            <AlertTriangle className="text-destructive" />
           </EmptyMedia>
           <EmptyTitle>Something went wrong</EmptyTitle>
           <EmptyDescription>
@@ -45,7 +45,7 @@ export default function Error({
         </EmptyHeader>
         <EmptyContent>
           <Button onClick={reset} variant="outline">
-            <ArrowsClockwise className="mr-2 h-4 w-4" />
+            <RefreshCw className="mr-2 h-4 w-4" />
             Try again
           </Button>
         </EmptyContent>
