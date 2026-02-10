@@ -1,44 +1,29 @@
-"use client";
-
 import Link from "next/link";
-import { Question, House } from "@phosphor-icons/react/dist/ssr"
-
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { Home, Search } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <Empty className="border-none">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <Question />
-          </EmptyMedia>
-          <div className="text-6xl font-bold text-muted-foreground/20 mb-2">
-            404
-          </div>
-          <EmptyTitle>Page not found</EmptyTitle>
-          <EmptyDescription>
-            The page you&apos;re looking for doesn&apos;t exist or has been
-            moved.
-          </EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          <Button asChild>
-            <Link href="/">
-              <House className="mr-2 h-4 w-4" />
-              Back to home
-            </Link>
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
+      <h1 className="text-8xl font-bold text-muted-foreground/20">404</h1>
+      <h2 className="mt-4 text-2xl font-bold">Pagina niet gevonden</h2>
+      <p className="mt-2 max-w-md text-muted-foreground">
+        Sorry, de pagina die je zoekt bestaat niet of is verplaatst.
+      </p>
+      <div className="mt-8 flex gap-3">
+        <Link href="/">
+          <Button variant="outline">
+            <Home className="mr-2 h-4 w-4" />
+            Homepage
           </Button>
-        </EmptyContent>
-      </Empty>
+        </Link>
+        <Link href="/aanbod">
+          <Button>
+            <Search className="mr-2 h-4 w-4" />
+            Bekijk aanbod
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }
