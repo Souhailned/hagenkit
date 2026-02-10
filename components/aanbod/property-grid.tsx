@@ -1,10 +1,11 @@
 "use client";
 
-import { Property } from "@/types/property";
+import type { Property } from "@/types/property";
+import type { FilteredProperty } from "@/app/actions/filter-properties";
 import { PropertyCard, PropertyCardSkeleton } from "./property-card";
 
 interface PropertyGridProps {
-  properties: Property[];
+  properties: Property[] | FilteredProperty[];
 }
 
 export function PropertyGrid({ properties }: PropertyGridProps) {

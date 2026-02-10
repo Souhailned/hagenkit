@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { searchProperties, getFilterOptions } from "@/app/actions/properties";
-import { PropertyType, PropertyFeature, SortOption } from "@/types/property";
-import { AanbodClient } from "@/components/aanbod/aanbod-client";
-import { PropertyGridSkeleton } from "@/components/aanbod";
+import { PropertyType } from "@/types/property";
+import { getFilteredProperties, getCities } from "@/app/actions/filter-properties";
+import { PropertyFilters } from "@/components/aanbod/property-filters";
+import { PropertyGrid, PropertyGridSkeleton } from "@/components/aanbod";
 
 export const metadata: Metadata = {
   title: "Horecapanden | Vind jouw perfecte horecalocatie",
@@ -46,16 +46,13 @@ function parseSearchParams(searchParams: {
   };
 
   return {
-    cities: getArray("cities"),
+    minPrice: getNumber("minPrice"),
+    maxPrice: getNumber("maxPrice"),
     types: getArray("types") as PropertyType[],
-    priceMin: getNumber("priceMin"),
-    priceMax: getNumber("priceMax"),
-    areaMin: getNumber("areaMin"),
-    areaMax: getNumber("areaMax"),
-    features: getArray("features") as PropertyFeature[],
-    sortBy: (getString("sortBy") as SortOption) || "newest",
+    city: getString("city"),
+    minArea: getNumber("minArea"),
+    maxArea: getNumber("maxArea"),
     page: getNumber("page") || 1,
-    view: (getString("view") === "map" ? "map" : "list") as "list" | "map",
   };
 }
 
@@ -66,37 +63,60 @@ async function AanbodContent({
 }) {
   const filters = parseSearchParams(searchParams);
 
-  // Fetch filter options and initial results in parallel
-  const [filterOptionsResult, searchResult] = await Promise.all([
-    getFilterOptions(),
-    searchProperties({
-      cities: filters.cities.length > 0 ? filters.cities : undefined,
+  // Fetch cities and properties in parallel
+  const [citiesResult, propertiesResult] = await Promise.all([
+    getCities(),
+    getFilteredProperties({
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
       types: filters.types.length > 0 ? filters.types : undefined,
-      priceMin: filters.priceMin,
-      priceMax: filters.priceMax,
-      areaMin: filters.areaMin,
-      areaMax: filters.areaMax,
-      features: filters.features.length > 0 ? filters.features : undefined,
-      sortBy: filters.sortBy,
+      city: filters.city,
+      minArea: filters.minArea,
+      maxArea: filters.maxArea,
       page: filters.page,
       pageSize: 12,
     }),
   ]);
 
-  if (!filterOptionsResult.success || !filterOptionsResult.data) {
-    throw new Error("Failed to load filter options");
+  if (!citiesResult.success || !citiesResult.data) {
+    throw new Error("Failed to load cities");
   }
 
-  if (!searchResult.success || !searchResult.data) {
+  if (!propertiesResult.success || !propertiesResult.data) {
     throw new Error("Failed to load properties");
   }
 
+  const { properties, total } = propertiesResult.data;
+
   return (
-    <AanbodClient
-      filterOptions={filterOptionsResult.data}
-      initialResults={searchResult.data}
-      initialFilters={filters}
-    />
+    <>
+      {/* Filters */}
+      <div className="mb-8">
+        <PropertyFilters availableCities={citiesResult.data} />
+      </div>
+
+      {/* Results count */}
+      <div className="mb-6">
+        <p className="text-sm text-muted-foreground">
+          <span className="font-semibold text-foreground">{total}</span>{" "}
+          {total === 1 ? "pand" : "panden"} gevonden
+        </p>
+      </div>
+
+      {/* Property grid */}
+      {properties.length > 0 ? (
+        <PropertyGrid properties={properties} />
+      ) : (
+        <div className="flex min-h-[400px] items-center justify-center rounded-xl border border-border/60 bg-muted/20">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold">Geen panden gevonden</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Pas uw filters aan om meer resultaten te zien.
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
