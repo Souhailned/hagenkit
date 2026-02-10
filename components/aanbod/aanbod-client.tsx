@@ -93,6 +93,16 @@ export function AanbodClient({
   const [page, setPage] = React.useState(initialFilters.page);
   const [view, setView] = React.useState<"list" | "map">(initialFilters.view);
 
+  // Trigger map resize when switching to map view
+  React.useEffect(() => {
+    if (view === "map") {
+      // MapLibre needs a resize trigger when container becomes visible
+      setTimeout(() => {
+        window.dispatchEvent(new Event("resize"));
+      }, 100);
+    }
+  }, [view]);
+
   // Results state
   const [results, setResults] =
     React.useState<SearchPropertiesResult>(initialResults);
@@ -420,7 +430,7 @@ export function AanbodClient({
         {/* Results */}
         <div
           className={cn(
-            "transition-opacity duration-200",
+            "w-full transition-opacity duration-200",
             view === "map" ? "block" : "hidden"
           )}
         >

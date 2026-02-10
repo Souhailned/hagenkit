@@ -55,7 +55,7 @@ export function PropertyMap({ properties, className }: PropertyMapProps) {
 
   return (
     <div
-      className={cn("relative w-full", className)}
+      className={cn("relative w-full rounded-xl", className)}
       role="region"
       aria-label={`Kaart met ${mappableProperties.length} horecapanden`}
     >
