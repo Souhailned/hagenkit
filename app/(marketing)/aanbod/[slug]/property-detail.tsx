@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createInquiry } from "@/app/actions/inquiries";
 import { FavoriteButton } from "@/components/favorites/favorite-button";
 import { addToRecentlyViewed, RecentlyViewed } from "@/components/recently-viewed/recently-viewed";
+import { NeighborhoodInfo } from "@/components/property/neighborhood-info";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -36,6 +37,7 @@ import {
   ChevronRight,
   Heart,
   Share2,
+  Printer,
   Phone,
   Mail,
   Calendar,
@@ -714,6 +716,15 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                 <Share2 className="mr-1.5 size-4" />
                 Delen
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.print()}
+                className="hidden sm:flex"
+              >
+                <Printer className="mr-1.5 size-4" />
+                Print
+              </Button>
             </div>
 
             {/* Agent info placeholder */}
@@ -745,6 +756,9 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Neighborhood info */}
+            <NeighborhoodInfo city={property.city} neighborhood={property.neighborhood} className="mt-4" />
 
             {/* Recently viewed */}
             <RecentlyViewed currentId={property.id} />
