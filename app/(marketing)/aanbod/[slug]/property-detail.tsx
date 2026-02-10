@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createInquiry } from "@/app/actions/inquiries";
 import { FavoriteButton } from "@/components/favorites/favorite-button";
+import { addToRecentlyViewed, RecentlyViewed } from "@/components/recently-viewed/recently-viewed";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -106,6 +107,17 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
     phone: "",
     message: `Beste makelaar,\n\nIk heb interesse in "${property.title}" en zou graag meer informatie ontvangen.\n\nMet vriendelijke groet`,
   });
+
+  // Track recently viewed
+  useEffect(() => {
+    addToRecentlyViewed({
+      id: property.id,
+      title: property.title,
+      slug: property.slug,
+      city: property.city,
+      type: property.propertyType,
+    });
+  }, [property.id, property.title, property.slug, property.city, property.propertyType]);
 
   // Get images from mock data - handle both string[] and PropertyImage[]
   const images: string[] = Array.isArray(property.images)
@@ -733,6 +745,9 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Recently viewed */}
+            <RecentlyViewed currentId={property.id} />
           </div>
         </div>
       </div>
