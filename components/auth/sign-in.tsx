@@ -291,12 +291,12 @@ export default function SignInAuth() {
             <p className="px-8 text-center text-sm text-muted-foreground">
               Door verder te gaan, ga je akkoord met onze{" "}
               <Link
-                href="/terms"
+                href="/voorwaarden"
                 className="underline underline-offset-4 hover:text-primary"
               >
                 Algemene Voorwaarden
               </Link>{" "}
-              and{" "}
+              en{" "}
               <Link
                 href="/privacy"
                 className="underline underline-offset-4 hover:text-primary"

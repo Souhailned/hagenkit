@@ -17,17 +17,16 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
-          // First user becomes admin, rest default to seeker (set via Prisma schema default)
+          // Better Auth admin plugin sets role="user" by default,
+          // but our Prisma enum is seeker/agent/admin. Fix it here.
           const userCount = await prisma.user.count();
-          if (userCount === 0) {
-            return {
-              data: {
-                ...user,
-                role: "admin",
-              },
-            };
-          }
-          return { data: user };
+          const role = userCount === 0 ? "admin" : "seeker";
+          return {
+            data: {
+              ...user,
+              role,
+            },
+          };
         },
       },
     },
