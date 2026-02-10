@@ -426,7 +426,7 @@ export function AanbodClient({
         >
           <PropertyMap
             properties={results.properties}
-            className="h-[calc(100vh-300px)] min-h-[600px]"
+            className="h-[calc(100vh-280px)] min-h-[500px] w-full"
           />
         </div>
         <div

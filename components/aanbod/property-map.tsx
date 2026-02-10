@@ -77,7 +77,7 @@ export function PropertyMap({ properties, className }: PropertyMapProps) {
           clusterRadius={50}
           clusterColors={["#3b82f6", "#f97316", "#ef4444"]} // Blauw → Oranje → Rood
           clusterThresholds={[10, 50]} // Klein < 10, Medium < 50, Groot >= 50
-          pointColor="oklch(0.43 0.215 254.5)" // Primary blue uit theme
+          pointColor="#2563eb" // Primary blue (hex for MapLibre compatibility)
           onPointClick={(feature) => {
             setSelectedProperty(feature.properties.property);
           }}
