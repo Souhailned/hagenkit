@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getPropertyBySlug } from "@/app/actions/properties";
 import { trackPropertyView } from "@/app/actions/track-view";
 import { PropertyDetail } from "./property-detail";
+import { SimilarProperties } from "@/components/property/similar-properties";
+import { PropertyJsonLd } from "@/components/seo/property-jsonld";
 
 const typeLabels: Record<string, string> = {
   RESTAURANT: "Restaurant", CAFE: "Café", BAR: "Bar", HOTEL: "Hotel",
@@ -57,5 +59,28 @@ export default async function PropertyDetailPage({
   // Track view (fire and forget)
   trackPropertyView(result.data.id).catch(() => {});
 
-  return <PropertyDetail property={result.data} />;
+  const p = result.data;
+  const imgUrl = p.images?.[0]?.originalUrl || p.images?.[0]?.thumbnailUrl;
+
+  return (
+    <>
+      <PropertyJsonLd
+        title={p.title}
+        description={p.shortDescription || p.description || undefined}
+        address={p.address}
+        city={p.city}
+        postalCode={p.postalCode}
+        price={p.rentPrice || p.salePrice || undefined}
+        priceType={p.priceType}
+        surfaceTotal={p.surfaceTotal}
+        propertyType={p.propertyType}
+        imageUrl={imgUrl || undefined}
+        slug={p.slug}
+      />
+      <PropertyDetail property={p} />
+      <div className="mx-auto max-w-6xl px-6 pb-16 lg:px-12">
+        <SimilarProperties propertyId={result.data.id} />
+      </div>
+    </>
+  );
 }

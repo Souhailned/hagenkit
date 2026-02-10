@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Newsletter } from "./newsletter";
 
 const links = [
   {
@@ -83,7 +84,12 @@ export function FooterSection() {
           </div>
         </div>
 
-        <div className="mt-12 border-t pt-6 flex flex-wrap justify-between gap-4">
+        {/* Newsletter */}
+        <div className="mt-12 border-t pt-8">
+          <Newsletter />
+        </div>
+
+        <div className="mt-8 border-t pt-6 flex flex-wrap justify-between gap-4">
           <span className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Horecagrond. Alle rechten voorbehouden.
           </span>

@@ -1,5 +1,6 @@
 import { FooterSection } from "@/components/marketing/footer";
 import { Header } from "@/components/marketing/header";
+import { CookieBanner } from "@/components/cookie-banner";
 
 export default function MarketingLayout({
   children,
@@ -13,6 +14,7 @@ export default function MarketingLayout({
         {children}
       </main>
       <FooterSection />
+      <CookieBanner />
     </>
   );
 }
