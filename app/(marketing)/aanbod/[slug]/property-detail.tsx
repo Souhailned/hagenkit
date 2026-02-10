@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createInquiry } from "@/app/actions/inquiries";
+import { FavoriteButton } from "@/components/favorites/favorite-button";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -676,11 +677,28 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
 
             {/* Quick actions */}
             <div className="mt-4 flex gap-2">
-              <Button variant="outline" className="flex-1" size="sm">
-                <Heart className="mr-1.5 size-4" />
-                Opslaan
-              </Button>
-              <Button variant="outline" className="flex-1" size="sm">
+              <FavoriteButton
+                propertyId={property.id}
+                size="md"
+                className="flex-1 rounded-lg"
+              />
+              <Button
+                variant="outline"
+                className="flex-1"
+                size="sm"
+                onClick={async () => {
+                  if (navigator.share) {
+                    await navigator.share({
+                      title: property.title,
+                      text: `Bekijk dit horecapand: ${property.title}`,
+                      url: window.location.href,
+                    });
+                  } else {
+                    await navigator.clipboard.writeText(window.location.href);
+                    alert("Link gekopieerd!");
+                  }
+                }}
+              >
                 <Share2 className="mr-1.5 size-4" />
                 Delen
               </Button>
