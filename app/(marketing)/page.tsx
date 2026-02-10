@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import {
   Search,
@@ -12,61 +14,83 @@ import {
   Utensils,
   Wine,
   ChefHat,
+  UtensilsCrossed,
+  Bed,
   Briefcase,
   CheckCircle2,
   Clock,
   Handshake,
+  TrendingUp,
+  Shield,
+  Sparkles,
+  Maximize2,
 } from "lucide-react";
 
-// Mock featured properties until getFeaturedProperties action exists
+// Mock featured properties (prepared for Prisma)
 const featuredProperties = [
   {
-    id: "1",
-    slug: "grand-cafe-amsterdam-centrum",
-    title: "Grand Café Amsterdam Centrum",
+    id: "prop-001",
+    slug: "restaurant-de-gouden-leeuw-amsterdam",
+    title: "Restaurant De Gouden Leeuw",
     city: "Amsterdam",
-    propertyType: "CAFE",
-    rentPrice: 450000, // cents
+    province: "Noord-Holland",
+    propertyType: "RESTAURANT" as const,
+    priceType: "SALE" as const,
+    price: 175000,
     surfaceTotal: 180,
-    image: "/placeholder-property-1.jpg",
-    seatingCapacity: 85,
-    hasTerrace: true,
+    image:
+      "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop",
+    features: ["TERRACE", "KITCHEN", "ALCOHOL_LICENSE"],
+    isFeatured: true,
+    isNew: true,
   },
   {
-    id: "2",
-    slug: "restaurant-rotterdam-haven",
-    title: "Restaurant aan de Maas",
-    city: "Rotterdam",
-    propertyType: "RESTAURANT",
-    rentPrice: 550000,
-    surfaceTotal: 220,
-    image: "/placeholder-property-2.jpg",
-    seatingCapacity: 120,
-    hasTerrace: true,
-  },
-  {
-    id: "3",
-    slug: "boutique-hotel-utrecht",
-    title: "Boutique Hotel Binnenstad",
+    id: "prop-002",
+    slug: "grand-cafe-het-station-utrecht",
+    title: "Grand Café Het Station",
     city: "Utrecht",
-    propertyType: "HOTEL",
-    rentPrice: 850000,
-    surfaceTotal: 450,
-    image: "/placeholder-property-3.jpg",
-    seatingCapacity: 0,
-    hasTerrace: false,
+    province: "Utrecht",
+    propertyType: "GRANDCAFE" as const,
+    priceType: "RENT" as const,
+    price: 3500,
+    surfaceTotal: 250,
+    image:
+      "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=600&fit=crop",
+    features: ["TERRACE", "ALCOHOL_LICENSE", "LIVING_QUARTERS"],
+    isFeatured: true,
+    isNew: false,
   },
   {
-    id: "4",
-    slug: "dark-kitchen-den-haag",
-    title: "Dark Kitchen Premium",
+    id: "prop-006",
+    slug: "boutique-hotel-de-oranje-nassau-den-haag",
+    title: "Boutique Hotel De Oranje Nassau",
     city: "Den Haag",
-    propertyType: "DARK_KITCHEN",
-    rentPrice: 280000,
-    surfaceTotal: 95,
-    image: "/placeholder-property-4.jpg",
-    seatingCapacity: 0,
-    hasTerrace: false,
+    province: "Zuid-Holland",
+    propertyType: "HOTEL" as const,
+    priceType: "SALE" as const,
+    price: 890000,
+    surfaceTotal: 650,
+    image:
+      "https://images.unsplash.com/photo-1559329007-40df8a9345d8?w=800&h=600&fit=crop",
+    features: ["KITCHEN", "ALCOHOL_LICENSE", "PARKING"],
+    isFeatured: true,
+    isNew: false,
+  },
+  {
+    id: "prop-009",
+    slug: "partycentrum-de-feestzaal-tilburg",
+    title: "Partycentrum De Feestzaal",
+    city: "Tilburg",
+    province: "Noord-Brabant",
+    propertyType: "PARTYCENTRUM" as const,
+    priceType: "SALE" as const,
+    price: 450000,
+    surfaceTotal: 1200,
+    image:
+      "https://images.unsplash.com/photo-1537047902294-62a40c20a6ae?w=800&h=600&fit=crop",
+    features: ["KITCHEN", "ALCOHOL_LICENSE", "PARKING"],
+    isFeatured: true,
+    isNew: false,
   },
 ];
 
@@ -77,164 +101,241 @@ const stats = {
   cities: 42,
 };
 
-const propertyTypeIcons: Record<string, React.ReactNode> = {
-  CAFE: <Coffee className="size-4" />,
-  RESTAURANT: <Utensils className="size-4" />,
-  BAR: <Wine className="size-4" />,
-  HOTEL: <Building2 className="size-4" />,
-  DARK_KITCHEN: <ChefHat className="size-4" />,
-};
-
 const propertyTypeLabels: Record<string, string> = {
-  CAFE: "Café",
   RESTAURANT: "Restaurant",
+  CAFE: "Café",
   BAR: "Bar",
   HOTEL: "Hotel",
   DARK_KITCHEN: "Dark Kitchen",
+  GRANDCAFE: "Grand Café",
+  LUNCHROOM: "Lunchroom",
+  PARTYCENTRUM: "Partycentrum",
+  PIZZERIA: "Pizzeria",
+  BRASSERIE: "Brasserie",
+  SNACKBAR: "Snackbar",
 };
 
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("nl-NL", {
+const featureLabels: Record<string, string> = {
+  TERRACE: "Terras",
+  KITCHEN: "Keuken",
+  ALCOHOL_LICENSE: "Drank & Horeca",
+  PARKING: "Parkeren",
+  LIVING_QUARTERS: "Woonruimte",
+};
+
+// Categories for the grid
+const categories = [
+  {
+    type: "RESTAURANT",
+    label: "Restaurant",
+    icon: Utensils,
+    count: 312,
+    description: "Eetgelegenheden van fine-dining tot casual",
+  },
+  {
+    type: "CAFE",
+    label: "Café & Grand Café",
+    icon: Coffee,
+    count: 189,
+    description: "Bruine kroegen tot moderne koffiezaken",
+  },
+  {
+    type: "BAR",
+    label: "Bar & Lounge",
+    icon: Wine,
+    count: 124,
+    description: "Cocktailbars, lounges en nachthoreca",
+  },
+  {
+    type: "HOTEL",
+    label: "Hotel",
+    icon: Bed,
+    count: 87,
+    description: "Boutique hotels tot conferentielocaties",
+  },
+  {
+    type: "LUNCHROOM",
+    label: "Lunchroom",
+    icon: UtensilsCrossed,
+    count: 156,
+    description: "Broodjes-, lunch- en ontbijtzaken",
+  },
+  {
+    type: "DARK_KITCHEN",
+    label: "Dark Kitchen",
+    icon: ChefHat,
+    count: 43,
+    description: "Bezorg-only keukens en ghost kitchens",
+  },
+];
+
+function formatPrice(amount: number, priceType: string): string {
+  const formatted = new Intl.NumberFormat("nl-NL", {
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: 0,
-  }).format(cents / 100);
+  }).format(amount);
+  return priceType === "RENT" ? `${formatted}/mnd` : formatted;
+}
+
+function formatPriceLabel(priceType: string): string {
+  return priceType === "RENT" ? "Te huur" : "Te koop";
 }
 
 export default function Home() {
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative overflow-hidden border-b bg-gradient-to-b from-background via-background to-muted/30">
-        {/* Decorative background pattern - Dutch tile inspired */}
+      {/* ─────────────────────────── HERO ─────────────────────────── */}
+      <section className="relative overflow-hidden border-b bg-gradient-to-b from-primary/[0.04] via-background to-background">
+        {/* Subtle grid pattern */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.03]"
+          className="pointer-events-none absolute inset-0 opacity-[0.025]"
           style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000' fill-opacity='1'%3E%3Cpath d='M0 0h1v40H0zM40 0h1v40h-1zM0 0h40v1H0zM0 40h40v1H0z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
           }}
         />
 
-        <div className="relative mx-auto max-w-6xl px-6 pb-16 pt-32 sm:pb-24 sm:pt-44 lg:px-12">
-          <div className="mx-auto max-w-4xl text-center">
-            {/* Badge */}
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5">
+        <div className="relative mx-auto max-w-6xl px-6 pb-20 pt-28 sm:pb-28 sm:pt-40 lg:px-12">
+          <div className="mx-auto max-w-3xl text-center">
+            {/* Live indicator */}
+            <div className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-primary/15 bg-primary/[0.06] px-4 py-1.5">
               <span className="relative flex size-2">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/60 opacity-75" />
                 <span className="relative inline-flex size-2 rounded-full bg-primary" />
               </span>
               <span className="text-sm font-medium text-primary">
-                847+ horecalocaties beschikbaar
+                {stats.properties}+ horecapanden beschikbaar
               </span>
             </div>
 
             {/* Headline */}
-            <h1 className="text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
-              Vind de perfecte{" "}
-              <span className="relative">
-                <span className="relative z-10 bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent">
-                  horecalocatie
-                </span>
-                <svg
-                  aria-hidden
-                  className="absolute -bottom-2 left-0 w-full"
-                  viewBox="0 0 358 12"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M3 9C118.957 3.58687 237.086 2.34387 355 9"
-                    stroke="url(#hero-underline)"
-                    strokeWidth="5"
-                    strokeLinecap="round"
-                  />
-                  <defs>
-                    <linearGradient
-                      id="hero-underline"
-                      x1="3"
-                      y1="9"
-                      x2="355"
-                      y2="9"
-                      gradientUnits="userSpaceOnUse"
-                    >
-                      <stop stopColor="oklch(0.43 0.215 254.5 / 0.3)" />
-                      <stop
-                        offset="0.5"
-                        stopColor="oklch(0.43 0.215 254.5 / 0.6)"
-                      />
-                      <stop
-                        offset="1"
-                        stopColor="oklch(0.43 0.215 254.5 / 0.3)"
-                      />
-                    </linearGradient>
-                  </defs>
-                </svg>
+            <h1 className="text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+              Vind jouw ideale{" "}
+              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                horecalocatie
               </span>
             </h1>
 
-            {/* Subtext */}
-            <p className="mx-auto mt-8 max-w-2xl text-balance text-lg text-muted-foreground sm:text-xl">
-              Van restaurant tot dark kitchen, van café tot hotel.
-              <br className="hidden sm:block" />
-              Ontdek {stats.properties}+ locaties van {stats.agents} makelaars
-              in {stats.cities} steden.
+            <p className="mx-auto mt-6 max-w-xl text-balance text-lg text-muted-foreground">
+              Doorzoek {stats.properties}+ panden van {stats.agents} makelaars
+              in {stats.cities} steden. Van restaurant tot dark kitchen.
             </p>
 
-            {/* CTAs */}
-            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Button
-                asChild
-                size="lg"
-                className="group h-12 px-8 text-base shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30"
-              >
-                <Link href="/aanbod">
-                  <Search className="mr-2 size-5" />
-                  Bekijk Aanbod
-                  <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="h-12 px-8 text-base"
-              >
-                <Link href="/sign-up?role=agent">
-                  <Briefcase className="mr-2 size-5" />
-                  Ik ben Makelaar
-                </Link>
-              </Button>
+            {/* Search bar */}
+            <div className="mx-auto mt-10 max-w-2xl">
+              <form action="/aanbod" method="get">
+                <div className="flex flex-col gap-3 sm:flex-row sm:gap-0">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      name="search"
+                      placeholder="Zoek op stad, buurt of type..."
+                      className="h-14 rounded-xl border-border/60 bg-card pl-12 pr-4 text-base shadow-sm placeholder:text-muted-foreground/60 sm:rounded-r-none sm:border-r-0"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="h-14 rounded-xl px-8 text-base shadow-lg shadow-primary/20 sm:rounded-l-none"
+                  >
+                    <Search className="mr-2 size-5 sm:hidden" />
+                    Zoeken
+                    <ArrowRight className="ml-2 hidden size-4 sm:block" />
+                  </Button>
+                </div>
+              </form>
+
+              {/* Quick links */}
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
+                <span className="text-muted-foreground">Populair:</span>
+                {["Amsterdam", "Rotterdam", "Utrecht", "Den Haag"].map(
+                  (city) => (
+                    <Link
+                      key={city}
+                      href={`/aanbod?cities=${city}`}
+                      className="rounded-full border bg-card px-3 py-1 text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                    >
+                      {city}
+                    </Link>
+                  )
+                )}
+              </div>
             </div>
 
             {/* Trust indicators */}
-            <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-sm text-muted-foreground">
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="size-4 text-green-500" />
+                <CheckCircle2 className="size-4 text-emerald-500" />
                 <span>Gratis zoeken</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="size-4 text-green-500" />
-                <span>Direct contact met makelaars</span>
+                <CheckCircle2 className="size-4 text-emerald-500" />
+                <span>Direct contact</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="size-4 text-green-500" />
+                <CheckCircle2 className="size-4 text-emerald-500" />
                 <span>Dagelijks nieuwe panden</span>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Decorative bottom wave */}
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
       </section>
 
-      {/* Featured Listings Section */}
+      {/* ──────────────────── CATEGORIES GRID ──────────────────── */}
+      <section className="border-b py-16 sm:py-24">
+        <div className="mx-auto max-w-6xl px-6 lg:px-12">
+          <div className="mx-auto mb-12 max-w-2xl text-center">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              Zoek per categorie
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              Elk type horecabedrijf heeft unieke eisen. Vind precies wat je
+              nodig hebt.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {categories.map((cat) => {
+              const Icon = cat.icon;
+              return (
+                <Link
+                  key={cat.type}
+                  href={`/aanbod?types=${cat.type}`}
+                  className="group relative overflow-hidden rounded-xl border bg-card p-6 transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                      <Icon className="size-6" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-baseline gap-2">
+                        <h3 className="font-semibold text-foreground">
+                          {cat.label}
+                        </h3>
+                        <span className="text-sm text-muted-foreground">
+                          {cat.count}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {cat.description}
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight className="absolute right-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground/40 transition-all group-hover:translate-x-1 group-hover:text-primary" />
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ──────────────── FEATURED PROPERTIES ──────────────── */}
       <section className="border-b bg-muted/30 py-16 sm:py-24">
         <div className="mx-auto max-w-6xl px-6 lg:px-12">
-          {/* Section header */}
           <div className="mb-12 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
             <div>
-              <Badge variant="secondary" className="mb-4">
+              <Badge variant="secondary" className="mb-3">
                 <Star className="mr-1 size-3 fill-amber-500 text-amber-500" />
                 Uitgelicht
               </Badge>
@@ -242,7 +343,7 @@ export default function Home() {
                 Populaire locaties
               </h2>
               <p className="mt-2 text-muted-foreground">
-                Ontdek onze meest gevraagde horecapanden
+                Ontdek de meest bekeken horecapanden van dit moment
               </p>
             </div>
             <Button asChild variant="outline" className="shrink-0">
@@ -253,69 +354,69 @@ export default function Home() {
             </Button>
           </div>
 
-          {/* Property cards grid */}
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {featuredProperties.map((property, index) => (
+            {featuredProperties.map((property) => (
               <Link
                 key={property.id}
                 href={`/aanbod/${property.slug}`}
-                className="group relative overflow-hidden rounded-xl border bg-card shadow-sm transition-all hover:shadow-lg hover:shadow-primary/5"
-                style={{
-                  animationDelay: `${index * 100}ms`,
-                }}
+                className="group relative overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5"
               >
                 {/* Image */}
                 <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                    {propertyTypeIcons[property.propertyType] || (
-                      <Building2 className="size-12 opacity-20" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={property.image}
+                    alt={property.title}
+                    className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+
+                  {/* Badges */}
+                  <div className="absolute left-3 top-3 flex gap-2">
+                    {property.isNew && (
+                      <Badge className="border-0 bg-primary text-primary-foreground shadow-lg">
+                        <Sparkles className="mr-1 size-3" />
+                        Nieuw
+                      </Badge>
                     )}
-                  </div>
-                  {/* Type badge */}
-                  <Badge
-                    variant="secondary"
-                    className="absolute left-3 top-3 bg-background/90 backdrop-blur"
-                  >
-                    {propertyTypeIcons[property.propertyType]}
-                    <span className="ml-1">
+                    <Badge
+                      variant="secondary"
+                      className="border-0 bg-white/90 shadow-lg backdrop-blur-sm"
+                    >
                       {propertyTypeLabels[property.propertyType]}
-                    </span>
-                  </Badge>
-                  {/* Price on image */}
-                  <div className="absolute bottom-3 left-3 right-3">
+                    </Badge>
+                  </div>
+
+                  {/* Price overlay */}
+                  <div className="absolute bottom-3 left-3">
                     <p className="text-lg font-bold text-white">
-                      {formatPrice(property.rentPrice)}
-                      <span className="text-sm font-normal opacity-80">
-                        /maand
-                      </span>
+                      {formatPrice(property.price, property.priceType)}
                     </p>
                   </div>
                 </div>
 
                 {/* Content */}
                 <div className="p-4">
-                  <h3 className="font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                  <h3 className="line-clamp-1 font-semibold text-foreground transition-colors group-hover:text-primary">
                     {property.title}
                   </h3>
-                  <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
+                  <div className="mt-1.5 flex items-center gap-1 text-sm text-muted-foreground">
                     <MapPin className="size-3.5" />
                     <span>{property.city}</span>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
+                      <Maximize2 className="size-3" />
                       {property.surfaceTotal} m²
                     </span>
-                    {property.seatingCapacity > 0 && (
-                      <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs">
-                        {property.seatingCapacity} zitplaatsen
+                    {property.features.slice(0, 2).map((f) => (
+                      <span
+                        key={f}
+                        className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground"
+                      >
+                        {featureLabels[f] || f}
                       </span>
-                    )}
-                    {property.hasTerrace && (
-                      <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs">
-                        Terras
-                      </span>
-                    )}
+                    ))}
                   </div>
                 </div>
               </Link>
@@ -324,10 +425,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How it Works Section */}
+      {/* ────────────────── HOW IT WORKS ────────────────── */}
       <section className="border-b py-16 sm:py-24">
         <div className="mx-auto max-w-6xl px-6 lg:px-12">
-          <div className="mx-auto max-w-2xl text-center">
+          <div className="mx-auto mb-16 max-w-2xl text-center">
             <Badge variant="secondary" className="mb-4">
               Hoe het werkt
             </Badge>
@@ -335,158 +436,173 @@ export default function Home() {
               In 3 stappen naar jouw locatie
             </h2>
             <p className="mt-4 text-muted-foreground">
-              Van zoeken tot ondertekenen - wij maken het proces zo eenvoudig
+              Van zoeken tot ondertekenen — wij maken het proces zo eenvoudig
               mogelijk
             </p>
           </div>
 
-          <div className="mt-16 grid gap-8 md:grid-cols-3">
-            {/* Step 1 */}
-            <div className="relative">
-              <div className="flex flex-col items-center text-center">
-                <div className="relative">
-                  <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-8 ring-primary/5">
-                    <Search className="size-7" />
+          <div className="grid gap-8 md:grid-cols-3">
+            {[
+              {
+                icon: Search,
+                step: 1,
+                title: "Zoek & Filter",
+                description:
+                  "Gebruik onze geavanceerde zoekfunctie om panden te vinden die perfect aansluiten bij jouw horecaconcept en budget.",
+              },
+              {
+                icon: Clock,
+                step: 2,
+                title: "Plan Bezichtiging",
+                description:
+                  "Neem direct contact op met de makelaar en plan een bezichtiging in. Krijg antwoord op al je vragen.",
+              },
+              {
+                icon: Handshake,
+                step: 3,
+                title: "Onderteken Deal",
+                description:
+                  "Gevonden wat je zocht? De makelaar begeleidt je door het contractproces tot de sleuteloverdracht.",
+              },
+            ].map((step, i) => {
+              const Icon = step.icon;
+              return (
+                <div key={step.step} className="relative">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="relative">
+                      <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-8 ring-primary/5">
+                        <Icon className="size-7" />
+                      </div>
+                      <span className="absolute -right-2 -top-2 flex size-7 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                        {step.step}
+                      </span>
+                    </div>
+                    <h3 className="mt-6 text-xl font-semibold">{step.title}</h3>
+                    <p className="mt-3 text-muted-foreground">
+                      {step.description}
+                    </p>
                   </div>
-                  <span className="absolute -right-2 -top-2 flex size-7 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                    1
-                  </span>
+                  {/* Connector line (desktop, not on last item) */}
+                  {i < 2 && (
+                    <div
+                      aria-hidden
+                      className="absolute right-0 top-8 hidden h-px w-[calc(50%-2rem)] bg-gradient-to-r from-border to-transparent md:block"
+                    />
+                  )}
+                  {i > 0 && (
+                    <div
+                      aria-hidden
+                      className="absolute left-0 top-8 hidden h-px w-[calc(50%-2rem)] bg-gradient-to-l from-border to-transparent md:block"
+                    />
+                  )}
                 </div>
-                <h3 className="mt-6 text-xl font-semibold">
-                  Zoek &amp; Filter
-                </h3>
-                <p className="mt-3 text-muted-foreground">
-                  Gebruik onze geavanceerde zoekfunctie om panden te vinden die
-                  perfect aansluiten bij jouw horecaconcept en budget.
-                </p>
-              </div>
-              {/* Connector line (desktop) */}
-              <div
-                aria-hidden
-                className="absolute right-0 top-8 hidden h-px w-[calc(50%-2rem)] bg-gradient-to-r from-border to-transparent md:block"
-              />
-            </div>
-
-            {/* Step 2 */}
-            <div className="relative">
-              <div className="flex flex-col items-center text-center">
-                <div className="relative">
-                  <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-8 ring-primary/5">
-                    <Clock className="size-7" />
-                  </div>
-                  <span className="absolute -right-2 -top-2 flex size-7 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                    2
-                  </span>
-                </div>
-                <h3 className="mt-6 text-xl font-semibold">Plan Bezichtiging</h3>
-                <p className="mt-3 text-muted-foreground">
-                  Neem direct contact op met de makelaar en plan een bezichtiging
-                  in. Krijg antwoord op al je vragen.
-                </p>
-              </div>
-              {/* Connector lines (desktop) */}
-              <div
-                aria-hidden
-                className="absolute left-0 top-8 hidden h-px w-[calc(50%-2rem)] bg-gradient-to-l from-border to-transparent md:block"
-              />
-              <div
-                aria-hidden
-                className="absolute right-0 top-8 hidden h-px w-[calc(50%-2rem)] bg-gradient-to-r from-border to-transparent md:block"
-              />
-            </div>
-
-            {/* Step 3 */}
-            <div className="relative">
-              <div className="flex flex-col items-center text-center">
-                <div className="relative">
-                  <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-8 ring-primary/5">
-                    <Handshake className="size-7" />
-                  </div>
-                  <span className="absolute -right-2 -top-2 flex size-7 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                    3
-                  </span>
-                </div>
-                <h3 className="mt-6 text-xl font-semibold">Onderteken Deal</h3>
-                <p className="mt-3 text-muted-foreground">
-                  Gevonden wat je zocht? De makelaar begeleidt je door het
-                  contractproces tot de sleuteloverdracht.
-                </p>
-              </div>
-              {/* Connector line (desktop) */}
-              <div
-                aria-hidden
-                className="absolute left-0 top-8 hidden h-px w-[calc(50%-2rem)] bg-gradient-to-l from-border to-transparent md:block"
-              />
-            </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* ────────────────── STATS ────────────────── */}
       <section className="border-b bg-gradient-to-br from-primary/5 via-background to-primary/5 py-16 sm:py-20">
         <div className="mx-auto max-w-6xl px-6 lg:px-12">
-          <div className="grid gap-8 sm:grid-cols-3">
-            {/* Stat 1 */}
-            <div className="group relative overflow-hidden rounded-2xl border bg-card/50 p-8 text-center backdrop-blur transition-all hover:bg-card hover:shadow-lg">
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
-              />
-              <div className="relative">
-                <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Building2 className="size-7" />
-                </div>
-                <p className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-                  {stats.properties.toLocaleString("nl-NL")}+
-                </p>
-                <p className="mt-2 text-muted-foreground">Horecapanden</p>
-              </div>
-            </div>
-
-            {/* Stat 2 */}
-            <div className="group relative overflow-hidden rounded-2xl border bg-card/50 p-8 text-center backdrop-blur transition-all hover:bg-card hover:shadow-lg">
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
-              />
-              <div className="relative">
-                <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Users className="size-7" />
-                </div>
-                <p className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-                  {stats.agents.toLocaleString("nl-NL")}
-                </p>
-                <p className="mt-2 text-muted-foreground">
-                  Gecertificeerde Makelaars
-                </p>
-              </div>
-            </div>
-
-            {/* Stat 3 */}
-            <div className="group relative overflow-hidden rounded-2xl border bg-card/50 p-8 text-center backdrop-blur transition-all hover:bg-card hover:shadow-lg">
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
-              />
-              <div className="relative">
-                <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <MapPin className="size-7" />
-                </div>
-                <p className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-                  {stats.cities}
-                </p>
-                <p className="mt-2 text-muted-foreground">Steden in Nederland</p>
-              </div>
-            </div>
+          <div className="grid gap-6 sm:grid-cols-3">
+            {[
+              {
+                icon: Building2,
+                value: stats.properties.toLocaleString("nl-NL") + "+",
+                label: "Horecapanden",
+              },
+              {
+                icon: Users,
+                value: stats.agents.toLocaleString("nl-NL"),
+                label: "Gecertificeerde Makelaars",
+              },
+              {
+                icon: MapPin,
+                value: stats.cities.toString(),
+                label: "Steden in Nederland",
+              },
+            ].map((stat) => {
+              const Icon = stat.icon;
+              return (
+                <Card
+                  key={stat.label}
+                  className="group overflow-hidden border bg-card/50 text-center backdrop-blur transition-all hover:bg-card hover:shadow-lg"
+                >
+                  <CardContent className="p-8">
+                    <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <Icon className="size-7" />
+                    </div>
+                    <p className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+                      {stat.value}
+                    </p>
+                    <p className="mt-2 text-muted-foreground">{stat.label}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* CTA Banner for Makelaars */}
+      {/* ──────────────── WHY HORECAGROND ──────────────── */}
+      <section className="border-b py-16 sm:py-24">
+        <div className="mx-auto max-w-6xl px-6 lg:px-12">
+          <div className="mx-auto mb-12 max-w-2xl text-center">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              Waarom Horecagrond?
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              Het platform dat horeca-ondernemers en makelaars samenbrengt
+            </p>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                icon: TrendingUp,
+                title: "Marktinzichten",
+                description:
+                  "Locatiescores, voetgangersstroom en concurrentieanalyse per pand.",
+              },
+              {
+                icon: Shield,
+                title: "Geverifieerde Makelaars",
+                description:
+                  "Alle aangesloten makelaars zijn gecertificeerd en beoordeeld.",
+              },
+              {
+                icon: Sparkles,
+                title: "AI Foto Verbetering",
+                description:
+                  "Automatische beeldoptimalisatie voor professionele presentatie.",
+              },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.title}
+                  className="rounded-xl border bg-card p-6 transition-all hover:shadow-md"
+                >
+                  <div className="mb-4 flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Icon className="size-5" />
+                  </div>
+                  <h3 className="font-semibold text-foreground">{item.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ────────────── CTA BANNER ────────────── */}
       <section className="py-16 sm:py-24">
         <div className="mx-auto max-w-6xl px-6 lg:px-12">
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-primary/80 px-8 py-16 text-center text-primary-foreground shadow-2xl shadow-primary/25 sm:px-16 sm:py-20">
-            {/* Decorative elements */}
+            {/* Pattern */}
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0 opacity-10"
@@ -541,7 +657,7 @@ export default function Home() {
                 </Button>
               </div>
 
-              <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-sm text-primary-foreground/70">
+              <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-primary-foreground/70">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="size-4" />
                   <span>Eerste 3 panden gratis</span>
