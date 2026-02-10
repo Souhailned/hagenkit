@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { SearchBar } from "@/components/search/search-bar";
 import Link from "next/link";
 import {
   Search,
@@ -224,27 +225,7 @@ export default function Home() {
 
             {/* Search bar */}
             <div className="mx-auto mt-10 max-w-2xl">
-              <form action="/aanbod" method="get">
-                <div className="flex flex-col gap-3 sm:flex-row sm:gap-0">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      name="search"
-                      placeholder="Zoek op stad, buurt of type..."
-                      className="h-14 rounded-xl border-border/60 bg-card pl-12 pr-4 text-base shadow-sm placeholder:text-muted-foreground/60 sm:rounded-r-none sm:border-r-0"
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="h-14 rounded-xl px-8 text-base shadow-lg shadow-primary/20 sm:rounded-l-none"
-                  >
-                    <Search className="mr-2 size-5 sm:hidden" />
-                    Zoeken
-                    <ArrowRight className="ml-2 hidden size-4 sm:block" />
-                  </Button>
-                </div>
-              </form>
+              <SearchBar size="lg" placeholder="Zoek op stad, type of pandnaam..." />
 
               {/* Quick links */}
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">

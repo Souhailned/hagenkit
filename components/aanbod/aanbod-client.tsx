@@ -19,6 +19,7 @@ import { ResultsPagination } from "./results-pagination";
 import { ViewToggle } from "./view-toggle";
 import { searchProperties } from "@/app/actions/properties";
 import { cn } from "@/lib/utils";
+import { SearchBar } from "@/components/search/search-bar";
 
 const PropertyMap = dynamic(
   () => import("./property-map").then((mod) => mod.PropertyMap),
@@ -326,7 +327,11 @@ export function AanbodClient({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8">
+    <div className="flex flex-col gap-6">
+      {/* Search bar */}
+      <SearchBar size="lg" className="max-w-2xl" />
+
+      <div className="flex flex-col lg:flex-row gap-8">
       {/* Desktop sidebar */}
       <FilterSidebar
         className="hidden lg:block w-72 shrink-0"
@@ -463,6 +468,7 @@ export function AanbodClient({
             />
           )}
         </div>
+      </div>
       </div>
     </div>
   );
