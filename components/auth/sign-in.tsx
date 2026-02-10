@@ -78,12 +78,12 @@ export default function SignInAuth() {
           <div className="absolute inset-0 bg-zinc-900" />
           <div className="relative z-20 flex items-center text-lg font-medium">
             <IconInnerShadowTop className="mr-2 h-6 w-6" />
-            DataRAG
+            Horecagrond
           </div>
           <div className="relative z-20 mt-auto">
             <blockquote className="space-y-2">
               <p className="text-lg">
-                &ldquo;DataRAG gave us launch-ready auth, billing, and UI in a
+                &ldquo;Horecagrond maakt het vinden van het perfecte horecapand
                 single weekend. Our team shipped features instead of scaffolding
                 infrastructure.&rdquo;
               </p>
@@ -97,7 +97,7 @@ export default function SignInAuth() {
           <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
             <div className="flex flex-col space-y-2 text-center">
               <h1 className="text-2xl font-semibold tracking-tight">
-                Sign in to your account
+                Inloggen
               </h1>
               <p className="text-sm text-muted-foreground">
                 Enter your email below to sign in

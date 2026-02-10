@@ -35,15 +35,20 @@ export default function SignUpAuth() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"seeker" | "agent">("seeker");
   const [loading, setLoading] = useState(false);
 
   // Extract callbackURL from query parameters
   const searchParams = useSearchParams();
   const rawCallbackUrl = searchParams.get("callbackUrl");
-  const callbackURL =
+  const baseCallbackUrl =
     rawCallbackUrl && rawCallbackUrl.startsWith("/") && !rawCallbackUrl.startsWith("//")
       ? rawCallbackUrl
       : "/onboarding";
+  // Append role to callback URL
+  const callbackURL = baseCallbackUrl.includes("?")
+    ? `${baseCallbackUrl}&role=${role}`
+    : `${baseCallbackUrl}?role=${role}`;
 
   const isInvitation = rawCallbackUrl?.includes("accept-invitation");
 
@@ -75,17 +80,16 @@ export default function SignUpAuth() {
           <div className="absolute inset-0 bg-zinc-900" />
           <div className="relative z-20 flex items-center text-lg font-medium">
             <IconInnerShadowTop className="mr-2 h-6 w-6" />
-            DataRAG
+            Horecagrond
           </div>
           <div className="relative z-20 mt-auto">
             <blockquote className="space-y-2">
               <p className="text-lg">
-                &ldquo;DataRAG transformed onboarding for our SaaS studio. We
-                now start every client with robust scaffolding and focus on the
-                differentiators.&rdquo;
+                &ldquo;Horecagrond heeft ons geholpen het perfecte pand te vinden voor
+                ons restaurant. De AI-tools maakten het zoekproces veel efficiënter.&rdquo;
               </p>
               <footer className="text-sm">
-                — Michael Chen, Founder, Parallel Launch Lab
+                — Een tevreden ondernemer
               </footer>
             </blockquote>
           </div>
@@ -94,10 +98,10 @@ export default function SignUpAuth() {
           <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
             <div className="flex flex-col space-y-2 text-center">
               <h1 className="text-2xl font-semibold tracking-tight">
-                Create an account
+                Account aanmaken
               </h1>
               <p className="text-sm text-muted-foreground">
-                Enter your email below to create your account
+                Maak een account aan om horeca panden te zoeken of aan te bieden
               </p>
               {isInvitation && (
                 <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
@@ -137,11 +141,43 @@ export default function SignUpAuth() {
                 }}
               >
                 <div className="grid gap-4">
+                  {/* Role selector */}
                   <div className="grid gap-2">
-                    <Label htmlFor="name">Name</Label>
+                    <Label>Ik ben een</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setRole("seeker")}
+                        className={cn(
+                          "rounded-lg border-2 p-3 text-center text-sm font-medium transition-all",
+                          role === "seeker"
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "border-border hover:border-primary/30"
+                        )}
+                      >
+                        🔍 Ondernemer
+                        <span className="block text-xs font-normal text-muted-foreground mt-0.5">Ik zoek een pand</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRole("agent")}
+                        className={cn(
+                          "rounded-lg border-2 p-3 text-center text-sm font-medium transition-all",
+                          role === "agent"
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "border-border hover:border-primary/30"
+                        )}
+                      >
+                        🏢 Makelaar
+                        <span className="block text-xs font-normal text-muted-foreground mt-0.5">Ik bied panden aan</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">Naam</Label>
                     <Input
                       id="name"
-                      placeholder="John Doe"
+                      placeholder="Je volledige naam"
                       required
                       onChange={(e) => setName(e.target.value)}
                       value={name}
@@ -149,11 +185,11 @@ export default function SignUpAuth() {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">E-mail</Label>
                     <Input
                       id="email"
                       type="email"
-                      placeholder="name@example.com"
+                      placeholder="je@email.nl"
                       required
                       onChange={(e) => setEmail(e.target.value)}
                       value={email}
@@ -161,7 +197,7 @@ export default function SignUpAuth() {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password">Wachtwoord</Label>
                     <PasswordInput
                       id="password"
                       placeholder="••••••••"
@@ -181,7 +217,7 @@ export default function SignUpAuth() {
                     {loading && (
                       <Spinner className="mr-2 size-4" aria-hidden="true" />
                     )}
-                    <span>Create account</span>
+                    <span>Account aanmaken</span>
                     {emailIsLast && (
                       <>
                         <Badge className="ml-2" variant="secondary">

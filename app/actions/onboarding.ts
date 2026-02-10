@@ -4,122 +4,78 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
 
-export interface OnboardingData {
-  role?: string;
-  useCase?: string;
-  discoverySource?: string;
-  workspaceName: string;
-  firstName?: string;
-  businessName?: string;
-  businessPhone?: string;
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function completeOnboarding(data: Record<string, any>) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-export async function completeOnboarding(data: OnboardingData) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+  if (!session?.user?.id) {
+    throw new Error("Niet ingelogd");
+  }
 
-    if (!session?.user?.id) {
-      throw new Error("Unauthorized");
-    }
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { defaultWorkspaceId: true, role: true },
+  });
 
-    const workspaceSlug = data.workspaceName
+  // Create workspace if user doesn't have one
+  let workspaceId = user?.defaultWorkspaceId;
+
+  if (!workspaceId) {
+    const workspaceName = data.agencyName || `${session.user.name || "Mijn"} Workspace`;
+    const slug = workspaceName
       .toLowerCase()
-      .replace(/[^a-z0-9]/g, "-");
+      .replace(/[^a-z0-9]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "") + `-${Date.now().toString(36)}`;
 
-    // Check if slug is already taken
-    const existingWorkspace = await prisma.workspace.findUnique({
-      where: {
-        slug: workspaceSlug,
-      },
-    });
-
-    if (existingWorkspace) {
-      throw new Error("Workspace name already exists. Please choose another.");
-    }
-
-    // Create workspace and update user in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Create workspace
-      const workspace = await tx.workspace.create({
-        data: {
-          name: data.workspaceName,
-          slug: workspaceSlug,
-          members: {
-            create: {
-              userId: session.user.id,
-              role: "OWNER",
-            },
-          },
-        },
-      });
-
-      // Update user with onboarding completion
-      const user = await tx.user.update({
-        where: {
-          id: session.user.id,
-        },
-        data: {
-          onboardingCompleted: true,
-          ...(data.firstName && { name: data.firstName }),
-          onboardingData: {
-            ...(data.role && { role: data.role }),
-            ...(data.useCase && { useCase: data.useCase }),
-            ...(data.discoverySource && { discoverySource: data.discoverySource }),
-            ...(data.businessName && { businessName: data.businessName }),
-            ...(data.businessPhone && { businessPhone: data.businessPhone }),
-            completedAt: new Date().toISOString(),
-          },
-          defaultWorkspaceId: workspace.id,
-        },
-      });
-
-      return { workspace, user };
-    });
-
-    return { success: true, workspace: result.workspace };
-  } catch (error) {
-    console.error("Error completing onboarding:", error);
-    throw error;
-  }
-}
-
-export async function updateOnboardingData(data: Partial<OnboardingData>) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      throw new Error("Unauthorized");
-    }
-
-    // Get current onboarding data
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { onboardingData: true },
-    });
-
-    const currentData = (user?.onboardingData
-      ? (user.onboardingData as unknown as OnboardingData)
-      : {}) as OnboardingData;
-
-    await prisma.user.update({
-      where: {
-        id: session.user.id,
-      },
+    const workspace = await prisma.workspace.create({
       data: {
-        onboardingData: {
-          ...currentData,
-          ...data,
+        name: workspaceName,
+        slug,
+        members: {
+          create: { userId: session.user.id, role: "OWNER" },
         },
       },
     });
-
-    return { success: true };
-  } catch (error) {
-    console.error("Error updating onboarding data:", error);
-    throw error;
+    workspaceId = workspace.id;
   }
+
+  // Update user
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: {
+      onboardingCompleted: true,
+      defaultWorkspaceId: workspaceId,
+      onboardingData: {
+        ...data,
+        completedAt: new Date().toISOString(),
+      },
+    },
+  });
+
+  // Create seeker profile if role is seeker
+  if (user?.role === "seeker" && data.selectedTypes) {
+    await prisma.seekerProfile.upsert({
+      where: { userId: session.user.id },
+      create: {
+        userId: session.user.id,
+        preferredTypes: data.selectedTypes || [],
+        preferredProvinces: data.selectedProvinces || [],
+        budgetMin: data.budgetMin ? parseInt(data.budgetMin) * 100 : null,
+        budgetMax: data.budgetMax ? parseInt(data.budgetMax) * 100 : null,
+        conceptDescription: data.concept || null,
+      },
+      update: {
+        preferredTypes: data.selectedTypes || [],
+        preferredProvinces: data.selectedProvinces || [],
+        budgetMin: data.budgetMin ? parseInt(data.budgetMin) * 100 : null,
+        budgetMax: data.budgetMax ? parseInt(data.budgetMax) * 100 : null,
+        conceptDescription: data.concept || null,
+      },
+    });
+  }
+
+  return { success: true };
 }
