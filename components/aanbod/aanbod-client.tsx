@@ -20,6 +20,7 @@ import { ViewToggle } from "./view-toggle";
 import { searchProperties } from "@/app/actions/properties";
 import { cn } from "@/lib/utils";
 import { SearchBar } from "@/components/search/search-bar";
+import { SaveSearchDialog } from "@/components/search/save-search-dialog";
 
 const PropertyMap = dynamic(
   () => import("./property-map").then((mod) => mod.PropertyMap),
@@ -391,6 +392,15 @@ export function AanbodClient({
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Save search */}
+            <SaveSearchDialog
+              cities={selectedCities}
+              types={selectedTypes}
+              priceMin={priceMin}
+              priceMax={priceMax}
+              areaMin={areaMin}
+              areaMax={areaMax}
+            />
             {/* View toggle */}
             <ViewToggle view={view} onViewChange={setView} />
 
