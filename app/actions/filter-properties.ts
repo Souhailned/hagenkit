@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import type { ActionResult } from "@/types/actions";
 import type { PropertyType } from "@/generated/prisma/browser";
+import { Prisma } from "@/generated/prisma/client";
 
 export interface FilterPropertiesParams {
   minPrice?: number;
@@ -70,7 +71,7 @@ export async function getFilteredProperties(
     } = params;
 
     // Build where clause
-    const where: any = {
+    const where: Prisma.PropertyWhereInput = {
       status: "ACTIVE",
     };
 

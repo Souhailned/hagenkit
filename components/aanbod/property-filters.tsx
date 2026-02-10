@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useState, useTransition, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { PropertyType, PropertyTypeLabels, PROPERTY_TYPES } from "@/types/property";
 import { Check, X, Filter, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export interface PropertyFiltersProps {
   availableCities: string[];
@@ -42,6 +43,12 @@ export function PropertyFilters({ availableCities }: PropertyFiltersProps) {
   const [typePopoverOpen, setTypePopoverOpen] = useState(false);
   const [cityPopoverOpen, setCityPopoverOpen] = useState(false);
 
+  // Debounced values for price and area (300ms delay)
+  const debouncedMinPrice = useDebounce(minPrice, 300);
+  const debouncedMaxPrice = useDebounce(maxPrice, 300);
+  const debouncedMinArea = useDebounce(minArea, 300);
+  const debouncedMaxArea = useDebounce(maxArea, 300);
+
   // Build URL params
   const buildUrlParams = useCallback((newParams: Record<string, string | string[] | undefined>) => {
     const params = new URLSearchParams();
@@ -59,7 +66,23 @@ export function PropertyFilters({ availableCities }: PropertyFiltersProps) {
     return params.toString();
   }, []);
 
-  // Apply filters
+  // Auto-apply filters when debounced values change
+  useEffect(() => {
+    const params = buildUrlParams({
+      minPrice: debouncedMinPrice,
+      maxPrice: debouncedMaxPrice,
+      types: selectedTypes,
+      city,
+      minArea: debouncedMinArea,
+      maxArea: debouncedMaxArea,
+    });
+
+    startTransition(() => {
+      router.push(`/aanbod${params ? `?${params}` : ""}`, { scroll: false });
+    });
+  }, [debouncedMinPrice, debouncedMaxPrice, debouncedMinArea, debouncedMaxArea, selectedTypes, city, buildUrlParams, router]);
+
+  // Apply filters manually (for button click)
   const applyFilters = useCallback(() => {
     const params = buildUrlParams({
       minPrice,

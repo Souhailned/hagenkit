@@ -59,10 +59,23 @@ const propertyListIncludes = {
 } satisfies Prisma.PropertyInclude;
 
 /**
+ * Prisma property result type with includes (union of both include types)
+ */
+type PrismaPropertyWithFullIncludes = Prisma.PropertyGetPayload<{
+  include: typeof propertyIncludes;
+}>;
+
+type PrismaPropertyWithListIncludes = Prisma.PropertyGetPayload<{
+  include: typeof propertyListIncludes;
+}>;
+
+type PrismaPropertyResult = PrismaPropertyWithFullIncludes | PrismaPropertyWithListIncludes;
+
+/**
  * Map a Prisma property result to the Property interface expected by the UI.
  * Adds backward-compatible `type`, `price`, `area`, `features`, `isFeatured`, `isNew` fields.
  */
-function mapProperty(p: any): Property {
+function mapProperty(p: PrismaPropertyResult): Property {
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
   const isNew = p.publishedAt ? new Date(p.publishedAt) > sevenDaysAgo : new Date(p.createdAt) > sevenDaysAgo;
@@ -76,12 +89,12 @@ function mapProperty(p: any): Property {
   }
 
   // Derive legacy features array from PropertyFeature records
-  const featureKeys: string[] = [];
-  if (p.features?.length) {
+  const featureKeys: PropertyFeature[] = [];
+  if ("features" in p && p.features?.length) {
     for (const f of p.features) {
       if (f.booleanValue === true) {
         // Map DB keys to legacy UI feature keys
-        const keyMap: Record<string, string> = {
+        const keyMap: Record<string, PropertyFeature> = {
           alcohol_license: "ALCOHOL_LICENSE",
           terrace_license: "TERRACE",
           professional_kitchen: "KITCHEN",
@@ -100,14 +113,14 @@ function mapProperty(p: any): Property {
   if (p.hasParking && !featureKeys.includes("PARKING")) featureKeys.push("PARKING");
   if (p.hasBasement && !featureKeys.includes("CELLAR")) featureKeys.push("CELLAR");
 
-  return {
+  return ({
     ...p,
     // Legacy compat fields
     type: p.propertyType,
     price,
     area: p.surfaceTotal,
     features: featureKeys,
-    featureRecords: p.features,
+    featureRecords: "features" in p ? p.features : undefined,
     isFeatured: p.featured,
     isNew,
     // Ensure images is always an array
@@ -115,7 +128,7 @@ function mapProperty(p: any): Property {
     // Dates
     createdAt: new Date(p.createdAt),
     updatedAt: new Date(p.updatedAt),
-  };
+  }) as any as Property;
 }
 
 /**
@@ -196,10 +209,16 @@ export async function searchProperties(
 
     // Area filter
     if (areaMin !== undefined) {
-      where.surfaceTotal = { ...(where.surfaceTotal as any), gte: areaMin };
+      where.surfaceTotal = {
+        ...(typeof where.surfaceTotal === "object" ? where.surfaceTotal : {}),
+        gte: areaMin,
+      };
     }
     if (areaMax !== undefined) {
-      where.surfaceTotal = { ...(where.surfaceTotal as any), lte: areaMax };
+      where.surfaceTotal = {
+        ...(typeof where.surfaceTotal === "object" ? where.surfaceTotal : {}),
+        lte: areaMax,
+      };
     }
 
     // Features filter (check PropertyFeature records)
