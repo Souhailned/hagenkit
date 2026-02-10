@@ -16,6 +16,7 @@ import { addToRecentlyViewed, RecentlyViewed } from "@/components/recently-viewe
 import { NeighborhoodInfo } from "@/components/property/neighborhood-info";
 import { WhatsAppButton } from "@/components/property/whatsapp-button";
 import { BuurtIntelligence } from "@/components/property/buurt-intelligence";
+import { ConceptSuggestions } from "@/components/property/concept-suggestions";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -571,11 +572,18 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
 
                 {/* Buurtintelligentie */}
                 {property.latitude != null && property.longitude != null && (
-                  <BuurtIntelligence
-                    lat={property.latitude}
-                    lng={property.longitude}
-                    radius={500}
-                  />
+                  <>
+                    <BuurtIntelligence
+                      lat={property.latitude}
+                      lng={property.longitude}
+                      radius={500}
+                    />
+                    <ConceptSuggestions
+                      lat={property.latitude}
+                      lng={property.longitude}
+                      surface={property.surfaceTotal || 100}
+                    />
+                  </>
                 )}
               </TabsContent>
             </Tabs>
