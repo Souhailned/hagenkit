@@ -1,9 +1,12 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
-import { PropertyType } from "@/types/property";
-import { getFilteredProperties, getCities } from "@/app/actions/filter-properties";
-import { PropertyFilters } from "@/components/aanbod/property-filters";
-import { PropertyGrid, PropertyGridSkeleton } from "@/components/aanbod";
+import {
+  PropertyType,
+  PropertyFeature,
+  PropertyTypeLabels,
+  SortOption,
+} from "@/types/property";
+import { searchProperties } from "@/app/actions/properties";
+import { AanbodClient } from "@/components/aanbod/aanbod-client";
 
 export const metadata: Metadata = {
   title: "Horecapanden | Vind jouw perfecte horecalocatie",
@@ -46,82 +49,84 @@ function parseSearchParams(searchParams: {
   };
 
   return {
-    minPrice: getNumber("minPrice"),
-    maxPrice: getNumber("maxPrice"),
+    cities: getArray("cities"),
     types: getArray("types") as PropertyType[],
-    city: getString("city"),
-    minArea: getNumber("minArea"),
-    maxArea: getNumber("maxArea"),
+    priceMin: getNumber("priceMin"),
+    priceMax: getNumber("priceMax"),
+    areaMin: getNumber("areaMin"),
+    areaMax: getNumber("areaMax"),
+    features: getArray("features") as PropertyFeature[],
+    sortBy: (getString("sortBy") || "newest") as SortOption,
     page: getNumber("page") || 1,
+    view: (getString("view") || "list") as "list" | "map",
   };
-}
-
-async function AanbodContent({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined };
-}) {
-  const filters = parseSearchParams(searchParams);
-
-  // Fetch cities and properties in parallel
-  const [citiesResult, propertiesResult] = await Promise.all([
-    getCities(),
-    getFilteredProperties({
-      minPrice: filters.minPrice,
-      maxPrice: filters.maxPrice,
-      types: filters.types.length > 0 ? filters.types : undefined,
-      city: filters.city,
-      minArea: filters.minArea,
-      maxArea: filters.maxArea,
-      page: filters.page,
-      pageSize: 12,
-    }),
-  ]);
-
-  if (!citiesResult.success || !citiesResult.data) {
-    throw new Error("Failed to load cities");
-  }
-
-  if (!propertiesResult.success || !propertiesResult.data) {
-    throw new Error("Failed to load properties");
-  }
-
-  const { properties, total } = propertiesResult.data;
-
-  return (
-    <>
-      {/* Filters */}
-      <div className="mb-8">
-        <PropertyFilters availableCities={citiesResult.data} />
-      </div>
-
-      {/* Results count */}
-      <div className="mb-6">
-        <p className="text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">{total}</span>{" "}
-          {total === 1 ? "pand" : "panden"} gevonden
-        </p>
-      </div>
-
-      {/* Property grid */}
-      {properties.length > 0 ? (
-        <PropertyGrid properties={properties} />
-      ) : (
-        <div className="flex min-h-[400px] items-center justify-center rounded-xl border border-border/60 bg-muted/20">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold">Geen panden gevonden</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Pas uw filters aan om meer resultaten te zien.
-            </p>
-          </div>
-        </div>
-      )}
-    </>
-  );
 }
 
 export default async function AanbodPage({ searchParams }: AanbodPageProps) {
   const resolvedParams = await searchParams;
+  const filters = parseSearchParams(resolvedParams);
+
+  // Fetch initial data server-side
+  const result = await searchProperties({
+    cities: filters.cities.length > 0 ? filters.cities : undefined,
+    types: filters.types.length > 0 ? filters.types : undefined,
+    priceMin: filters.priceMin,
+    priceMax: filters.priceMax,
+    areaMin: filters.areaMin,
+    areaMax: filters.areaMax,
+    features: filters.features.length > 0 ? filters.features : undefined,
+    sortBy: filters.sortBy,
+    page: filters.page,
+    pageSize: 12,
+  });
+
+  if (!result.success || !result.data) {
+    throw new Error("Failed to load properties");
+  }
+
+  // Get all unique cities from the database for filter options
+  // TODO: Move this to a dedicated server action
+  const allCities = [
+    "Amsterdam",
+    "Rotterdam",
+    "Utrecht",
+    "Den Haag",
+    "Eindhoven",
+    "Tilburg",
+    "Groningen",
+    "Almere",
+    "Breda",
+    "Nijmegen",
+  ];
+
+  // Property types with labels
+  const types = Object.entries(PropertyTypeLabels).map(([value, label]) => ({
+    value: value as PropertyType,
+    label,
+  }));
+
+  // Property features
+  const features: { value: PropertyFeature; label: string }[] = [
+    { value: "TERRACE", label: "Terras" },
+    { value: "PARKING", label: "Parkeren" },
+    { value: "KITCHEN", label: "Professionele keuken" },
+    { value: "LIVING_QUARTERS", label: "Woonruimte" },
+    { value: "ALCOHOL_LICENSE", label: "Drank- & Horecavergunning" },
+    { value: "VENTILATION", label: "Ventilatie" },
+    { value: "CELLAR", label: "Kelder" },
+    { value: "DELIVERY_OPTION", label: "Bezorgmogelijkheid" },
+    { value: "OUTDOOR_SEATING", label: "Buitenzitplaatsen" },
+    { value: "WHEELCHAIR_ACCESSIBLE", label: "Rolstoeltoegankelijk" },
+  ];
+
+  // Price and area ranges (based on typical Dutch horeca properties)
+  const filterOptions = {
+    cities: allCities,
+    types,
+    features,
+    priceRange: { min: 0, max: 50000 },
+    areaRange: { min: 0, max: 1000 },
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -149,36 +154,11 @@ export default async function AanbodPage({ searchParams }: AanbodPageProps) {
 
       {/* Main content */}
       <section className="container mx-auto px-4 py-10 lg:py-12">
-        <Suspense
-          fallback={
-            <div className="flex flex-col lg:flex-row gap-8">
-              {/* Sidebar skeleton */}
-              <div className="hidden lg:block w-72 shrink-0">
-                <div className="sticky top-24 rounded-xl border border-border/60 bg-card p-4">
-                  <div className="h-8 w-24 animate-pulse rounded bg-muted mb-4" />
-                  <div className="space-y-3">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="h-10 animate-pulse rounded bg-muted"
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              {/* Results skeleton */}
-              <div className="flex-1">
-                <div className="mb-6 flex justify-between">
-                  <div className="h-6 w-32 animate-pulse rounded bg-muted" />
-                  <div className="h-10 w-44 animate-pulse rounded bg-muted" />
-                </div>
-                <PropertyGridSkeleton count={6} />
-              </div>
-            </div>
-          }
-        >
-          <AanbodContent searchParams={resolvedParams} />
-        </Suspense>
+        <AanbodClient
+          filterOptions={filterOptions}
+          initialResults={result.data}
+          initialFilters={filters}
+        />
       </section>
     </div>
   );
