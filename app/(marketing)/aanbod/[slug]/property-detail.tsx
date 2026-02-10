@@ -15,6 +15,7 @@ import { FavoriteButton } from "@/components/favorites/favorite-button";
 import { addToRecentlyViewed, RecentlyViewed } from "@/components/recently-viewed/recently-viewed";
 import { NeighborhoodInfo } from "@/components/property/neighborhood-info";
 import { WhatsAppButton } from "@/components/property/whatsapp-button";
+import { BuurtIntelligence } from "@/components/property/buurt-intelligence";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -566,6 +567,15 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                       </div>
                     </div>
                   </div>
+                )}
+
+                {/* Buurtintelligentie */}
+                {property.latitude != null && property.longitude != null && (
+                  <BuurtIntelligence
+                    lat={property.latitude}
+                    lng={property.longitude}
+                    radius={500}
+                  />
                 )}
               </TabsContent>
             </Tabs>
