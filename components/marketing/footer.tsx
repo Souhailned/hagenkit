@@ -23,10 +23,10 @@ const links = [
   {
     group: "Over ons",
     items: [
-      { title: "Over Horecagrond", href: "#" },
-      { title: "Contact", href: "#" },
+      { title: "Over Horecagrond", href: "/team" },
+      { title: "Contact", href: "/contact" },
+      { title: "Veelgestelde vragen", href: "/faq" },
       { title: "Privacy", href: "#" },
-      { title: "Voorwaarden", href: "#" },
     ],
   },
 ];
