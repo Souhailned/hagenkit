@@ -45,6 +45,7 @@ import {
   CaretUpDown,
   Image,
   VideoCamera,
+  Heart,
   ShieldCheck,
   Buildings,
   UserCircle,
@@ -75,6 +76,7 @@ const navItemIcons: Record<NavItemId, React.ComponentType<{ className?: string }
   performance: ChartBar,
   images: Image,
   videos: VideoCamera,
+  favorieten: Heart,
 }
 
 const footerItemIcons: Record<SidebarFooterItemId, React.ComponentType<{ className?: string }>> = {
@@ -132,6 +134,7 @@ export function AppSidebar({
     if (id === "performance") return "/dashboard/analytics"    // Analytics page
     if (id === "images") return "/dashboard/images"            // Images page
     if (id === "videos") return "/dashboard/videos"            // Videos page
+    if (id === "favorieten") return "/dashboard/favorieten"    // Favorieten page
     return "#"
   }
 
@@ -143,6 +146,7 @@ export function AppSidebar({
     if (id === "performance") return pathname.startsWith("/dashboard/analytics")
     if (id === "images") return pathname.startsWith("/dashboard/images")
     if (id === "videos") return pathname.startsWith("/dashboard/videos")
+    if (id === "favorieten") return pathname.startsWith("/dashboard/favorieten")
     return false
   }
 

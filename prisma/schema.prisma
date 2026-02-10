@@ -69,6 +69,7 @@ model User {
   inquiriesMade     PropertyInquiry[] @relation("InquirySeeker")
   inquiriesAssigned PropertyInquiry[] @relation("InquiryAssignee")
   propertyViews     PropertyView[]
+  favorites         FavoriteProperty[]
 
   // Search Alerts
   searchAlerts      SearchAlert[]
@@ -520,6 +521,7 @@ model Property {
   savedBy           SavedProperty[]
   views             PropertyView[]
   imageProjects     ImageProject[]  // Link naar AI processing
+  favorites         FavoriteProperty[]
 
   // Detail Relations (1:1)
   financials        PropertyFinancials?
@@ -1619,6 +1621,25 @@ model ProjectNote {
   @@index([projectId])
   @@index([createdById])
   @@map("project_note")
+}
+
+// ============================================
+// FAVORITE PROPERTY MODEL
+// ============================================
+
+model FavoriteProperty {
+  id         String   @id @default(cuid())
+  userId     String
+  propertyId String
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, propertyId])
+  @@index([userId])
+  @@index([propertyId])
+  @@map("favorite_property")
 }
 
 // ============================================

@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   Sparkles,
 } from "lucide-react";
+import { FavoriteButton } from "@/components/favorites/favorite-button";
 
 /**
  * Helper to get effective price based on priceType
@@ -33,9 +34,10 @@ interface PropertyCardProps {
   property: Property;
   className?: string;
   priority?: boolean;
+  isFavorited?: boolean;
 }
 
-export function PropertyCard({ property, className, priority = false }: PropertyCardProps) {
+export function PropertyCard({ property, className, priority = false, isFavorited = false }: PropertyCardProps) {
   const formattedPrice = new Intl.NumberFormat("nl-NL", {
     style: "currency",
     currency: "EUR",
@@ -93,6 +95,15 @@ export function PropertyCard({ property, className, priority = false }: Property
               Uitgelicht
             </Badge>
           )}
+        </div>
+
+        {/* Favorite button */}
+        <div className="absolute right-3 top-3 z-10">
+          <FavoriteButton
+            propertyId={property.id}
+            initialFavorited={isFavorited}
+            size="sm"
+          />
         </div>
 
         {/* Property type badge */}
