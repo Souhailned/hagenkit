@@ -403,6 +403,21 @@ model Property {
   longitude         Float?
   neighborhood      String?         // Buurt/wijk
 
+  // Location Classification
+  locationClassification LocationClassification? // A1/A2/B/C locatie
+  horecaConcentratie     Boolean?       // In horecaconcentratiegebied
+  passantenTelling       Int?           // Geschatte passanten/dag
+  bereikbaarheidAuto     String?        // Bijv. "Goed", "Matig"
+  bereikbaarheidOV       String?
+  bereikbaarheidFiets    String?
+  parkeerType            String?        // Bijv. "Betaald parkeren", "Vrij parkeren"
+  eigenParkeerterrein    Boolean        @default(false)
+  toeristischGebied      Boolean        @default(false)
+  kadastralGemeente      String?
+  kadastralSectie        String?
+  kadastralNummer        String?
+  perceelOppervlakte     Int?           // In m2
+
   // Pricing
   priceType         PriceType
   rentPrice         Int?            // Per maand in CENTEN (dus 4500 euro = 450000)
@@ -420,6 +435,8 @@ model Property {
   surfaceStorage    Int?            // Opslag m2
   surfaceTerrace    Int?            // Terras m2
   surfaceBasement   Int?            // Kelder m2
+  surfaceOffice     Int?            // Kantoor m2
+  surfaceWoning     Int?            // Woning m2
   floors            Int             @default(1)
   ceilingHeight     Float?          // Plafondhoogte in meters
 
@@ -438,6 +455,12 @@ model Property {
   hasParking        Boolean         @default(false)
   parkingSpaces     Int?
 
+  // Horeca Operational
+  totalCapacity          Int?           // Totale capaciteit (binnen + buiten)
+  operationalDays        String?        // Bijv. "Ma-Za", "7 dagen"
+  operationalHours       String?        // Bijv. "08:00-23:00"
+  currentlyOperating     Boolean        @default(false) // Draaiend bedrijf
+
   // Previous Use
   previousUse       String?         // Beschrijving vorig gebruik
   wasHoreca         Boolean         @default(false)
@@ -449,6 +472,14 @@ model Property {
   lastRenovation    Int?
   monumentStatus    Boolean         @default(false)  // Monumentaal pand?
   energyLabel       String?         // A+++ tot G
+
+  // Compliance
+  brandpreventieGoedgekeurd Boolean    @default(false)
+  warenwetGoedgekeurd        Boolean   @default(false)
+  scopeKeuring               String?   // Bijv. "Volledig", "Gedeeltelijk"
+  haccpCertificering         Boolean   @default(false)
+  beslagenInventaris         Boolean   @default(false) // Beslag op inventaris
+  boetesOvertredingen        String?   @db.Text        // Beschrijving openstaande boetes
 
   // Scores (AI/Platform berekend)
   horecaScore       String?         // A+ tot F
@@ -491,6 +522,17 @@ model Property {
   views             PropertyView[]
   imageProjects     ImageProject[]  // Link naar AI processing
 
+  // Detail Relations (1:1)
+  financials        PropertyFinancials?
+  building          PropertyBuilding?
+  staffing          PropertyStaffing?
+
+  // Detail Relations (1:N)
+  licenses          PropertyLicense[]
+  installations     PropertyInstallation[]
+  obligations       PropertyObligation[]
+  history           PropertyHistory[]
+
   // Indexes voor zoeken
   @@index([agencyId])
   @@index([createdById])
@@ -505,6 +547,8 @@ model Property {
   @@index([rentPrice])
   @@index([salePrice])
   @@index([surfaceTotal])
+  @@index([locationClassification])
+  @@index([currentlyOperating])
 
   @@map("property")
 }
@@ -782,6 +826,27 @@ enum PropertyType {
   FOOD_TRUCK_SPOT
   CATERING
   BAKERY
+  EETCAFE
+  GRAND_CAFE
+  COCKTAILBAR
+  HOTEL_RESTAURANT
+  BED_AND_BREAKFAST
+  LUNCHROOM
+  KOFFIEBAR
+  BRASSERIE
+  PIZZERIA
+  SNACKBAR
+  IJSSALON
+  WOK_RESTAURANT
+  SUSHI
+  BEZORG_AFHAAL
+  PARTYCENTRUM
+  STRANDPAVILJOEN
+  PANNENKOEKHUIS
+  TEAROOM
+  WIJNBAR
+  BROUWERIJ_CAFE
+  LEISURE
   OTHER
 }
 
@@ -864,6 +929,327 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
   DELETED
+}
+
+// ============================================
+// PROPERTY DETAIL MODELS (Horeca-specifiek)
+// ============================================
+
+model PropertyFinancials {
+  id                      String         @id @default(cuid())
+  propertyId              String         @unique
+  property                Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Overname
+  goodwill                Int?           // In centen
+  inventarisWaarde        Int?           // In centen
+  overnameSom             Int?           // In centen
+  overnameType            OvernameType?
+
+  // Huurcontract
+  huurcontractType        String?        // Bijv. "290-bedrijfsruimte", "230a", "7:290 BW"
+  huurcontractIngangsdatum DateTime?
+  huurcontractEinddatum   DateTime?
+  huurprijsIndexatie      String?        // Bijv. "CPI", "vast 3%"
+  opzegtermijnMaanden     Int?
+  borgMaanden             Int?
+
+  // Omzet & Winst
+  jaaromzet               Int?           // In centen
+  omzetJaar               Int?           // Jaar waarover omzet gaat
+  omzetTrend              OmzetTrend?
+  winst                   Int?           // In centen
+
+  // Verkoop
+  discreteVerkoop         Boolean        @default(false)
+  priceOnRequest          Boolean        @default(false)
+  rentPriceExBtw          Boolean        @default(false) // Huurprijs exclusief BTW
+  btwBelast               Boolean        @default(false) // BTW belast
+  salePriceType           SalePriceType?
+
+  // Timestamps
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+
+  @@index([propertyId])
+  @@map("property_financials")
+}
+
+model PropertyBuilding {
+  id                    String          @id @default(cuid())
+  propertyId            String          @unique
+  property              Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Bouwjaar & Renovatie
+  buildYear             Int?
+  lastRenovation        Int?
+  renovationDetails     String?         @db.Text
+
+  // Monument
+  monumentStatus        Boolean         @default(false)
+  monumentType          String?         // Bijv. "Rijksmonument", "Gemeentelijk monument"
+
+  // Energie
+  energyLabel           String?         // A+++ tot G
+  energyLabelExpiry     DateTime?
+
+  // Staat
+  staat                 PropertyStaat?
+
+  // Bedrijfswoning
+  bedrijfswoning        Boolean         @default(false)
+  bedrijfswoningDetails String?         @db.Text
+  bedrijfswoningKamers  Int?
+
+  // Timestamps
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([propertyId])
+  @@map("property_building")
+}
+
+model PropertyStaffing {
+  id                    String          @id @default(cuid())
+  propertyId            String          @unique
+  property              Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Personeel
+  hasStaff              Boolean         @default(false)
+  staffCount            Int?
+  staffFulltime         Int?
+  staffParttime         Int?
+  staffFlex             Int?
+  staffTransfer         StaffTransfer?
+  staffDetails          String?         @db.Text
+
+  // CAO & Kosten
+  caoApplicable         Boolean         @default(false)
+  personnelCostsMonthly Int?            // In centen
+
+  // Timestamps
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([propertyId])
+  @@map("property_staffing")
+}
+
+model PropertyLicense {
+  id                    String            @id @default(cuid())
+  propertyId            String
+  property              Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Vergunning Info
+  type                  LicenseType
+  status                LicenseStatus     @default(NIET_AANWEZIG)
+  issuedDate            DateTime?
+  expiryDate            DateTime?
+  issuedBy              String?           // Uitgevende instantie
+  licenseNumber         String?
+  documentUrl           String?
+  details               String?           @db.Text
+
+  // Bestemmingsplan & Horeca
+  bestemmingsplan       String?           // Bijv. "Horeca toegestaan"
+  horecaCategorie       HorecaCategorie?
+  precario              Boolean           @default(false)
+  precarioBedrag        Int?              // In centen per jaar
+
+  // Openingstijden & Normen
+  openingstijden        String?           // Bijv. "Ma-Za 08:00-01:00, Zo 10:00-00:00"
+  maxOpeningstijd       String?           // Bijv. "03:00"
+  geluidsnormenDb       Int?              // Max dB
+
+  // Timestamps
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([propertyId])
+  @@index([propertyId, type])
+  @@index([type])
+  @@index([status])
+  @@map("property_license")
+}
+
+model PropertyInstallation {
+  id                    String                  @id @default(cuid())
+  propertyId            String
+  property              Property                @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Installatie Info
+  category              InstallationCategory
+  name                  String
+  description           String?                 @db.Text
+  brand                 String?
+  condition             InstallationCondition?
+  yearInstalled         Int?
+
+  // Eigendom
+  ownership             InstallationOwnership   @default(EIGENDOM)
+  leaseCompany          String?
+  included              Boolean                 @default(true) // Inbegrepen in overname
+
+  // Timestamps
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  @@index([propertyId])
+  @@index([propertyId, category])
+  @@index([category])
+  @@map("property_installation")
+}
+
+model PropertyObligation {
+  id                    String           @id @default(cuid())
+  propertyId            String
+  property              Property         @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Verplichting Info
+  type                  ObligationType
+  name                  String
+  company               String?
+  description           String?          @db.Text
+  startDate             DateTime?
+  endDate               DateTime?
+  monthlyCost           Int?             // In centen
+
+  // Overdraagbaarheid
+  transferable          Boolean          @default(false)
+  mandatory             Boolean          @default(false)
+
+  // Timestamps
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@index([propertyId])
+  @@index([propertyId, type])
+  @@index([type])
+  @@map("property_obligation")
+}
+
+model PropertyHistory {
+  id                    String         @id @default(cuid())
+  propertyId            String
+  property              Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Historische Info
+  previousType          PropertyType?
+  previousName          String?
+  yearsActive           Int?
+  reasonClosed          String?        @db.Text
+  wasSuccessful         Boolean?
+
+  // Timestamps
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@index([propertyId])
+  @@index([previousType])
+  @@map("property_history")
+}
+
+// ============================================
+// PROPERTY DETAIL ENUMS (Horeca-specifiek)
+// ============================================
+
+enum OvernameType {
+  ACTIVA_PASSIVA
+  AANDELEN
+  BEIDE
+}
+
+enum OmzetTrend {
+  STIJGEND
+  STABIEL
+  DALEND
+}
+
+enum SalePriceType {
+  KOSTEN_KOPER
+  VRIJ_OP_NAAM
+}
+
+enum PropertyStaat {
+  UITSTEKEND
+  GOED
+  REDELIJK
+  MATIG
+  SLECHT
+}
+
+enum StaffTransfer {
+  VERPLICHT
+  OPTIONEEL
+  GEEN
+}
+
+enum LicenseType {
+  DRANK_HORECA_A
+  DRANK_HORECA_B
+  DRANK_HORECA_C
+  EXPLOITATIE
+  TERRAS
+  NACHT
+  GEBRUIKSMELDING
+  OMGEVINGS
+  MUZIEK
+  SPEELAUTOMATEN
+  EVENEMENTEN
+}
+
+enum LicenseStatus {
+  AANWEZIG
+  NIET_AANWEZIG
+  AANGEVRAAGD
+  VERLOPEN
+}
+
+enum HorecaCategorie {
+  HORECA_1
+  HORECA_2
+  HORECA_3
+  HORECA_4
+}
+
+enum InstallationCategory {
+  KEUKEN
+  DRANK
+  KLIMAAT
+  SANITAIR
+  VEILIGHEID
+  OVERIG
+}
+
+enum InstallationCondition {
+  NIEUW
+  GOED
+  REDELIJK
+  VERVANGEN
+}
+
+enum InstallationOwnership {
+  EIGENDOM
+  HUUR
+  LEASE
+  BRUIKLEEN
+}
+
+enum ObligationType {
+  BROUWERIJ
+  LEVERANCIER
+  LEASE
+  MUZIEK
+  AFVAL
+  ENERGIE
+  OVERIG
+}
+
+enum LocationClassification {
+  A1
+  A2
+  B
+  C
 }
 
 // ============================================
