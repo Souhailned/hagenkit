@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { recordPropertyView } from "@/app/actions/property-analytics";
+import { recordPropertyView } from "@/app/actions/property";
 
 interface ViewTrackerProps {
   propertyId: string;
@@ -69,7 +69,6 @@ export function ViewTracker({ propertyId, userId }: ViewTrackerProps) {
     // Record the view
     recordPropertyView({
       propertyId,
-      userId,
       sessionId,
       deviceType: getDeviceType(),
       source: getSource(),

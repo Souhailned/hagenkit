@@ -1,62 +1,58 @@
 "use server";
 
-export type ActionResult<T = void> =
-  | { success: true; data?: T }
-  | { success: false; error: string };
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
-interface RecordPropertyViewInput {
-  propertyId: string;
-  userId?: string | null;
-  sessionId: string;
-  deviceType: "mobile" | "desktop" | "tablet";
-  source: "search" | "direct" | "email" | "social" | "referral";
-}
+export async function getPropertyAnalytics(propertyId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user?.id) return null;
 
-/**
- * Record a property view for analytics
- * Rate-limited per session/IP to prevent duplicate counting
- */
-export async function recordPropertyView(
-  input: RecordPropertyViewInput
-): Promise<ActionResult<{ viewId: string }>> {
-  try {
-    // TODO: Replace with actual Prisma query when models are ready
-    // Check for recent view from same session
-    // const recentView = await prisma.propertyView.findFirst({
-    //   where: {
-    //     propertyId: input.propertyId,
-    //     sessionId: input.sessionId,
-    //     viewedAt: { gte: new Date(Date.now() - 30 * 60 * 1000) }, // 30 min
-    //   },
-    // });
-    // if (recentView) return { success: true, data: { viewId: recentView.id } };
+  const property = await prisma.property.findFirst({
+    where: { id: propertyId, createdById: session.user.id },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      viewCount: true,
+      inquiryCount: true,
+      status: true,
+      publishedAt: true,
+      createdAt: true,
+      _count: {
+        select: {
+          inquiries: true,
+          favorites: true,
+          views: true,
+        },
+      },
+    },
+  });
 
-    // Create view record
-    // const view = await prisma.propertyView.create({
-    //   data: {
-    //     propertyId: input.propertyId,
-    //     userId: input.userId,
-    //     sessionId: input.sessionId,
-    //     deviceType: input.deviceType,
-    //     source: input.source,
-    //   },
-    // });
+  if (!property) return null;
 
-    // Increment property view count
-    // await prisma.property.update({
-    //   where: { id: input.propertyId },
-    //   data: { viewCount: { increment: 1 } },
-    // });
+  // Get views over last 7 days
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const recentViews = await prisma.propertyView.groupBy({
+    by: ["viewedAt"],
+    where: {
+      propertyId,
+      viewedAt: { gte: sevenDaysAgo },
+    },
+    _count: true,
+  });
 
-    // For now, just log and return mock ID
-    console.log("Recording property view:", input);
+  // Conversion rate
+  const conversionRate = property.viewCount > 0
+    ? ((property._count.inquiries / property.viewCount) * 100).toFixed(1)
+    : "0";
 
-    return {
-      success: true,
-      data: { viewId: `view_${Date.now()}` },
-    };
-  } catch (error) {
-    console.error("Error recording property view:", error);
-    return { success: false, error: "Failed to record view" };
-  }
+  return {
+    ...property,
+    recentViewCount: recentViews.length,
+    conversionRate,
+    daysOnline: property.publishedAt
+      ? Math.floor((Date.now() - new Date(property.publishedAt).getTime()) / (1000 * 60 * 60 * 24))
+      : 0,
+  };
 }
