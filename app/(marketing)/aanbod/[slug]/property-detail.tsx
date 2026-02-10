@@ -14,6 +14,7 @@ import { createInquiry } from "@/app/actions/inquiries";
 import { FavoriteButton } from "@/components/favorites/favorite-button";
 import { addToRecentlyViewed, RecentlyViewed } from "@/components/recently-viewed/recently-viewed";
 import { NeighborhoodInfo } from "@/components/property/neighborhood-info";
+import { WhatsAppButton } from "@/components/property/whatsapp-button";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -716,6 +717,7 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                 <Share2 className="mr-1.5 size-4" />
                 Delen
               </Button>
+              <WhatsAppButton title={property.title} slug={property.slug} />
               <Button
                 variant="outline"
                 size="sm"
