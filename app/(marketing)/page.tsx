@@ -3,6 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { SearchBar } from "@/components/search/search-bar";
+import { Testimonials } from "@/components/marketing/testimonials";
+import { CtaSection } from "@/components/marketing/cta-section";
+import { FeaturesSection } from "@/components/marketing/features-section";
 import Link from "next/link";
 import {
   Search,
@@ -671,6 +674,15 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* Features */}
+      <FeaturesSection />
+
+      {/* Testimonials */}
+      <Testimonials />
+
+      {/* CTA */}
+      <CtaSection />
     </>
   );
 }
