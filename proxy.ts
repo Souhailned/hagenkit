@@ -1,6 +1,5 @@
-// Next.js 16+ Proxy with full session validation
+// Next.js 16+ Proxy — Horecagrond auth + role protection
 // Uses auth.api.getSession() for database-backed session checks
-// Ref: https://www.better-auth.com/docs/integrations/next
 
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
@@ -9,7 +8,7 @@ import { auth } from "@/lib/auth";
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Get session with full database validation (Next.js 16+ with nodejs runtime)
+  // Get session with full database validation
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -19,16 +18,37 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Redirect unauthenticated users away from protected routes
-  if (!session) {
-    const protectedPaths = ["/dashboard", "/admin", "/onboarding", "/settings", "/app-ideas"];
+  // Protected routes — require authentication
+  const protectedPaths = ["/dashboard", "/onboarding"];
+  const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path));
 
-    const isProtectedPath = protectedPaths.some((path) =>
-      pathname.startsWith(path)
-    );
+  if (!session && isProtectedPath) {
+    const signInUrl = new URL("/sign-in", request.url);
+    signInUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(signInUrl);
+  }
 
-    if (isProtectedPath) {
-      return NextResponse.redirect(new URL("/sign-in", request.url));
+  // Role-based route protection (session exists at this point)
+  if (session && pathname.startsWith("/dashboard")) {
+    const userRole = (session.user as { role?: string })?.role || "seeker";
+
+    // Admin-only routes
+    if (pathname.startsWith("/dashboard/admin") && userRole !== "admin") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+
+    // Agent-only routes
+    const agentOnlyPaths = ["/dashboard/panden", "/dashboard/leads", "/dashboard/videos"];
+    const isAgentOnly = agentOnlyPaths.some((path) => pathname.startsWith(path));
+    if (isAgentOnly && userRole === "seeker") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+
+    // Seeker-only routes
+    const seekerOnlyPaths = ["/dashboard/favorieten", "/dashboard/alerts"];
+    const isSeekerOnly = seekerOnlyPaths.some((path) => pathname.startsWith(path));
+    if (isSeekerOnly && userRole === "agent") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 
@@ -36,13 +56,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Note: Next.js 16 proxy always runs on Node.js runtime (no config needed)
   matcher: [
     "/dashboard/:path*",
-    "/admin/:path*",
-    "/onboarding",
-    "/settings/:path*",
-    "/app-ideas/:path*",
+    "/onboarding/:path*",
     "/sign-in",
     "/sign-up",
   ],
