@@ -5,12 +5,13 @@ import React from "react";
 import { List as Menu, X } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/auth-client";
-import { Building2, Search, Map, Users } from "lucide-react";
+import { Building2, Search, Map, MapPin, Users } from "lucide-react";
 
 const navLinks = [
   { name: "Aanbod", href: "/aanbod", icon: Search },
   { name: "Kaart", href: "/aanbod?view=map", icon: Map },
   { name: "Voor makelaars", href: "/sign-up", icon: Building2 },
+  { name: "Steden", href: "/steden", icon: MapPin },
   { name: "Over ons", href: "/team", icon: Users },
 ];
 
