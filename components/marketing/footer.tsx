@@ -7,8 +7,8 @@ const links = [
     items: [
       { title: "Aanbod bekijken", href: "/aanbod" },
       { title: "Kaart", href: "/aanbod?view=map" },
-      { title: "Voor makelaars", href: "/sign-up" },
-      { title: "Prijzen", href: "#" },
+      { title: "Voor makelaars", href: "/voor-makelaars" },
+      { title: "Haalbaarheidscheck", href: "/haalbaarheid" },
     ],
   },
   {
@@ -23,7 +23,7 @@ const links = [
   {
     group: "Over ons",
     items: [
-      { title: "Over Horecagrond", href: "/team" },
+      { title: "Over Horecagrond", href: "/over-ons" },
       { title: "Contact", href: "/contact" },
       { title: "Veelgestelde vragen", href: "/faq" },
       { title: "Privacy", href: "/privacy" },
@@ -94,8 +94,8 @@ export function FooterSection() {
             © {new Date().getFullYear()} Horecagrond. Alle rechten voorbehouden.
           </span>
           <div className="flex gap-4 text-xs text-muted-foreground">
-            <Link href="#" className="hover:text-primary transition-colors">Privacy</Link>
-            <Link href="#" className="hover:text-primary transition-colors">Voorwaarden</Link>
+            <Link href="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
+            <Link href="/voorwaarden" className="hover:text-primary transition-colors">Voorwaarden</Link>
             <Link href="#" className="hover:text-primary transition-colors">Cookies</Link>
           </div>
         </div>
