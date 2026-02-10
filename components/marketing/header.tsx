@@ -6,6 +6,7 @@ import { List as Menu, X } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/auth-client";
 import { Building2, Search, Map, MapPin, Users } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const navLinks = [
   { name: "Aanbod", href: "/aanbod", icon: Search },
@@ -68,6 +69,7 @@ export function Header() {
                 </Link>
               ) : (
                 <>
+                  <ThemeToggle />
                   <Link href="/sign-in">
                     <Button variant="ghost" size="sm">
                       Inloggen
