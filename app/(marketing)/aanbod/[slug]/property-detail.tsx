@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { createInquiry } from "@/app/actions/inquiries";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -96,6 +97,8 @@ interface PropertyDetailProps {
 export function PropertyDetail({ property }: PropertyDetailProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [formState, setFormState] = useState({
     name: "",
     email: "",
@@ -566,10 +569,22 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    // TODO: submit inquiry via server action
-                    alert(
-                      "Bedankt voor je interesse! De makelaar neemt spoedig contact met je op."
-                    );
+                    setSubmitStatus("idle");
+                    startTransition(async () => {
+                      const result = await createInquiry({
+                        propertyId: property.id,
+                        name: formState.name,
+                        email: formState.email,
+                        phone: formState.phone,
+                        message: formState.message,
+                      });
+                      if ("error" in result) {
+                        setSubmitStatus("error");
+                      } else {
+                        setSubmitStatus("success");
+                        setFormState((s) => ({ ...s, name: "", email: "", phone: "" }));
+                      }
+                    });
                   }}
                   className="space-y-4"
                 >
@@ -641,9 +656,19 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                       }
                     />
                   </div>
-                  <Button type="submit" className="w-full" size="lg">
+                  {submitStatus === "success" && (
+                    <div className="rounded-lg bg-green-50 p-3 text-sm text-green-800 dark:bg-green-950 dark:text-green-200">
+                      ✅ Bedankt voor je interesse! De makelaar neemt spoedig contact met je op.
+                    </div>
+                  )}
+                  {submitStatus === "error" && (
+                    <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">
+                      Er ging iets mis. Probeer het opnieuw.
+                    </div>
+                  )}
+                  <Button type="submit" className="w-full" size="lg" disabled={isPending || submitStatus === "success"}>
                     <Mail className="mr-2 size-4" />
-                    Verstuur interesse
+                    {isPending ? "Versturen..." : submitStatus === "success" ? "Verstuurd!" : "Verstuur interesse"}
                   </Button>
                 </form>
               </CardContent>
