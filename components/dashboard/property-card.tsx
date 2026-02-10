@@ -18,6 +18,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import type { PropertyListItem, PropertyType, PriceType } from "@/types/property";
+import { PropertyTypeLabels } from "@/types/property";
 
 /**
  * Format price from cents to readable string
@@ -40,25 +41,7 @@ function formatPrice(cents: number, priceType: PriceType): string {
  * Get property type label
  */
 function getPropertyTypeLabel(type: PropertyType): string {
-  const labels: Record<PropertyType, string> = {
-    RESTAURANT: "Restaurant",
-    CAFE: "Café",
-    BAR: "Bar",
-    HOTEL: "Hotel",
-    DARK_KITCHEN: "Dark Kitchen",
-    NIGHTCLUB: "Nachtclub",
-    FOOD_COURT: "Food Court",
-    CATERING: "Catering",
-    BAKERY: "Bakkerij",
-    SNACKBAR: "Snackbar",
-    PARTYCENTRUM: "Partycentrum",
-    GRANDCAFE: "Grand Café",
-    LUNCHROOM: "Lunchroom",
-    PIZZERIA: "Pizzeria",
-    BRASSERIE: "Brasserie",
-    OTHER: "Overig",
-  };
-  return labels[type] || type;
+  return PropertyTypeLabels[type] || type;
 }
 
 /**

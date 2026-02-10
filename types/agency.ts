@@ -3,6 +3,8 @@
  * These types will be used by actions and components
  */
 
+import type { PropertyType, PropertyStatus, PriceType } from "@/generated/prisma";
+
 export type AgencyPlan = "FREE" | "PRO" | "ENTERPRISE";
 
 export interface Agency {
@@ -53,29 +55,8 @@ export interface AgentProfile {
   createdAt: Date;
 }
 
-export type PropertyType =
-  | "RESTAURANT"
-  | "CAFE"
-  | "BAR"
-  | "HOTEL"
-  | "DARK_KITCHEN"
-  | "NIGHTCLUB"
-  | "FAST_FOOD"
-  | "BAKERY"
-  | "CATERING"
-  | "OTHER";
-
-export type PropertyStatus =
-  | "DRAFT"
-  | "PENDING_REVIEW"
-  | "ACTIVE"
-  | "UNDER_OFFER"
-  | "RENTED"
-  | "SOLD"
-  | "ARCHIVED"
-  | "REJECTED";
-
-export type PriceType = "RENT" | "SALE" | "RENT_OR_SALE";
+// Re-export from central source (Prisma-derived)
+export type { PropertyType, PropertyStatus, PriceType } from "@/types/property";
 
 export interface PropertyImage {
   id: string;

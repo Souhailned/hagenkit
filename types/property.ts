@@ -1,26 +1,91 @@
 /**
  * Property-related types for the Horecagrond platform
- * These types mirror the Prisma schema models for Property, SeekerProfile, etc.
+ *
+ * Re-exports Prisma-generated enums as single source of truth.
+ * Only add UI-specific types/labels here, never duplicate Prisma enums.
  */
 
-// Property type enum
-export type PropertyType =
-  | "RESTAURANT"
-  | "CAFE"
-  | "BAR"
-  | "HOTEL"
-  | "DARK_KITCHEN"
-  | "NIGHTCLUB"
-  | "FOOD_COURT"
-  | "CATERING"
-  | "BAKERY"
-  | "SNACKBAR"
-  | "PARTYCENTRUM"
-  | "GRANDCAFE"
-  | "LUNCHROOM"
-  | "PIZZERIA"
-  | "BRASSERIE"
-  | "OTHER";
+// Import Prisma enums for local use
+import {
+  PropertyType,
+  PropertyStatus,
+  PriceType,
+  FeatureCategory,
+  PropertyImageType,
+  LocationClassification,
+  OvernameType,
+  OmzetTrend,
+  SalePriceType,
+  PropertyStaat,
+  StaffTransfer,
+  LicenseType,
+  LicenseStatus,
+  HorecaCategorie,
+  InstallationCategory,
+  InstallationCondition,
+  InstallationOwnership,
+  ObligationType,
+  AlertFrequency,
+} from "@/generated/prisma";
+
+// Re-export for consumers
+export {
+  PropertyType,
+  PropertyStatus,
+  PriceType,
+  FeatureCategory,
+  PropertyImageType,
+  LocationClassification,
+  OvernameType,
+  OmzetTrend,
+  SalePriceType,
+  PropertyStaat,
+  StaffTransfer,
+  LicenseType,
+  LicenseStatus,
+  HorecaCategorie,
+  InstallationCategory,
+  InstallationCondition,
+  InstallationOwnership,
+  ObligationType,
+  AlertFrequency,
+};
+
+// Property types array for iteration (all Prisma PropertyType enum values)
+export const PROPERTY_TYPES: PropertyType[] = [
+  "RESTAURANT",
+  "CAFE",
+  "BAR",
+  "HOTEL",
+  "DARK_KITCHEN",
+  "NIGHTCLUB",
+  "FOOD_COURT",
+  "FOOD_TRUCK_SPOT",
+  "CATERING",
+  "BAKERY",
+  "EETCAFE",
+  "GRAND_CAFE",
+  "COCKTAILBAR",
+  "HOTEL_RESTAURANT",
+  "BED_AND_BREAKFAST",
+  "LUNCHROOM",
+  "KOFFIEBAR",
+  "BRASSERIE",
+  "PIZZERIA",
+  "SNACKBAR",
+  "IJSSALON",
+  "WOK_RESTAURANT",
+  "SUSHI",
+  "BEZORG_AFHAAL",
+  "PARTYCENTRUM",
+  "STRANDPAVILJOEN",
+  "PANNENKOEKHUIS",
+  "TEAROOM",
+  "WIJNBAR",
+  "BROUWERIJ_CAFE",
+  "LEISURE",
+  "OTHER",
+];
 
 // Property type labels for display (Dutch)
 export const PropertyTypeLabels: Record<PropertyType, string> = {
@@ -31,27 +96,55 @@ export const PropertyTypeLabels: Record<PropertyType, string> = {
   DARK_KITCHEN: "Dark Kitchen",
   NIGHTCLUB: "Nachtclub",
   FOOD_COURT: "Food Court",
+  FOOD_TRUCK_SPOT: "Food Truck Spot",
   CATERING: "Catering",
   BAKERY: "Bakkerij",
-  SNACKBAR: "Snackbar",
-  PARTYCENTRUM: "Partycentrum",
-  GRANDCAFE: "Grand Café",
+  EETCAFE: "Eetcafé",
+  GRAND_CAFE: "Grand Café",
+  COCKTAILBAR: "Cocktailbar",
+  HOTEL_RESTAURANT: "Hotel-Restaurant",
+  BED_AND_BREAKFAST: "Bed & Breakfast",
   LUNCHROOM: "Lunchroom",
-  PIZZERIA: "Pizzeria",
+  KOFFIEBAR: "Koffiebar",
   BRASSERIE: "Brasserie",
+  PIZZERIA: "Pizzeria",
+  SNACKBAR: "Snackbar",
+  IJSSALON: "IJssalon",
+  WOK_RESTAURANT: "Wok Restaurant",
+  SUSHI: "Sushi",
+  BEZORG_AFHAAL: "Bezorg & Afhaal",
+  PARTYCENTRUM: "Partycentrum",
+  STRANDPAVILJOEN: "Strandpaviljoen",
+  PANNENKOEKHUIS: "Pannenkoekhuis",
+  TEAROOM: "Tearoom",
+  WIJNBAR: "Wijnbar",
+  BROUWERIJ_CAFE: "Brouwerij Café",
+  LEISURE: "Leisure",
   OTHER: "Overig",
 };
 
-// Property status enum
-export type PropertyStatus =
-  | "DRAFT"
-  | "PENDING_REVIEW"
-  | "ACTIVE"
-  | "UNDER_OFFER"
-  | "RENTED"
-  | "SOLD"
-  | "ARCHIVED"
-  | "REJECTED";
+// Alias for backward compatibility
+export const PROPERTY_TYPE_LABELS = PropertyTypeLabels;
+
+// Dutch regions/provinces for property location filtering
+export const REGIONS = [
+  "Noord-Holland",
+  "Zuid-Holland",
+  "Utrecht",
+  "Noord-Brabant",
+  "Gelderland",
+  "Limburg",
+  "Overijssel",
+  "Flevoland",
+  "Groningen",
+  "Friesland",
+  "Drenthe",
+  "Zeeland",
+] as const;
+
+export type Region = (typeof REGIONS)[number];
+
+// PropertyStatus already imported above
 
 export const PropertyStatusLabels: Record<PropertyStatus, string> = {
   DRAFT: "Concept",
@@ -64,32 +157,15 @@ export const PropertyStatusLabels: Record<PropertyStatus, string> = {
   REJECTED: "Afgewezen",
 };
 
-// Price type enum
-export type PriceType = "RENT" | "SALE" | "RENT_OR_SALE";
-
 export const PriceTypeLabels: Record<PriceType, string> = {
   RENT: "Te Huur",
   SALE: "Te Koop",
   RENT_OR_SALE: "Te Huur of Koop",
 };
 
-// Alert frequency enum
-export type AlertFrequency = "INSTANT" | "DAILY" | "WEEKLY";
+// Alert frequency — re-export from Prisma
 
-// Property image type enum
-export type PropertyImageType =
-  | "EXTERIOR"
-  | "INTERIOR"
-  | "KITCHEN"
-  | "TERRACE"
-  | "BATHROOM"
-  | "STORAGE"
-  | "FLOORPLAN"
-  | "LOCATION"
-  | "RENDER"
-  | "OTHER";
-
-// Property feature enum for filtering
+// Property feature enum for filtering (UI-only, not a Prisma enum)
 export type PropertyFeature =
   | "TERRACE"
   | "PARKING"
@@ -115,9 +191,6 @@ export const PropertyFeatureLabels: Record<PropertyFeature, string> = {
   OUTDOOR_SEATING: "Buitenzitplaatsen",
   WHEELCHAIR_ACCESSIBLE: "Rolstoeltoegankelijk",
 };
-
-// Feature category for detailed feature records
-export type FeatureCategory = "LICENSE" | "FACILITY" | "UTILITY" | "ACCESSIBILITY";
 
 export const FeatureCategoryLabels: Record<FeatureCategory, string> = {
   LICENSE: "Vergunningen",
@@ -577,4 +650,219 @@ export function getPriceTypeLabel(type: PriceType): string {
 
 export function getFeatureDefinition(key: string): FeatureDefinition | undefined {
   return FEATURE_DEFINITIONS.find((f) => f.key === key);
+}
+
+// --- Label maps for new Prisma enums ---
+
+export const LocationClassificationLabels: Record<LocationClassification, string> = {
+  A1: "A1 - Toplocatie",
+  A2: "A2 - Goede locatie",
+  B: "B - Gemiddelde locatie",
+  C: "C - Mindere locatie",
+};
+
+export const OvernameTypeLabels: Record<OvernameType, string> = {
+  ACTIVA_PASSIVA: "Activa / Passiva",
+  AANDELEN: "Aandelen",
+  BEIDE: "Beide",
+};
+
+export const OmzetTrendLabels: Record<OmzetTrend, string> = {
+  STIJGEND: "Stijgend",
+  STABIEL: "Stabiel",
+  DALEND: "Dalend",
+};
+
+export const SalePriceTypeLabels: Record<SalePriceType, string> = {
+  KOSTEN_KOPER: "Kosten Koper (k.k.)",
+  VRIJ_OP_NAAM: "Vrij op Naam (v.o.n.)",
+};
+
+export const PropertyStaatLabels: Record<PropertyStaat, string> = {
+  UITSTEKEND: "Uitstekend",
+  GOED: "Goed",
+  REDELIJK: "Redelijk",
+  MATIG: "Matig",
+  SLECHT: "Slecht",
+};
+
+export const StaffTransferLabels: Record<StaffTransfer, string> = {
+  VERPLICHT: "Verplicht",
+  OPTIONEEL: "Optioneel",
+  GEEN: "Geen",
+};
+
+export const LicenseTypeLabels: Record<LicenseType, string> = {
+  DRANK_HORECA_A: "Drank & Horeca A",
+  DRANK_HORECA_B: "Drank & Horeca B",
+  DRANK_HORECA_C: "Drank & Horeca C",
+  EXPLOITATIE: "Exploitatievergunning",
+  TERRAS: "Terrasvergunning",
+  NACHT: "Nachtvergunning",
+  GEBRUIKSMELDING: "Gebruiksmelding",
+  OMGEVINGS: "Omgevingsvergunning",
+  MUZIEK: "Muziekvergunning",
+  SPEELAUTOMATEN: "Speelautomatenvergunning",
+  EVENEMENTEN: "Evenementenvergunning",
+};
+
+export const LicenseStatusLabels: Record<LicenseStatus, string> = {
+  AANWEZIG: "Aanwezig",
+  NIET_AANWEZIG: "Niet aanwezig",
+  AANGEVRAAGD: "Aangevraagd",
+  VERLOPEN: "Verlopen",
+};
+
+export const HorecaCategorieLabels: Record<HorecaCategorie, string> = {
+  HORECA_1: "Horeca 1 (licht)",
+  HORECA_2: "Horeca 2 (middelzwaar)",
+  HORECA_3: "Horeca 3 (zwaar)",
+  HORECA_4: "Horeca 4 (nacht)",
+};
+
+export const InstallationCategoryLabels: Record<InstallationCategory, string> = {
+  KEUKEN: "Keuken",
+  DRANK: "Drank",
+  KLIMAAT: "Klimaat",
+  SANITAIR: "Sanitair",
+  VEILIGHEID: "Veiligheid",
+  OVERIG: "Overig",
+};
+
+export const InstallationConditionLabels: Record<InstallationCondition, string> = {
+  NIEUW: "Nieuw",
+  GOED: "Goed",
+  REDELIJK: "Redelijk",
+  VERVANGEN: "Moet vervangen worden",
+};
+
+export const InstallationOwnershipLabels: Record<InstallationOwnership, string> = {
+  EIGENDOM: "Eigendom",
+  HUUR: "Huur",
+  LEASE: "Lease",
+  BRUIKLEEN: "Bruikleen",
+};
+
+export const ObligationTypeLabels: Record<ObligationType, string> = {
+  BROUWERIJ: "Brouwerijcontract",
+  LEVERANCIER: "Leverancierscontract",
+  LEASE: "Leasecontract",
+  MUZIEK: "Muziekcontract",
+  AFVAL: "Afvalcontract",
+  ENERGIE: "Energiecontract",
+  OVERIG: "Overig",
+};
+
+// --- Types for new Prisma detail models (UI views) ---
+
+export interface PropertyFinancialsView {
+  id: string;
+  propertyId: string;
+  goodwill: number | null;
+  inventarisWaarde: number | null;
+  overnameSom: number | null;
+  overnameType: OvernameType | null;
+  huurcontractType: string | null;
+  huurcontractIngangsdatum: Date | null;
+  huurcontractEinddatum: Date | null;
+  huurprijsIndexatie: string | null;
+  opzegtermijnMaanden: number | null;
+  borgMaanden: number | null;
+  jaaromzet: number | null;
+  omzetJaar: number | null;
+  omzetTrend: OmzetTrend | null;
+  winst: number | null;
+  discreteVerkoop: boolean;
+  priceOnRequest: boolean;
+  rentPriceExBtw: boolean;
+  btwBelast: boolean;
+  salePriceType: SalePriceType | null;
+}
+
+export interface PropertyBuildingView {
+  id: string;
+  propertyId: string;
+  buildYear: number | null;
+  lastRenovation: number | null;
+  renovationDetails: string | null;
+  monumentStatus: boolean;
+  monumentType: string | null;
+  energyLabel: string | null;
+  energyLabelExpiry: Date | null;
+  staat: PropertyStaat | null;
+  bedrijfswoning: boolean;
+  bedrijfswoningDetails: string | null;
+  bedrijfswoningKamers: number | null;
+}
+
+export interface PropertyStaffingView {
+  id: string;
+  propertyId: string;
+  hasStaff: boolean;
+  staffCount: number | null;
+  staffFulltime: number | null;
+  staffParttime: number | null;
+  staffFlex: number | null;
+  staffTransfer: StaffTransfer | null;
+  staffDetails: string | null;
+  caoApplicable: boolean;
+  personnelCostsMonthly: number | null;
+}
+
+export interface PropertyLicenseView {
+  id: string;
+  propertyId: string;
+  type: LicenseType;
+  status: LicenseStatus;
+  issuedDate: Date | null;
+  expiryDate: Date | null;
+  issuedBy: string | null;
+  licenseNumber: string | null;
+  documentUrl: string | null;
+  details: string | null;
+  bestemmingsplan: string | null;
+  horecaCategorie: HorecaCategorie | null;
+  precario: boolean;
+  precarioBedrag: number | null;
+  openingstijden: string | null;
+  maxOpeningstijd: string | null;
+  geluidsnormenDb: number | null;
+}
+
+export interface PropertyInstallationView {
+  id: string;
+  propertyId: string;
+  category: InstallationCategory;
+  name: string;
+  description: string | null;
+  brand: string | null;
+  condition: InstallationCondition | null;
+  yearInstalled: number | null;
+  ownership: InstallationOwnership;
+  leaseCompany: string | null;
+  included: boolean;
+}
+
+export interface PropertyObligationView {
+  id: string;
+  propertyId: string;
+  type: ObligationType;
+  name: string;
+  company: string | null;
+  description: string | null;
+  startDate: Date | null;
+  endDate: Date | null;
+  monthlyCost: number | null;
+  transferable: boolean;
+  mandatory: boolean;
+}
+
+export interface PropertyHistoryView {
+  id: string;
+  propertyId: string;
+  previousType: PropertyType | null;
+  previousName: string | null;
+  yearsActive: number | null;
+  reasonClosed: string | null;
+  wasSuccessful: boolean | null;
 }

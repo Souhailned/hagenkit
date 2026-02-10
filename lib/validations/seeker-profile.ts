@@ -1,21 +1,7 @@
 import { z } from "zod";
 
-/**
- * Property type enum for horeca properties
- */
-export const propertyTypeEnum = z.enum([
-  "RESTAURANT",
-  "CAFE",
-  "BAR",
-  "HOTEL",
-  "NIGHTCLUB",
-  "FAST_FOOD",
-  "CATERING",
-  "FOOD_TRUCK",
-  "BAKERY",
-  "OTHER",
-]);
-
+// Import the shared propertyTypeEnum from property validations
+import { propertyTypeEnum } from "@/lib/validations/property";
 export type PropertyType = z.infer<typeof propertyTypeEnum>;
 
 /**

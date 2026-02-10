@@ -4,25 +4,8 @@ import { z } from "zod";
 // Property Enums (matching Prisma schema from PRD 1.1)
 // ============================================================================
 
-// Property type enum as const object for easier access
-export const PropertyType = {
-  RESTAURANT: "RESTAURANT",
-  CAFE: "CAFE",
-  BAR: "BAR",
-  HOTEL: "HOTEL",
-  DARK_KITCHEN: "DARK_KITCHEN",
-  NIGHTCLUB: "NIGHTCLUB",
-  FOOD_COURT: "FOOD_COURT",
-  CATERING: "CATERING",
-  BAKERY: "BAKERY",
-  SNACKBAR: "SNACKBAR",
-  PARTYCENTRUM: "PARTYCENTRUM",
-  GRANDCAFE: "GRANDCAFE",
-  LUNCHROOM: "LUNCHROOM",
-  PIZZERIA: "PIZZERIA",
-  BRASSERIE: "BRASSERIE",
-  OTHER: "OTHER",
-} as const;
+// PropertyType comes from @/types/property (Prisma is source of truth)
+// Don't re-export here — consumers should import from @/types/property directly
 
 export const PropertyStatus = {
   DRAFT: "DRAFT",
@@ -65,7 +48,7 @@ export const PropertyImageType = {
 // Zod Enums
 // ============================================================================
 
-// Property Type enum
+// Property Type enum — must match Prisma PropertyType exactly
 export const propertyTypeEnum = z.enum([
   "RESTAURANT",
   "CAFE",
@@ -74,14 +57,30 @@ export const propertyTypeEnum = z.enum([
   "DARK_KITCHEN",
   "NIGHTCLUB",
   "FOOD_COURT",
+  "FOOD_TRUCK_SPOT",
   "CATERING",
   "BAKERY",
-  "SNACKBAR",
-  "PARTYCENTRUM",
-  "GRANDCAFE",
+  "EETCAFE",
+  "GRAND_CAFE",
+  "COCKTAILBAR",
+  "HOTEL_RESTAURANT",
+  "BED_AND_BREAKFAST",
   "LUNCHROOM",
-  "PIZZERIA",
+  "KOFFIEBAR",
   "BRASSERIE",
+  "PIZZERIA",
+  "SNACKBAR",
+  "IJSSALON",
+  "WOK_RESTAURANT",
+  "SUSHI",
+  "BEZORG_AFHAAL",
+  "PARTYCENTRUM",
+  "STRANDPAVILJOEN",
+  "PANNENKOEKHUIS",
+  "TEAROOM",
+  "WIJNBAR",
+  "BROUWERIJ_CAFE",
+  "LEISURE",
   "OTHER",
 ]);
 
@@ -558,28 +557,15 @@ export interface Property {
 // Helper Labels (Dutch)
 // ============================================================================
 
-// Helper for property type labels
-export const propertyTypeLabels: Record<PropertyType, string> = {
-  RESTAURANT: "Restaurant",
-  CAFE: "Café",
-  BAR: "Bar",
-  HOTEL: "Hotel",
-  DARK_KITCHEN: "Dark Kitchen",
-  NIGHTCLUB: "Nachtclub",
-  FOOD_COURT: "Food Court",
-  CATERING: "Catering",
-  BAKERY: "Bakkerij",
-  SNACKBAR: "Snackbar",
-  PARTYCENTRUM: "Partycentrum",
-  GRANDCAFE: "Grand Café",
-  LUNCHROOM: "Lunchroom",
-  PIZZERIA: "Pizzeria",
-  BRASSERIE: "Brasserie",
-  OTHER: "Overig",
-};
+// Helper for property type labels — import from types/property.ts for single source
+import { PropertyTypeLabels as _ptLabels, REGIONS as _regions } from "@/types/property";
+export const propertyTypeLabels = _ptLabels;
 
 // Alias for backward compatibility
 export const PROPERTY_TYPE_LABELS = propertyTypeLabels;
+
+// Re-export REGIONS from central types
+export const REGIONS = _regions;
 
 // Helper for property status labels
 export const propertyStatusLabels: Record<PropertyStatus, string> = {

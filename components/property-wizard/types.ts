@@ -3,21 +3,11 @@
  * Based on the PRD database design for the Horecagrond platform
  */
 
-// Property Types as defined in PRD FASE 1.1
-export const PROPERTY_TYPES = [
-  "RESTAURANT",
-  "CAFE",
-  "BAR",
-  "HOTEL",
-  "DARK_KITCHEN",
-  "NIGHTCLUB",
-  "FOOD_COURT",
-  "CATERING",
-  "BAKERY",
-  "OTHER",
-] as const;
-
-export type PropertyType = (typeof PROPERTY_TYPES)[number];
+// Re-export from central types — Prisma is source of truth
+import type { PropertyType } from "@/types/property";
+import { PropertyTypeLabels, PROPERTY_TYPES as CENTRAL_PROPERTY_TYPES } from "@/types/property";
+export type { PropertyType };
+export { PROPERTY_TYPES as PROPERTY_TYPES } from "@/types/property";
 
 // Price Types
 export const PRICE_TYPES = ["RENT", "SALE", "RENT_OR_SALE"] as const;
@@ -46,19 +36,7 @@ export const PROPERTY_IMAGE_TYPES = [
 ] as const;
 export type PropertyImageType = (typeof PROPERTY_IMAGE_TYPES)[number];
 
-// Labels for UI
-export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
-  RESTAURANT: "Restaurant",
-  CAFE: "Café",
-  BAR: "Bar",
-  HOTEL: "Hotel",
-  DARK_KITCHEN: "Dark Kitchen",
-  NIGHTCLUB: "Nachtclub",
-  FOOD_COURT: "Food Court",
-  CATERING: "Catering",
-  BAKERY: "Bakkerij",
-  OTHER: "Anders",
-};
+export const PROPERTY_TYPE_LABELS = PropertyTypeLabels;
 
 export const PRICE_TYPE_LABELS: Record<PriceType, string> = {
   RENT: "Te huur",

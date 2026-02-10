@@ -18,16 +18,27 @@ interface PropertyCardProps {
   className?: string;
 }
 
-const propertyTypeLabels: Record<Property["propertyType"], string> = {
+const propertyTypeLabels: Partial<Record<Property["propertyType"], string>> = {
   RESTAURANT: "Restaurant",
   CAFE: "Café",
   BAR: "Bar",
   HOTEL: "Hotel",
   DARK_KITCHEN: "Dark Kitchen",
   NIGHTCLUB: "Nachtclub",
-  FAST_FOOD: "Fast Food",
   BAKERY: "Bakkerij",
   CATERING: "Catering",
+  EETCAFE: "Eetcafé",
+  GRAND_CAFE: "Grand Café",
+  COCKTAILBAR: "Cocktailbar",
+  HOTEL_RESTAURANT: "Hotel-Restaurant",
+  BED_AND_BREAKFAST: "B&B",
+  LUNCHROOM: "Lunchroom",
+  KOFFIEBAR: "Koffiebar",
+  BRASSERIE: "Brasserie",
+  PIZZERIA: "Pizzeria",
+  SNACKBAR: "Snackbar",
+  IJSSALON: "IJssalon",
+  PARTYCENTRUM: "Partycentrum",
   OTHER: "Overig",
 };
 

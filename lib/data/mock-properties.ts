@@ -110,8 +110,8 @@ export const mockProperties: Property[] = [
     slug: "grand-cafe-het-station-utrecht",
     description:
       "Sfeervolle grand café met authentieke details, gelegen nabij het centraal station. Groot terras aan de gracht met uitzicht op de Dom. Het interieur combineert klassieke elementen met modern comfort. De bovenwoning is volledig gerenoveerd en biedt een comfortabele woonruimte voor de exploitant.",
-    type: "GRANDCAFE",
-    propertyType: "GRANDCAFE",
+    type: "GRAND_CAFE",
+    propertyType: "GRAND_CAFE",
     city: "Utrecht",
     province: "Utrecht",
     address: "Oudegracht 45",
@@ -476,8 +476,8 @@ export const mockProperties: Property[] = [
     slug: "grand-cafe-central-breda",
     description:
       "Monumentaal grand café op de Grote Markt. Hoge plafonds, originele details en groot terras. De kelder biedt extra opslagruimte. Ideaal voor een ondernemer die karakter zoekt.",
-    type: "GRANDCAFE",
-    propertyType: "GRANDCAFE",
+    type: "GRAND_CAFE",
+    propertyType: "GRAND_CAFE",
     city: "Breda",
     province: "Noord-Brabant",
     address: "Grote Markt 31",

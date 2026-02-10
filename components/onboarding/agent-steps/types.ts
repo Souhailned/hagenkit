@@ -3,8 +3,14 @@
  * Defines data structures for agency info and agent profile forms
  */
 
-// PropertyType enum - horeca property categories
-export const PROPERTY_TYPES = [
+// Re-export from central types — Prisma is source of truth
+import type { PropertyType } from "@/types/property";
+import { PropertyTypeLabels } from "@/types/property";
+export type { PropertyType };
+export const PROPERTY_TYPE_LABELS = PropertyTypeLabels;
+
+// Property types array for iteration (derived from Prisma enum)
+export const PROPERTY_TYPES: PropertyType[] = [
   "RESTAURANT",
   "CAFE",
   "BAR",
@@ -12,26 +18,32 @@ export const PROPERTY_TYPES = [
   "DARK_KITCHEN",
   "NIGHTCLUB",
   "FOOD_COURT",
+  "FOOD_TRUCK_SPOT",
   "CATERING",
   "BAKERY",
+  "EETCAFE",
+  "GRAND_CAFE",
+  "COCKTAILBAR",
+  "HOTEL_RESTAURANT",
+  "BED_AND_BREAKFAST",
+  "LUNCHROOM",
+  "KOFFIEBAR",
+  "BRASSERIE",
+  "PIZZERIA",
+  "SNACKBAR",
+  "IJSSALON",
+  "WOK_RESTAURANT",
+  "SUSHI",
+  "BEZORG_AFHAAL",
+  "PARTYCENTRUM",
+  "STRANDPAVILJOEN",
+  "PANNENKOEKHUIS",
+  "TEAROOM",
+  "WIJNBAR",
+  "BROUWERIJ_CAFE",
+  "LEISURE",
   "OTHER",
-] as const;
-
-export type PropertyType = (typeof PROPERTY_TYPES)[number];
-
-// Human-readable labels for PropertyType
-export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
-  RESTAURANT: "Restaurant",
-  CAFE: "Café",
-  BAR: "Bar",
-  HOTEL: "Hotel",
-  DARK_KITCHEN: "Dark Kitchen",
-  NIGHTCLUB: "Nachtclub",
-  FOOD_COURT: "Food Court",
-  CATERING: "Catering",
-  BAKERY: "Bakkerij",
-  OTHER: "Overig",
-};
+];
 
 // Dutch regions/provinces
 export const REGIONS = [

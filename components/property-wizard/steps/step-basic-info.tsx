@@ -28,7 +28,7 @@ interface StepBasicInfoProps {
   onUpdate: (data: Partial<PropertyWizardData>) => void;
 }
 
-const TYPE_ICONS: Record<PropertyType, React.ComponentType<{ className?: string }>> = {
+const TYPE_ICONS: Partial<Record<PropertyType, React.ComponentType<{ className?: string }>>> = {
   RESTAURANT: IconBuildingStore,
   CAFE: IconCoffee,
   BAR: IconGlass,
@@ -68,7 +68,7 @@ export function StepBasicInfo({ data, onUpdate }: StepBasicInfoProps) {
         </Label>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           {PROPERTY_TYPES.map((type) => {
-            const Icon = TYPE_ICONS[type];
+            const Icon = TYPE_ICONS[type] || IconDots;
             const isSelected = data.propertyType === type;
 
             return (
