@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/app/actions/user";
 import { redirect } from "next/navigation";
 import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
 import { setUserRole } from "@/app/actions/set-role";
+import type { UserRole } from "@/types/user";
 
 export const dynamic = 'force-dynamic';
 
@@ -18,23 +19,30 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
     redirect("/sign-in");
   }
 
-  // Set role if provided via URL param (from sign-up)
-  if (roleParam === "seeker" || roleParam === "agent") {
-    await setUserRole(roleParam);
-  }
-
   // If user already completed onboarding, redirect to dashboard
   if (user.onboardingCompleted) {
     redirect("/dashboard");
   }
 
-  const userRole = roleParam === "agent" ? "agent" : (user.role || "seeker");
+  // Set role if provided via URL param (from sign-up) and user still has default role
+  if (
+    (roleParam === "seeker" || roleParam === "agent") &&
+    user.role !== roleParam
+  ) {
+    await setUserRole(roleParam);
+  }
+
+  // Determine effective role: URL param > existing DB role > default seeker
+  const effectiveRole: UserRole = 
+    (roleParam === "seeker" || roleParam === "agent") 
+      ? roleParam 
+      : (user.role === "agent" ? "agent" : "seeker");
 
   return (
     <OnboardingFlow
       userName={user.name}
       userEmail={user.email}
-      userRole={userRole as "seeker" | "agent"}
+      userRole={effectiveRole as "seeker" | "agent"}
     />
   );
 }

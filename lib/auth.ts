@@ -8,6 +8,7 @@ import { sendPasswordResetEmail } from "@/app/actions/email";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
@@ -16,6 +17,7 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
+          // First user becomes admin, rest default to seeker (set via Prisma schema default)
           const userCount = await prisma.user.count();
           if (userCount === 0) {
             return {
@@ -35,24 +37,37 @@ export const auth = betterAuth({
       role: {
         type: "string",
         required: false,
-        input: false, // Don't allow users to set their own role
+        input: false, // Role is set server-side only (via setUserRole action or onboarding)
+      },
+      phone: {
+        type: "string",
+        required: false,
+      },
+      onboardingCompleted: {
+        type: "boolean",
+        required: false,
+        input: false,
+      },
+      status: {
+        type: "string",
+        required: false,
+        input: false,
       },
     },
   },
   emailAndPassword: {
     enabled: true,
-    sendResetPassword: async ({ user, url, token }) => {
-      // Send password reset email using our email service
+    sendResetPassword: async ({ user, url }) => {
       await sendPasswordResetEmail(
         {
-          firstName: user.name?.split(" ")[0] || "there",
+          firstName: user.name?.split(" ")[0] || "daar",
           resetUrl: url,
-          expiresInMinutes: 60, // 1 hour
+          expiresInMinutes: 60,
         },
         user.email
       );
     },
-    resetPasswordTokenExpiresIn: 3600, // 1 hour in seconds
+    resetPasswordTokenExpiresIn: 3600,
   },
   socialProviders: {
     google: {
@@ -63,8 +78,8 @@ export const auth = betterAuth({
   plugins: [
     nextCookies(),
     admin({
-      adminRoles: ["admin"],
-      impersonationSessionDuration: 60 * 60, // 1 hour
+      adminRoles: ["admin"], // Maps to our UserRole.admin
+      impersonationSessionDuration: 60 * 60,
     }),
   ],
 });

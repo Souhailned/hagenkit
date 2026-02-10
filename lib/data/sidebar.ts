@@ -1,47 +1,70 @@
-export type NavItemId = "inbox" | "my-tasks" | "projects" | "clients" | "performance" | "images" | "videos" | "favorieten" | "panden" | "leads"
+import type { UserRole } from "@/types/user";
 
-export type SidebarFooterItemId = "settings" | "help" | "admin"
+export type NavItemId =
+  | "dashboard"
+  | "panden"
+  | "leads"
+  | "analytics"
+  | "videos"
+  | "favorieten"
+  | "alerts"
+  | "zoeken"
+  | "vergelijk";
+
+export type SidebarFooterItemId = "settings" | "help" | "admin";
 
 export type NavItem = {
-  id: NavItemId
-  label: string
-  badge?: number
-  isActive?: boolean
-}
-
-export type ActiveProjectSummary = {
-  id: string
-  name: string
-  color: string
-  progress: number
-}
+  id: NavItemId;
+  label: string;
+  href: string;
+  badge?: number;
+  /** Which roles can see this item. undefined = all roles */
+  roles?: UserRole[];
+};
 
 export type SidebarFooterItem = {
-  id: SidebarFooterItemId
-  label: string
-}
+  id: SidebarFooterItemId;
+  label: string;
+  href: string;
+  roles?: UserRole[];
+};
 
+/**
+ * Main navigation items — filtered by role in the sidebar component
+ */
 export const navItems: NavItem[] = [
-  { id: "inbox", label: "Inbox", badge: 24 },
-  { id: "my-tasks", label: "My task" },
-  { id: "projects", label: "Projects", isActive: true },
-  { id: "clients", label: "Clients" },
-  { id: "performance", label: "Performance" },
-  { id: "images", label: "Images" },
-  { id: "videos", label: "Videos" },
-  { id: "favorieten", label: "Favorieten" },
-  { id: "panden", label: "Mijn Panden" },
-  { id: "leads", label: "Leads" },
-]
+  // Shared
+  { id: "dashboard", label: "Dashboard", href: "/dashboard" },
 
-export const activeProjects: ActiveProjectSummary[] = [
-  { id: "ai-learning", name: "AI Learning Platform", color: "var(--chart-5)", progress: 25 },
-  { id: "fintech-app", name: "Fintech Mobile App", color: "var(--chart-3)", progress: 80 },
-  { id: "ecommerce-admin", name: "E-commerce Admin", color: "var(--chart-3)", progress: 65 },
-  { id: "healthcare-app", name: "Healthcare Booking App", color: "var(--chart-2)", progress: 10 },
-]
+  // Agent items
+  { id: "panden", label: "Mijn Panden", href: "/dashboard/panden", roles: ["agent", "admin"] },
+  { id: "leads", label: "Leads", href: "/dashboard/leads", roles: ["agent", "admin"] },
+  { id: "analytics", label: "Analytics", href: "/dashboard/analytics", roles: ["agent", "admin"] },
+  { id: "videos", label: "Video's", href: "/dashboard/videos", roles: ["agent", "admin"] },
+
+  // Seeker items
+  { id: "zoeken", label: "Zoeken", href: "/aanbod", roles: ["seeker"] },
+  { id: "favorieten", label: "Favorieten", href: "/dashboard/favorieten", roles: ["seeker"] },
+  { id: "alerts", label: "Zoekopdrachten", href: "/dashboard/alerts", roles: ["seeker"] },
+  { id: "vergelijk", label: "Vergelijken", href: "/vergelijk", roles: ["seeker"] },
+];
 
 export const footerItems: SidebarFooterItem[] = [
-  { id: "settings", label: "Settings" },
-  { id: "help", label: "Help" },
-]
+  { id: "settings", label: "Instellingen", href: "/dashboard/instellingen" },
+  { id: "help", label: "Help & FAQ", href: "/faq" },
+  { id: "admin", label: "Admin", href: "/dashboard/admin", roles: ["admin"] },
+];
+
+/**
+ * Filter nav items by user role
+ */
+export function getNavItemsForRole(role: UserRole): NavItem[] {
+  return navItems.filter((item) => !item.roles || item.roles.includes(role));
+}
+
+/**
+ * Filter footer items by user role
+ */
+export function getFooterItemsForRole(role: UserRole): SidebarFooterItem[] {
+  return footerItems.filter((item) => !item.roles || item.roles.includes(role));
+}
