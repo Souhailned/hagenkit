@@ -8,7 +8,7 @@ const links = [
       { title: "Aanbod bekijken", href: "/aanbod" },
       { title: "Kaart", href: "/aanbod?view=map" },
       { title: "Voor makelaars", href: "/voor-makelaars" },
-      { title: "Haalbaarheidscheck", href: "/haalbaarheid" },
+      { title: "Steden", href: "/steden" },
     ],
   },
   {
