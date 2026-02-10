@@ -12,7 +12,7 @@ const navLinks = [
   { name: "Kaart", href: "/aanbod?view=map", icon: Map },
   { name: "Voor makelaars", href: "/sign-up", icon: Building2 },
   { name: "Steden", href: "/steden", icon: MapPin },
-  { name: "Over ons", href: "/team", icon: Users },
+  { name: "Over ons", href: "/over-ons", icon: Users },
 ];
 
 export function Header() {
