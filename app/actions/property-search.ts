@@ -8,6 +8,8 @@ import {
   type SortOrder,
   listPropertiesSchema,
 } from "@/lib/validations/property";
+import prisma from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 // ActionResult type for consistent returns
 type ActionResult<T = void> = {
@@ -16,7 +18,7 @@ type ActionResult<T = void> = {
   error?: string;
 };
 
-// Property type for search results (matches future Prisma model)
+// Property type for search results (matches Prisma model)
 export interface PropertySearchResult {
   id: string;
   slug: string;
@@ -68,257 +70,67 @@ export interface SearchPropertiesInput {
   search?: string;
 }
 
-// Mock data for development (will be replaced with real Prisma queries)
-const MOCK_PROPERTIES: PropertySearchResult[] = [
-  {
-    id: "prop_1",
-    slug: "restaurant-centrum-amsterdam",
-    title: "Karakteristiek Restaurant in Hartje Amsterdam",
-    shortDescription: "Prachtig restaurant op A-locatie in de Jordaan. Volledig ingericht met professionele keuken en terrasvergunning.",
-    propertyType: "RESTAURANT",
-    priceType: "RENT",
-    rentPrice: 650000, // in cents
-    salePrice: null,
-    city: "Amsterdam",
-    province: "Noord-Holland",
-    address: "Prinsengracht 123",
-    surfaceTotal: 180,
-    hasTerrace: true,
-    hasKitchen: true,
-    hasParking: false,
-    seatingCapacityInside: 65,
-    seatingCapacityOutside: 30,
-    publishedAt: new Date("2024-01-15"),
-    viewCount: 342,
-    savedCount: 28,
-    primaryImage: {
-      thumbnailUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=300&fit=crop",
-      altText: "Restaurant interieur Amsterdam",
-    },
-    agency: {
-      id: "agency_1",
-      name: "Horeca Makelaars Amsterdam",
-      slug: "horeca-makelaars-amsterdam",
-    },
+// Removed mock data - using real Prisma queries below
+// Shared select for property search results
+const propertySearchSelect = {
+  id: true,
+  slug: true,
+  title: true,
+  shortDescription: true,
+  propertyType: true,
+  priceType: true,
+  rentPrice: true,
+  salePrice: true,
+  city: true,
+  province: true,
+  address: true,
+  surfaceTotal: true,
+  hasTerrace: true,
+  kitchenType: true,
+  hasParking: true,
+  seatingCapacityInside: true,
+  seatingCapacityOutside: true,
+  publishedAt: true,
+  viewCount: true,
+  savedCount: true,
+  images: {
+    where: { isPrimary: true as const },
+    take: 1,
+    select: { thumbnailUrl: true, altText: true },
   },
-  {
-    id: "prop_2",
-    slug: "cafe-rotterdam-centrum",
-    title: "Sfeervolle Café-Bar met Woning",
-    shortDescription: "Unieke kans! Draaiend café met bovenwoning op toplocatie in Rotterdam. Volledige inventaris en trouwe klantenkring.",
-    propertyType: "BAR",
-    priceType: "SALE",
-    rentPrice: null,
-    salePrice: 42500000, // in cents (€425.000)
-    city: "Rotterdam",
-    province: "Zuid-Holland",
-    address: "Witte de Withstraat 45",
-    surfaceTotal: 145,
-    hasTerrace: true,
-    hasKitchen: true,
-    hasParking: false,
-    seatingCapacityInside: 50,
-    seatingCapacityOutside: 20,
-    publishedAt: new Date("2024-01-18"),
-    viewCount: 156,
-    savedCount: 12,
-    primaryImage: {
-      thumbnailUrl: "https://images.unsplash.com/photo-1525268323446-0505b6fe7778?w=400&h=300&fit=crop",
-      altText: "Café bar Rotterdam",
-    },
-    agency: {
-      id: "agency_2",
-      name: "Zuid-Holland Horeca",
-      slug: "zuid-holland-horeca",
-    },
+  agency: {
+    select: { id: true, name: true, slug: true },
   },
-  {
-    id: "prop_3",
-    slug: "dark-kitchen-utrecht",
-    title: "Moderne Dark Kitchen met Bezorgdepot",
-    shortDescription: "Volledig uitgeruste dark kitchen op industrieterrein. Ideaal voor meerdere delivery-concepten met laadperron.",
-    propertyType: "DARK_KITCHEN",
-    priceType: "RENT",
-    rentPrice: 350000,
-    salePrice: null,
-    city: "Utrecht",
-    province: "Utrecht",
-    address: "Lage Weide 78",
-    surfaceTotal: 320,
-    hasTerrace: false,
-    hasKitchen: true,
-    hasParking: true,
-    seatingCapacityInside: null,
-    seatingCapacityOutside: null,
-    publishedAt: new Date("2024-01-20"),
-    viewCount: 89,
-    savedCount: 7,
-    primaryImage: {
-      thumbnailUrl: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=400&h=300&fit=crop",
-      altText: "Dark kitchen Utrecht",
-    },
-    agency: {
-      id: "agency_3",
-      name: "Utrecht Bedrijfsruimte",
-      slug: "utrecht-bedrijfsruimte",
-    },
-  },
-  {
-    id: "prop_4",
-    slug: "hotel-boutique-den-haag",
-    title: "Boutique Hotel 3-Sterren met Restaurant",
-    shortDescription: "Charmant boutique hotel in monumentaal pand. 22 kamers, ontbijtzaal en eigen restaurant op straathoek.",
-    propertyType: "HOTEL",
-    priceType: "RENT_OR_SALE",
-    rentPrice: 1250000,
-    salePrice: 185000000,
-    city: "Den Haag",
-    province: "Zuid-Holland",
-    address: "Lange Voorhout 12",
-    surfaceTotal: 850,
-    hasTerrace: true,
-    hasKitchen: true,
-    hasParking: false,
-    seatingCapacityInside: 45,
-    seatingCapacityOutside: 15,
-    publishedAt: new Date("2024-01-10"),
-    viewCount: 421,
-    savedCount: 35,
-    primaryImage: {
-      thumbnailUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=300&fit=crop",
-      altText: "Boutique hotel Den Haag",
-    },
-    agency: {
-      id: "agency_1",
-      name: "Horeca Makelaars Amsterdam",
-      slug: "horeca-makelaars-amsterdam",
-    },
-  },
-  {
-    id: "prop_5",
-    slug: "cafe-eindhoven-strijp",
-    title: "Trendy Café op Strijp-S",
-    shortDescription: "Hip café in creatieve wijk Strijp-S. Industrieel karakter met hoge plafonds en groot terras.",
-    propertyType: "CAFE",
-    priceType: "RENT",
-    rentPrice: 425000,
-    salePrice: null,
-    city: "Eindhoven",
-    province: "Noord-Brabant",
-    address: "Torenallee 22",
-    surfaceTotal: 200,
-    hasTerrace: true,
-    hasKitchen: true,
-    hasParking: true,
-    seatingCapacityInside: 80,
-    seatingCapacityOutside: 60,
-    publishedAt: new Date("2024-01-22"),
-    viewCount: 67,
-    savedCount: 5,
-    primaryImage: {
-      thumbnailUrl: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&h=300&fit=crop",
-      altText: "Café Strijp-S Eindhoven",
-    },
-    agency: {
-      id: "agency_4",
-      name: "Brabant Horeca Makelaars",
-      slug: "brabant-horeca-makelaars",
-    },
-  },
-  {
-    id: "prop_6",
-    slug: "bakkerij-groningen-centrum",
-    title: "Ambachtelijke Bakkerij met Lunchroom",
-    shortDescription: "Gevestigde bakkerij met trouwe klantenkring. Volledige bakkerijinrichting en gezellige lunchruimte.",
-    propertyType: "BAKERY",
-    priceType: "SALE",
-    rentPrice: null,
-    salePrice: 28500000,
-    city: "Groningen",
-    province: "Groningen",
-    address: "Zwanestraat 8",
-    surfaceTotal: 140,
-    hasTerrace: false,
-    hasKitchen: true,
-    hasParking: false,
-    seatingCapacityInside: 25,
-    seatingCapacityOutside: null,
-    publishedAt: new Date("2024-01-12"),
-    viewCount: 134,
-    savedCount: 11,
-    primaryImage: {
-      thumbnailUrl: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=300&fit=crop",
-      altText: "Bakkerij Groningen",
-    },
-    agency: {
-      id: "agency_5",
-      name: "Noord Makelaardij",
-      slug: "noord-makelaardij",
-    },
-  },
-  {
-    id: "prop_7",
-    slug: "nachtclub-amsterdam-rembrandtplein",
-    title: "Exclusieve Nachtclub op Rembrandtplein",
-    shortDescription: "Bekende nachtclub op iconische locatie. Twee verdiepingen, professioneel geluidssysteem en alle vergunningen.",
-    propertyType: "NIGHTCLUB",
-    priceType: "RENT",
-    rentPrice: 1500000,
-    salePrice: null,
-    city: "Amsterdam",
-    province: "Noord-Holland",
-    address: "Rembrandtplein 28",
-    surfaceTotal: 450,
-    hasTerrace: false,
-    hasKitchen: true,
-    hasParking: false,
-    seatingCapacityInside: null,
-    seatingCapacityOutside: null,
-    publishedAt: new Date("2024-01-08"),
-    viewCount: 567,
-    savedCount: 42,
-    primaryImage: {
-      thumbnailUrl: "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?w=400&h=300&fit=crop",
-      altText: "Nachtclub Amsterdam",
-    },
-    agency: {
-      id: "agency_1",
-      name: "Horeca Makelaars Amsterdam",
-      slug: "horeca-makelaars-amsterdam",
-    },
-  },
-  {
-    id: "prop_8",
-    slug: "food-court-rotterdam-markthal",
-    title: "Food Court Unit in de Markthal",
-    shortDescription: "Unieke kans in Rotterdam's Markthal. Kant-en-klare unit met veel passanten.",
-    propertyType: "FOOD_COURT",
-    priceType: "RENT",
-    rentPrice: 550000,
-    salePrice: null,
-    city: "Rotterdam",
-    province: "Zuid-Holland",
-    address: "Markthal 45",
-    surfaceTotal: 45,
-    hasTerrace: false,
-    hasKitchen: true,
-    hasParking: false,
-    seatingCapacityInside: 12,
-    seatingCapacityOutside: null,
-    publishedAt: new Date("2024-01-19"),
-    viewCount: 234,
-    savedCount: 19,
-    primaryImage: {
-      thumbnailUrl: "https://images.unsplash.com/photo-1567521464027-f127ff144326?w=400&h=300&fit=crop",
-      altText: "Food court Rotterdam",
-    },
-    agency: {
-      id: "agency_2",
-      name: "Zuid-Holland Horeca",
-      slug: "zuid-holland-horeca",
-    },
-  },
-];
+} satisfies Prisma.PropertySelect;
+
+function mapToSearchResult(p: any): PropertySearchResult {
+  return {
+    id: p.id,
+    slug: p.slug,
+    title: p.title,
+    shortDescription: p.shortDescription,
+    propertyType: p.propertyType as PropertyType,
+    priceType: p.priceType as PriceType,
+    rentPrice: p.rentPrice,
+    salePrice: p.salePrice,
+    city: p.city,
+    province: p.province,
+    address: p.address,
+    surfaceTotal: p.surfaceTotal,
+    hasTerrace: p.hasTerrace,
+    hasKitchen: p.kitchenType !== null,
+    hasParking: p.hasParking,
+    seatingCapacityInside: p.seatingCapacityInside,
+    seatingCapacityOutside: p.seatingCapacityOutside,
+    publishedAt: p.publishedAt,
+    viewCount: p.viewCount,
+    savedCount: p.savedCount,
+    primaryImage: p.images?.[0] ? { thumbnailUrl: p.images[0].thumbnailUrl ?? "", altText: p.images[0].altText ?? null } : null,
+    agency: p.agency,
+  };
+}
+
+// Mock data removed — using real Prisma queries below
 
 /**
  * Search properties with filters, pagination, and sorting
@@ -338,19 +150,20 @@ export async function searchProperties(
       search: input.search,
     });
 
-    // Apply filters to mock data
-    let filteredProperties = [...MOCK_PROPERTIES];
+    // Build Prisma where clause
+    const where: Prisma.PropertyWhereInput = {
+      status: "ACTIVE",
+    };
 
-    // Search filter
+    // Search filter (title, description, city, address)
     if (validated.search) {
-      const searchLower = validated.search.toLowerCase();
-      filteredProperties = filteredProperties.filter(
-        (p: any) =>
-          p.title.toLowerCase().includes(searchLower) ||
-          p.shortDescription?.toLowerCase().includes(searchLower) ||
-          p.city.toLowerCase().includes(searchLower) ||
-          p.address.toLowerCase().includes(searchLower)
-      );
+      where.OR = [
+        { title: { contains: validated.search, mode: "insensitive" } },
+        { shortDescription: { contains: validated.search, mode: "insensitive" } },
+        { description: { contains: validated.search, mode: "insensitive" } },
+        { city: { contains: validated.search, mode: "insensitive" } },
+        { address: { contains: validated.search, mode: "insensitive" } },
+      ];
     }
 
     // Apply property filters
@@ -359,113 +172,129 @@ export async function searchProperties(
 
       // City filter
       if (filters.cities && filters.cities.length > 0) {
-        filteredProperties = filteredProperties.filter((p: any) =>
-          filters.cities!.some(
-            (city) => p.city.toLowerCase() === city.toLowerCase()
-          )
-        );
+        where.city = { in: filters.cities };
       }
 
       // Province filter
       if (filters.provinces && filters.provinces.length > 0) {
-        filteredProperties = filteredProperties.filter(
-          (p: any) =>
-            p.province &&
-            filters.provinces!.some(
-              (prov) => p.province!.toLowerCase() === prov.toLowerCase()
-            )
-        );
+        where.province = { in: filters.provinces };
       }
 
       // Property type filter
       if (filters.propertyTypes && filters.propertyTypes.length > 0) {
-        filteredProperties = filteredProperties.filter((p: any) =>
-          filters.propertyTypes!.includes(p.propertyType)
-        );
+        where.propertyType = { in: filters.propertyTypes };
       }
 
       // Price type filter
       if (filters.priceType) {
-        filteredProperties = filteredProperties.filter(
-          (p: any) =>
-            p.priceType === filters.priceType ||
-            p.priceType === "RENT_OR_SALE"
-        );
+        where.OR = [
+          { priceType: filters.priceType },
+          { priceType: "RENT_OR_SALE" },
+        ];
       }
 
-      // Price range filter (using rent or sale price based on priceType)
-      if (filters.priceMin !== undefined) {
-        filteredProperties = filteredProperties.filter((p: any) => {
-          const price = p.rentPrice ?? p.salePrice ?? 0;
-          return price >= filters.priceMin!;
-        });
-      }
-      if (filters.priceMax !== undefined) {
-        filteredProperties = filteredProperties.filter((p: any) => {
-          const price = p.rentPrice ?? p.salePrice ?? Infinity;
-          return price <= filters.priceMax!;
-        });
+      // Price range filter (rent or sale based on filter priceType)
+      if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
+        const priceField = filters.priceType === "SALE" ? "salePrice" as const : "rentPrice" as const;
+        const priceFilter: Record<string, number> = {};
+        if (filters.priceMin !== undefined) priceFilter.gte = filters.priceMin;
+        if (filters.priceMax !== undefined) priceFilter.lte = filters.priceMax;
+        where[priceField] = priceFilter;
       }
 
       // Surface filter
-      if (filters.surfaceMin !== undefined) {
-        filteredProperties = filteredProperties.filter(
-          (p: any) => p.surfaceTotal >= filters.surfaceMin!
-        );
-      }
-      if (filters.surfaceMax !== undefined) {
-        filteredProperties = filteredProperties.filter(
-          (p: any) => p.surfaceTotal <= filters.surfaceMax!
-        );
+      if (filters.surfaceMin !== undefined || filters.surfaceMax !== undefined) {
+        const surfaceFilter: Record<string, number> = {};
+        if (filters.surfaceMin !== undefined) surfaceFilter.gte = filters.surfaceMin;
+        if (filters.surfaceMax !== undefined) surfaceFilter.lte = filters.surfaceMax;
+        where.surfaceTotal = surfaceFilter;
       }
 
       // Feature filters
       if (filters.hasTerrace !== undefined) {
-        filteredProperties = filteredProperties.filter(
-          (p: any) => p.hasTerrace === filters.hasTerrace
-        );
+        where.hasTerrace = filters.hasTerrace;
       }
       if (filters.hasKitchen !== undefined) {
-        filteredProperties = filteredProperties.filter(
-          (p: any) => p.hasKitchen === filters.hasKitchen
-        );
+        // Since hasKitchen is derived from kitchenType, check kitchenType is not null/none
+        where.kitchenType = filters.hasKitchen ? { not: null } : null;
       }
       if (filters.hasParking !== undefined) {
-        filteredProperties = filteredProperties.filter(
-          (p: any) => p.hasParking === filters.hasParking
-        );
+        where.hasParking = filters.hasParking;
       }
     }
 
-    // Sort
-    filteredProperties.sort((a, b) => {
-      let comparison = 0;
-      switch (validated.sortBy) {
-        case "publishedAt":
-          comparison =
-            (a.publishedAt?.getTime() ?? 0) - (b.publishedAt?.getTime() ?? 0);
-          break;
-        case "rentPrice":
-          comparison = (a.rentPrice ?? 0) - (b.rentPrice ?? 0);
-          break;
-        case "salePrice":
-          comparison = (a.salePrice ?? 0) - (b.salePrice ?? 0);
-          break;
-        case "surfaceTotal":
-          comparison = a.surfaceTotal - b.surfaceTotal;
-          break;
-        case "viewCount":
-          comparison = a.viewCount - b.viewCount;
-          break;
-      }
-      return validated.sortOrder === "desc" ? -comparison : comparison;
-    });
+    // Build orderBy clause
+    const orderBy: Prisma.PropertyOrderByWithRelationInput = {};
+    switch (validated.sortBy) {
+      case "publishedAt":
+        orderBy.publishedAt = validated.sortOrder;
+        break;
+      case "rentPrice":
+        orderBy.rentPrice = validated.sortOrder;
+        break;
+      case "salePrice":
+        orderBy.salePrice = validated.sortOrder;
+        break;
+      case "surfaceTotal":
+        orderBy.surfaceTotal = validated.sortOrder;
+        break;
+      case "viewCount":
+        orderBy.viewCount = validated.sortOrder;
+        break;
+    }
 
-    // Pagination
-    const total = filteredProperties.length;
+    // Query properties with count
+    const [properties, total] = await Promise.all([
+      prisma.property.findMany({
+        where,
+        orderBy,
+        skip: (validated.page - 1) * validated.limit,
+        take: validated.limit,
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          shortDescription: true,
+          propertyType: true,
+          priceType: true,
+          rentPrice: true,
+          salePrice: true,
+          city: true,
+          province: true,
+          address: true,
+          surfaceTotal: true,
+          hasTerrace: true,
+          kitchenType: true,
+          hasParking: true,
+          seatingCapacityInside: true,
+          seatingCapacityOutside: true,
+          publishedAt: true,
+          viewCount: true,
+          savedCount: true,
+          images: {
+            where: { isPrimary: true },
+            take: 1,
+            select: {
+              thumbnailUrl: true,
+              altText: true,
+            },
+          },
+          agency: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+      }),
+      prisma.property.count({ where }),
+    ]);
+
+    // Map to result type
+    const items: PropertySearchResult[] = properties.map(mapToSearchResult);
+
     const totalPages = Math.ceil(total / validated.limit);
-    const start = (validated.page - 1) * validated.limit;
-    const items = filteredProperties.slice(start, start + validated.limit);
 
     return {
       success: true,
@@ -494,8 +323,13 @@ export async function getFeaturedProperties(
   limit: number = 4
 ): Promise<ActionResult<PropertySearchResult[]>> {
   try {
-    // In real implementation, filter by featured=true and featuredUntil > now
-    const featured = MOCK_PROPERTIES.slice(0, limit);
+    const properties = await prisma.property.findMany({
+      where: { status: "ACTIVE", featured: true },
+      orderBy: { publishedAt: "desc" },
+      take: limit,
+      select: propertySearchSelect,
+    });
+    const featured: PropertySearchResult[] = properties.map(mapToSearchResult);
     return { success: true, data: featured };
   } catch (error) {
     console.error("Error fetching featured properties:", error);
@@ -513,12 +347,13 @@ export async function getRecentProperties(
   limit: number = 6
 ): Promise<ActionResult<PropertySearchResult[]>> {
   try {
-    const recent = [...MOCK_PROPERTIES]
-      .sort(
-        (a, b) =>
-          (b.publishedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? 0)
-      )
-      .slice(0, limit);
+    const properties = await prisma.property.findMany({
+      where: { status: "ACTIVE" },
+      orderBy: { publishedAt: "desc" },
+      take: limit,
+      select: propertySearchSelect,
+    });
+    const recent: PropertySearchResult[] = properties.map(mapToSearchResult);
     return { success: true, data: recent };
   } catch (error) {
     console.error("Error fetching recent properties:", error);
@@ -534,7 +369,13 @@ export async function getRecentProperties(
  */
 export async function getPropertyCities(): Promise<ActionResult<string[]>> {
   try {
-    const cities = [...new Set(MOCK_PROPERTIES.map((p: any) => p.city))].sort();
+    const results = await prisma.property.findMany({
+      where: { status: "ACTIVE" },
+      select: { city: true },
+      distinct: ["city"],
+      orderBy: { city: "asc" },
+    });
+    const cities = results.map((r) => r.city);
     return { success: true, data: cities };
   } catch {
     return { success: false, error: "Kon steden niet laden" };
