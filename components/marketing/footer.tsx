@@ -26,7 +26,7 @@ const links = [
       { title: "Over Horecagrond", href: "/team" },
       { title: "Contact", href: "/contact" },
       { title: "Veelgestelde vragen", href: "/faq" },
-      { title: "Privacy", href: "#" },
+      { title: "Privacy", href: "/privacy" },
     ],
   },
 ];
