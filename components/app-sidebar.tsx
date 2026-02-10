@@ -46,6 +46,7 @@ import {
   Image,
   VideoCamera,
   Heart,
+  ChatCircle,
   ShieldCheck,
   Buildings,
   UserCircle,
@@ -78,6 +79,7 @@ const navItemIcons: Record<NavItemId, React.ComponentType<{ className?: string }
   videos: VideoCamera,
   favorieten: Heart,
   panden: Buildings,
+  leads: ChatCircle,
 }
 
 const footerItemIcons: Record<SidebarFooterItemId, React.ComponentType<{ className?: string }>> = {
@@ -137,6 +139,7 @@ export function AppSidebar({
     if (id === "videos") return "/dashboard/videos"            // Videos page
     if (id === "favorieten") return "/dashboard/favorieten"    // Favorieten page
     if (id === "panden") return "/dashboard/panden"            // Mijn Panden page
+    if (id === "leads") return "/dashboard/leads"              // Leads page
     return "#"
   }
 
@@ -150,6 +153,7 @@ export function AppSidebar({
     if (id === "videos") return pathname.startsWith("/dashboard/videos")
     if (id === "favorieten") return pathname.startsWith("/dashboard/favorieten")
     if (id === "panden") return pathname.startsWith("/dashboard/panden")
+    if (id === "leads") return pathname.startsWith("/dashboard/leads")
     return false
   }
 
