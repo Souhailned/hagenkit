@@ -333,9 +333,15 @@ export function AppSidebar({
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href="/dashboard/settings" className="cursor-pointer">
+              <Link href="/dashboard/profiel" className="cursor-pointer">
                 <Gear className="mr-2 h-4 w-4" />
-                Settings
+                Profiel
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/instellingen" className="cursor-pointer">
+                <Gear className="mr-2 h-4 w-4" />
+                Instellingen
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -345,7 +351,7 @@ export function AppSidebar({
               disabled={isSigningOut}
             >
               <SignOut className={`mr-2 h-4 w-4 ${isSigningOut ? "animate-pulse" : ""}`} />
-              {isSigningOut ? "Signing out..." : "Sign Out"}
+              {isSigningOut ? "Uitloggen..." : "Uitloggen"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
