@@ -32,7 +32,11 @@ export function PropertyMap({ properties, className }: PropertyMapProps) {
   );
 
   return (
-    <div className={cn("relative w-full", className)}>
+    <div
+      className={cn("relative w-full", className)}
+      role="region"
+      aria-label={`Kaart met ${mappableProperties.length} horecapanden`}
+    >
       <Map
         center={NL_CENTER}
         zoom={NL_ZOOM}
@@ -49,11 +53,21 @@ export function PropertyMap({ properties, className }: PropertyMapProps) {
         ))}
       </Map>
 
+      {/* Results count overlay */}
+      {mappableProperties.length > 0 && (
+        <div className="absolute left-3 top-3 z-10 rounded-lg border border-border/50 bg-background/90 px-3 py-1.5 text-sm font-medium shadow-sm backdrop-blur-sm">
+          {mappableProperties.length} {mappableProperties.length === 1 ? "pand" : "panden"}
+        </div>
+      )}
+
       {mappableProperties.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-muted/80">
-          <p className="text-muted-foreground">
-            Geen panden met locatiegegevens gevonden
-          </p>
+          <div className="text-center">
+            <MapPin className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+            <p className="text-muted-foreground">
+              Geen panden met locatiegegevens gevonden
+            </p>
+          </div>
         </div>
       )}
     </div>
@@ -103,7 +117,7 @@ function PropertyPopupCard({ property }: { property: Property }) {
     >
       {/* Image */}
       <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-        {property.images[0] ? (
+        {property.images?.[0] ? (
           <Image
             src={
               property.images[0].thumbnailUrl ||

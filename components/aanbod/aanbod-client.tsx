@@ -18,6 +18,7 @@ import { EmptyState } from "./empty-state";
 import { ResultsPagination } from "./results-pagination";
 import { ViewToggle } from "./view-toggle";
 import { searchProperties } from "@/app/actions/properties";
+import { cn } from "@/lib/utils";
 
 const PropertyMap = dynamic(
   () => import("./property-map").then((mod) => mod.PropertyMap),
@@ -417,28 +418,41 @@ export function AanbodClient({
         </div>
 
         {/* Results */}
-        {view === "map" ? (
+        <div
+          className={cn(
+            "transition-opacity duration-200",
+            view === "map" ? "block" : "hidden"
+          )}
+        >
           <PropertyMap
             properties={results.properties}
-            className="h-[600px] lg:h-[700px]"
+            className="h-[500px] sm:h-[600px] lg:h-[700px]"
           />
-        ) : isLoading ? (
-          <PropertyGridSkeleton count={6} />
-        ) : results.properties.length > 0 ? (
-          <>
-            <PropertyGrid properties={results.properties} />
-            <ResultsPagination
-              currentPage={results.page}
-              pageCount={results.pageCount}
-              onPageChange={handlePageChange}
+        </div>
+        <div
+          className={cn(
+            "transition-opacity duration-200",
+            view === "list" ? "block" : "hidden"
+          )}
+        >
+          {isLoading ? (
+            <PropertyGridSkeleton count={6} />
+          ) : results.properties.length > 0 ? (
+            <>
+              <PropertyGrid properties={results.properties} />
+              <ResultsPagination
+                currentPage={results.page}
+                pageCount={results.pageCount}
+                onPageChange={handlePageChange}
+              />
+            </>
+          ) : (
+            <EmptyState
+              hasFilters={activeFilterCount > 0}
+              onClearFilters={handleReset}
             />
-          </>
-        ) : (
-          <EmptyState
-            hasFilters={activeFilterCount > 0}
-            onClearFilters={handleReset}
-          />
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
