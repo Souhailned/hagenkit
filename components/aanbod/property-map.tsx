@@ -1,15 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
   Map,
+  MapClusterLayer,
+  MapPopup,
+  MapControls,
   MapMarker,
   MarkerContent,
-  MarkerPopup,
   MarkerTooltip,
-  MapControls,
 } from "@/components/ui/map";
 import { Badge } from "@/components/ui/badge";
 import { Property, PropertyTypeLabels, formatPrice } from "@/types/property";
@@ -26,9 +27,30 @@ interface PropertyMapProps {
 }
 
 export function PropertyMap({ properties, className }: PropertyMapProps) {
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+
+  // Filter properties met locatiegegevens
   const mappableProperties = useMemo(
     () => properties.filter((p) => p.latitude != null && p.longitude != null),
     [properties]
+  );
+
+  // Converteer properties naar GeoJSON FeatureCollection voor clustering
+  const geoJsonData = useMemo<GeoJSON.FeatureCollection<GeoJSON.Point, { property: Property }>>(
+    () => ({
+      type: "FeatureCollection",
+      features: mappableProperties.map((property) => ({
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [property.longitude!, property.latitude!],
+        },
+        properties: {
+          property,
+        },
+      })),
+    }),
+    [mappableProperties]
   );
 
   return (
@@ -48,9 +70,30 @@ export function PropertyMap({ properties, className }: PropertyMapProps) {
       >
         <MapControls showZoom showLocate position="bottom-right" />
 
-        {mappableProperties.map((property) => (
-          <PropertyMapMarker key={property.id} property={property} />
-        ))}
+        {/* Cluster layer voor property markers */}
+        <MapClusterLayer
+          data={geoJsonData}
+          clusterMaxZoom={14}
+          clusterRadius={50}
+          clusterColors={["#3b82f6", "#f97316", "#ef4444"]} // Blauw → Oranje → Rood
+          clusterThresholds={[10, 50]} // Klein < 10, Medium < 50, Groot >= 50
+          pointColor="oklch(0.43 0.215 254.5)" // Primary blue uit theme
+          onPointClick={(feature) => {
+            setSelectedProperty(feature.properties.property);
+          }}
+        />
+
+        {/* Property popup bij klik op individuele marker */}
+        {selectedProperty && (
+          <MapPopup
+            longitude={selectedProperty.longitude!}
+            latitude={selectedProperty.latitude!}
+            closeButton
+            onClose={() => setSelectedProperty(null)}
+          >
+            <PropertyPopupCard property={selectedProperty} />
+          </MapPopup>
+        )}
       </Map>
 
       {/* Results count overlay */}
@@ -74,34 +117,6 @@ export function PropertyMap({ properties, className }: PropertyMapProps) {
   );
 }
 
-function PropertyMapMarker({ property }: { property: Property }) {
-  const price = getDisplayPrice(property);
-
-  return (
-    <MapMarker
-      longitude={property.longitude!}
-      latitude={property.latitude!}
-    >
-      <MarkerContent>
-        <div
-          className={cn(
-            "rounded-full border border-primary/20 bg-primary px-2.5 py-1",
-            "text-xs font-semibold text-primary-foreground shadow-lg",
-            "cursor-pointer transition-transform hover:scale-110"
-          )}
-        >
-          {price}
-        </div>
-      </MarkerContent>
-
-      <MarkerTooltip>{property.title}</MarkerTooltip>
-
-      <MarkerPopup closeButton>
-        <PropertyPopupCard property={property} />
-      </MarkerPopup>
-    </MapMarker>
-  );
-}
 
 function PropertyPopupCard({ property }: { property: Property }) {
   const price = getDisplayPrice(property);
