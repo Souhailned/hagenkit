@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,21 @@ import {
   PriceTypeLabels,
 } from "@/types/property";
 import { cn } from "@/lib/utils";
+
+const PropertyDetailMap = dynamic(
+  () => import("@/components/aanbod/property-map").then((mod) => mod.PropertyDetailMap),
+  {
+    loading: () => (
+      <div className="flex aspect-[16/9] items-center justify-center rounded-xl border bg-muted/30">
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span className="text-sm">Kaart laden...</span>
+        </div>
+      </div>
+    ),
+    ssr: false,
+  }
+);
 
 // Property type icons mapping
 const propertyTypeIcons: Record<string, React.ReactNode> = {
@@ -509,20 +525,29 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                   </div>
                 </div>
 
-                {/* Map placeholder */}
-                <div className="overflow-hidden rounded-xl border bg-muted/30">
-                  <div className="flex aspect-[16/9] items-center justify-center">
-                    <div className="text-center text-muted-foreground">
-                      <MapPin className="mx-auto mb-3 size-10 opacity-30" />
-                      <p className="font-medium">
-                        {property.address}, {property.city}
-                      </p>
-                      <p className="mt-1 text-sm">
-                        Kaartweergave binnenkort beschikbaar
-                      </p>
+                {/* Map */}
+                {property.latitude != null && property.longitude != null ? (
+                  <PropertyDetailMap
+                    latitude={property.latitude}
+                    longitude={property.longitude}
+                    title={property.title}
+                    className="aspect-[16/9]"
+                  />
+                ) : (
+                  <div className="overflow-hidden rounded-xl border bg-muted/30">
+                    <div className="flex aspect-[16/9] items-center justify-center">
+                      <div className="text-center text-muted-foreground">
+                        <MapPin className="mx-auto mb-3 size-10 opacity-30" />
+                        <p className="font-medium">
+                          {property.address}, {property.city}
+                        </p>
+                        <p className="mt-1 text-sm">
+                          Geen locatiegegevens beschikbaar
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </TabsContent>
             </Tabs>
           </div>
