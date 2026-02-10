@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { updateProperty } from "@/app/actions/update-property";
 import { StatusBadge } from "@/components/property/status-badge";
 import { Save } from "lucide-react";
+import { ListingTurboDialog } from "@/components/listing-turbo/listing-turbo-dialog";
 
 interface EditPropertyFormProps {
   property: {
@@ -21,9 +22,12 @@ interface EditPropertyFormProps {
     city: string;
     rentPrice: number | null;
     salePrice: number | null;
+    priceType: string;
+    propertyType: string;
     surfaceTotal: number;
     buildYear: number | null;
     status: string;
+    seatingCapacityInside: number | null;
   };
 }
 
@@ -79,6 +83,22 @@ export function EditPropertyForm({ property }: EditPropertyFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex items-center gap-3">
         <StatusBadge status={property.status} />
+        <ListingTurboDialog
+          input={{
+            propertyType: property.propertyType,
+            title: form.title || property.title,
+            city: form.city || property.city,
+            surface: property.surfaceTotal,
+            rentPrice: property.rentPrice || undefined,
+            salePrice: property.salePrice || undefined,
+            priceType: property.priceType as "RENT" | "SALE" | "BOTH",
+            features: [],
+            buildYear: property.buildYear || undefined,
+            seatingCapacity: property.seatingCapacityInside || undefined,
+          }}
+          onApplyDescription={(desc) => update("description", desc)}
+          onApplyShortDescription={(desc) => update("shortDescription", desc)}
+        />
       </div>
 
       <Card>
