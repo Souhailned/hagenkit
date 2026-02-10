@@ -1,123 +1,56 @@
-import { MetadataRoute } from "next"
-import {
-  allBlogPosts,
-  allChangelogPosts,
-  allCustomersPosts,
-  allHelpPosts,
-  allIntegrationsPosts,
-  allLegalPosts,
-} from "content-collections"
+import { MetadataRoute } from "next";
+import prisma from "@/lib/prisma";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://hagenkit.com"
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://horecagrond.nl";
 
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 1.0,
-    },
-    {
-      url: `${baseUrl}/blog`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/help`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
+    { url: baseUrl, lastModified: new Date(), changeFrequency: "daily", priority: 1.0 },
+    { url: `${baseUrl}/aanbod`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
+    { url: `${baseUrl}/sign-up`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
+    { url: `${baseUrl}/sign-in`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
+    { url: `${baseUrl}/team`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
+    { url: `${baseUrl}/help`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
+  ];
+
+  // Dynamic property pages
+  let propertyPages: MetadataRoute.Sitemap = [];
+  try {
+    const properties = await prisma.property.findMany({
+      where: { status: "ACTIVE" },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+    });
+
+    propertyPages = properties.map((p) => ({
+      url: `${baseUrl}/aanbod/${p.slug}`,
+      lastModified: p.updatedAt,
+      changeFrequency: "weekly" as const,
       priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/changelog`,
+    }));
+  } catch {
+    // DB not available during build
+  }
+
+  // City pages
+  let cityPages: MetadataRoute.Sitemap = [];
+  try {
+    const cities = await prisma.property.findMany({
+      where: { status: "ACTIVE" },
+      select: { city: true },
+      distinct: ["city"],
+    });
+
+    cityPages = cities.map((c) => ({
+      url: `${baseUrl}/aanbod?city=${encodeURIComponent(c.city)}`,
       lastModified: new Date(),
-      changeFrequency: "weekly",
+      changeFrequency: "daily" as const,
       priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/customers`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/integrations`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/team`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
-  ]
+    }));
+  } catch {
+    // DB not available
+  }
 
-  // Blog posts
-  const blogPages: MetadataRoute.Sitemap = allBlogPosts.map((post) => ({
-    url: `${baseUrl}/blog/${post.slug}`,
-    lastModified: new Date(post.publishedAt),
-    changeFrequency: "monthly" as const,
-    priority: post.featured ? 0.9 : 0.7,
-  }))
-
-  // Help articles
-  const helpPages: MetadataRoute.Sitemap = allHelpPosts.map((post) => ({
-    url: `${baseUrl}/help/article/${post.slug}`,
-    lastModified: new Date(post.updatedAt),
-    changeFrequency: "weekly" as const,
-    priority: 0.8,
-  }))
-
-  // Changelog posts
-  const changelogPages: MetadataRoute.Sitemap = allChangelogPosts.map(
-    (post) => ({
-      url: `${baseUrl}/changelog/${post.slug}`,
-      lastModified: new Date(post.publishedAt),
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
-    }),
-  )
-
-  // Customer stories
-  const customerPages: MetadataRoute.Sitemap = allCustomersPosts.map(
-    (post) => ({
-      url: `${baseUrl}/customers/${post.slug}`,
-      lastModified: new Date(post.publishedAt),
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
-    }),
-  )
-
-  // Integration pages
-  const integrationPages: MetadataRoute.Sitemap = allIntegrationsPosts.map(
-    (post) => ({
-      url: `${baseUrl}/integrations/${post.slug}`,
-      lastModified: new Date(post.publishedAt),
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
-    }),
-  )
-
-  // Legal pages
-  const legalPages: MetadataRoute.Sitemap = allLegalPosts.map((post) => ({
-    url: `${baseUrl}/legal/${post.slug}`,
-    lastModified: new Date(post.updatedAt),
-    changeFrequency: "yearly" as const,
-    priority: 0.3,
-  }))
-
-  return [
-    ...staticPages,
-    ...blogPages,
-    ...helpPages,
-    ...changelogPages,
-    ...customerPages,
-    ...integrationPages,
-    ...legalPages,
-  ]
+  return [...staticPages, ...propertyPages, ...cityPages];
 }
