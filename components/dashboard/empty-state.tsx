@@ -19,7 +19,7 @@ export function DashboardEmptyState() {
         <EmptyMedia variant="icon">
           <RocketIcon />
         </EmptyMedia>
-        <EmptyTitle>Welcome to DataRAG</EmptyTitle>
+        <EmptyTitle>Welcome to Horecagrond</EmptyTitle>
         <EmptyDescription>
           This is your dashboard. Get started by adding your first project,
           creating content, or exploring the features available to you.

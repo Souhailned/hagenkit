@@ -6,9 +6,9 @@ import CategoryCard from "@/components/blog/category-card";
 import HelpArticleLink from "@/components/blog/help-article-link";
 
 export const metadata = constructMetadata({
-  title: "DataRAG Help Center",
+  title: "Horecagrond Help Center",
   description:
-    "Find DataRAG guides, troubleshooting steps, and expert workflows that help teams ship launches faster, stay organized, and resolve roadblocks.",
+    "Find Horecagrond guides, troubleshooting steps, and expert workflows that help teams ship launches faster, stay organized, and resolve roadblocks.",
 });
 
 export default function HelpCenter() {
@@ -19,7 +19,7 @@ export default function HelpCenter() {
       <MaxWidthWrapper className="max-w-screen-lg pt-28">
         <div className="flex flex-col space-y-4 pb-10">
           <h1 className="font-display text-xl font-bold text-gray-700 sm:text-3xl">
-            👋 How can we help you ship faster with DataRAG?
+            👋 How can we help you ship faster with Horecagrond?
           </h1>
           <SearchButton />
         </div>

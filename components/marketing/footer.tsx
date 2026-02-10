@@ -1,139 +1,97 @@
-import { siteConfig } from "@/lib/config";
 import Link from "next/link";
 
 const links = [
   {
-    group: "Product",
+    group: "Platform",
     items: [
-      {
-        title: "Features",
-        href: "#",
-      },
-      {
-        title: "Solution",
-        href: "#",
-      },
-      {
-        title: "Partnerships",
-        href: "#",
-      },
-      {
-        title: "Mobile App",
-        href: "#",
-      },
+      { title: "Aanbod bekijken", href: "/aanbod" },
+      { title: "Kaart", href: "/aanbod?view=map" },
+      { title: "Voor makelaars", href: "/sign-up" },
+      { title: "Prijzen", href: "#" },
     ],
   },
   {
-    group: "Company",
+    group: "Pand types",
     items: [
-      {
-        title: "About",
-        href: "#",
-      },
-      {
-        title: "Licence",
-        href: "#",
-      },
-      {
-        title: "Privacy",
-        href: "#",
-      },
+      { title: "Restaurants", href: "/aanbod?types=RESTAURANT" },
+      { title: "Cafés", href: "/aanbod?types=CAFE" },
+      { title: "Hotels", href: "/aanbod?types=HOTEL" },
+      { title: "Lunchrooms", href: "/aanbod?types=LUNCHROOM" },
+    ],
+  },
+  {
+    group: "Over ons",
+    items: [
+      { title: "Over Horecagrond", href: "#" },
+      { title: "Contact", href: "#" },
+      { title: "Privacy", href: "#" },
+      { title: "Voorwaarden", href: "#" },
     ],
   },
 ];
 
+const cities = [
+  "Amsterdam", "Rotterdam", "Utrecht", "Den Haag",
+  "Eindhoven", "Groningen", "Maastricht", "Arnhem",
+];
+
 export function FooterSection() {
   return (
-    <footer role="contentinfo" className="py-8 sm:py-20 lg:pt-32">
-      <div className="mx-auto max-w-6xl space-y-16 px-6 lg:px-12">
+    <footer role="contentinfo" className="border-t bg-muted/30 py-12 sm:py-16">
+      <div className="mx-auto max-w-6xl px-6 lg:px-12">
         <div className="grid gap-12 md:grid-cols-5">
-          <div className="space-y-6 md:col-span-2 md:space-y-12">
-            <Link href="/" aria-label="go home" className="block size-fit">
-              <span className="h-5 flex items-center text-foreground font-semibold">
-                {siteConfig.name}
+          <div className="space-y-4 md:col-span-2">
+            <Link href="/" className="block">
+              <span className="text-xl font-bold text-foreground">
+                Horecagrond
               </span>
             </Link>
-
-            <p className="text-muted-foreground text-balance text-sm">
-              {siteConfig.description}
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Het platform voor horecapanden in Nederland.
+              Vind of bied restaurants, cafés, bars en meer aan.
             </p>
+            <div className="flex flex-wrap gap-2 pt-2">
+              {cities.map((city) => (
+                <Link
+                  key={city}
+                  href={`/aanbod?city=${encodeURIComponent(city)}`}
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {city}
+                </Link>
+              ))}
+            </div>
           </div>
 
-          <div className="col-span-3 grid gap-6 sm:grid-cols-3">
-            {links.map((link, index) => (
-              <div key={index} className="space-y-4 text-sm">
-                <span className="block font-medium">{link.group}</span>
-
-                <div className="flex flex-wrap gap-4 sm:flex-col">
-                  {link.items.map((item, index) => (
+          <div className="col-span-3 grid gap-8 sm:grid-cols-3">
+            {links.map((link) => (
+              <div key={link.group} className="space-y-3">
+                <span className="block text-sm font-semibold">{link.group}</span>
+                <div className="flex flex-col gap-2">
+                  {link.items.map((item) => (
                     <Link
-                      key={index}
+                      key={item.title}
                       href={item.href}
-                      className="text-muted-foreground hover:text-primary block duration-150"
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors"
                     >
-                      <span>{item.title}</span>
+                      {item.title}
                     </Link>
                   ))}
                 </div>
               </div>
             ))}
-
-            <div className="space-y-4">
-              <span className="block font-medium">Community</span>
-              <div className="flex flex-wrap gap-3 text-sm">
-                <Link
-                  href="#"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="X/Twitter"
-                  className="text-muted-foreground hover:text-primary block"
-                >
-                  <svg
-                    className="size-5"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="1em"
-                    height="1em"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill="currentColor"
-                      d="M10.488 14.651L15.25 21h7l-7.858-10.478L20.93 3h-2.65l-5.117 5.886L8.75 3h-7l7.51 10.015L2.32 21h2.65zM16.25 19L5.75 5h2l10.5 14z"
-                    ></path>
-                  </svg>
-                </Link>
-                <Link
-                  href="#"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="LinkedIn"
-                  className="text-muted-foreground hover:text-primary block"
-                >
-                  <svg
-                    className="size-5"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="1em"
-                    height="1em"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill="currentColor"
-                      d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93zM6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37z"
-                    ></path>
-                  </svg>
-                </Link>
-              </div>
-            </div>
           </div>
         </div>
-        <div
-          aria-hidden
-          className="bg-size-[6px_1px] h-px bg-[linear-gradient(90deg,var(--color-foreground)_1px,transparent_1px)] bg-repeat-x opacity-25"
-        />
-        <div className="flex flex-wrap justify-between gap-4">
-          <span className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} {siteConfig.name}, All rights
-            reserved{" "}
+
+        <div className="mt-12 border-t pt-6 flex flex-wrap justify-between gap-4">
+          <span className="text-xs text-muted-foreground">
+            © {new Date().getFullYear()} Horecagrond. Alle rechten voorbehouden.
           </span>
+          <div className="flex gap-4 text-xs text-muted-foreground">
+            <Link href="#" className="hover:text-primary transition-colors">Privacy</Link>
+            <Link href="#" className="hover:text-primary transition-colors">Voorwaarden</Link>
+            <Link href="#" className="hover:text-primary transition-colors">Cookies</Link>
+          </div>
         </div>
       </div>
     </footer>

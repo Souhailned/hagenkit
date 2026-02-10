@@ -67,45 +67,45 @@ export const HELP_CATEGORIES: {
   icon: React.ReactNode;
 }[] = [
   {
-    title: "DataRAG Overview",
+    title: "Horecagrond Overview",
     slug: "overview",
     description:
-      "Understand the DataRAG platform, core capabilities, and the problems it solves for modern teams.",
+      "Understand the Horecagrond platform, core capabilities, and the problems it solves for modern teams.",
     icon: <IconBuildingSkyscraper className="h-6 w-6 text-gray-500" />,
   },
   {
     title: "Getting Started",
     slug: "getting-started",
     description:
-      "Launch quickly with setup checklists, workspace walkthroughs, and best practices for connecting your first DataRAG projects and inviting collaborators.",
+      "Launch quickly with setup checklists, workspace walkthroughs, and best practices for connecting your first Horecagrond projects and inviting collaborators.",
     icon: <IconChartBar className="h-6 w-6 text-gray-500" />,
   },
   {
     title: "Key Concepts",
     slug: "terms",
     description:
-      "Build fluency with DataRAG terminology, core objects, and workspace roles so every teammate knows how launches, automations, and permissions connect.",
+      "Build fluency with Horecagrond terminology, core objects, and workspace roles so every teammate knows how launches, automations, and permissions connect.",
     icon: <IconBook2 className="h-6 w-6 text-gray-500" />,
   },
   {
     title: "Agency Playbooks",
     slug: "for-investors",
     description:
-      "Detailed playbooks for agencies orchestrating multiple DataRAG clients, with templates, automation tips, and workflow handoffs that scale.",
+      "Detailed playbooks for agencies orchestrating multiple Horecagrond clients, with templates, automation tips, and workflow handoffs that scale.",
     icon: <IconFileAnalytics className="h-6 w-6 text-gray-500" />,
   },
   {
     title: "AI Insights",
     slug: "analysis",
     description:
-      "Dive into DataRAG AI workflows, enrichment techniques, and automation explainers to understand how data powers each step of your launch process.",
+      "Dive into Horecagrond AI workflows, enrichment techniques, and automation explainers to understand how data powers each step of your launch process.",
     icon: <IconChartPie className="h-6 w-6 text-gray-500" />,
   },
   {
     title: "Optimization Guides",
     slug: "valuation",
     description:
-      "Optimize live DataRAG sites with guidance on performance tuning, design refinements, copy testing, and analytics workflows that keep launches improving.",
+      "Optimize live Horecagrond sites with guidance on performance tuning, design refinements, copy testing, and analytics workflows that keep launches improving.",
     icon: <IconScale className="h-6 w-6 text-gray-500" />,
   },
 ];

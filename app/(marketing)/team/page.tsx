@@ -7,9 +7,9 @@ import { XLogo as Twitter, LinkedinLogo as Linkedin, GithubLogo as Github, Envel
 import Link from "next/link"
 
 export const metadata: Metadata = constructMetadata({
-  title: "Our Team - Meet the People Behind DataRAG",
+  title: "Our Team - Meet the People Behind Horecagrond",
   description:
-    "Meet the talented individuals building the future of collaboration at DataRAG.",
+    "Meet the talented individuals building the future of collaboration at Horecagrond.",
 })
 
 const departmentConfig = {

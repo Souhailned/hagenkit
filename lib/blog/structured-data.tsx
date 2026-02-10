@@ -1,7 +1,7 @@
 import type { BlogPost, HelpPost } from "content-collections"
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://datarag.io"
-const organizationName = "DataRAG"
+const organizationName = "Horecagrond"
 const organizationLogo = `${baseUrl}/logo.png`
 
 interface Author {

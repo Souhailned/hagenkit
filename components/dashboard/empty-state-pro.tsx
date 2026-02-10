@@ -20,9 +20,9 @@ export function DashboardProEmptyState() {
         <EmptyMedia variant="icon">
           <Rocket />
         </EmptyMedia>
-        <EmptyTitle>DataRAG Pro Unlocks More</EmptyTitle>
+        <EmptyTitle>Horecagrond Pro Unlocks More</EmptyTitle>
         <EmptyDescription>
-          Activate DataRAG Pro to access advanced analytics, automation, and
+          Activate Horecagrond Pro to access advanced analytics, automation, and
           collaboration workflows across your team.
         </EmptyDescription>
       </EmptyHeader>
