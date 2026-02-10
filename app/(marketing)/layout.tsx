@@ -1,6 +1,7 @@
 import { FooterSection } from "@/components/marketing/footer";
 import { Header } from "@/components/marketing/header";
 import { CookieBanner } from "@/components/cookie-banner";
+import { ScrollToTop } from "@/components/scroll-to-top";
 
 export default function MarketingLayout({
   children,
@@ -15,6 +16,7 @@ export default function MarketingLayout({
       </main>
       <FooterSection />
       <CookieBanner />
+      <ScrollToTop />
     </>
   );
 }
