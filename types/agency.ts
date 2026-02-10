@@ -3,7 +3,7 @@
  * These types will be used by actions and components
  */
 
-import type { PropertyType, PropertyStatus, PriceType } from "@/generated/prisma";
+import type { PropertyType, PropertyStatus, PriceType } from "@prisma/client";
 
 export type AgencyPlan = "FREE" | "PRO" | "ENTERPRISE";
 

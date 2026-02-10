@@ -30,7 +30,7 @@ import {
   startProjectProcessing,
   updateImageRoomType,
 } from "@/app/actions/images";
-import type { Image, ImageProject, ProjectStatus } from "@/generated/prisma";
+import type { Image, ImageProject, ProjectStatus } from "@prisma/client";
 import {
   ArrowLeft,
   CheckCircle,

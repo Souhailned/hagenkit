@@ -26,7 +26,7 @@ import {
   InstallationOwnership,
   ObligationType,
   AlertFrequency,
-} from "@/generated/prisma";
+} from "@prisma/client";
 
 // Re-export for consumers
 export {

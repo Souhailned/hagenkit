@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CheckCircle, Clock, CircleNotch, WarningCircle, DotsThreeVertical, Download, Trash, ArrowsClockwise, Eye } from "@phosphor-icons/react/dist/ssr"
 import { getRoomTypes } from "@/lib/prompts";
-import type { Image as ImageType, ImageStatus } from "@/generated/prisma";
+import type { Image as ImageType, ImageStatus } from "@prisma/client";
 
 interface ImageCardProps {
   image: ImageType;
