@@ -91,7 +91,7 @@ export function FilterSidebar({
           </div>
 
           {/* Filter sections */}
-          <ScrollArea className="h-[calc(100vh-16rem)] max-h-[600px]">
+          <ScrollArea className="h-[calc(100vh-12rem)]">
             <div className="space-y-6 p-4">
               {/* Location filter */}
               <LocationFilter
