@@ -55,6 +55,7 @@ function parseSearchParams(searchParams: {
     features: getArray("features") as PropertyFeature[],
     sortBy: (getString("sortBy") as SortOption) || "newest",
     page: getNumber("page") || 1,
+    view: (getString("view") === "map" ? "map" : "list") as "list" | "map",
   };
 }
 

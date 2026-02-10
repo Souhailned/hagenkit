@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   PropertyType,
@@ -15,7 +16,23 @@ import { SortDropdown } from "./sort-dropdown";
 import { PropertyGrid, PropertyGridSkeleton } from "./property-grid";
 import { EmptyState } from "./empty-state";
 import { ResultsPagination } from "./results-pagination";
+import { ViewToggle } from "./view-toggle";
 import { searchProperties } from "@/app/actions/properties";
+
+const PropertyMap = dynamic(
+  () => import("./property-map").then((mod) => mod.PropertyMap),
+  {
+    loading: () => (
+      <div className="flex h-[600px] items-center justify-center rounded-xl border border-border/60 bg-muted/50">
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span className="text-sm">Kaart laden...</span>
+        </div>
+      </div>
+    ),
+    ssr: false,
+  }
+);
 
 interface AanbodClientProps {
   filterOptions: {
@@ -36,6 +53,7 @@ interface AanbodClientProps {
     features: PropertyFeature[];
     sortBy: SortOption;
     page: number;
+    view: "list" | "map";
   };
 }
 
@@ -72,6 +90,7 @@ export function AanbodClient({
   >(initialFilters.features);
   const [sortBy, setSortBy] = React.useState<SortOption>(initialFilters.sortBy);
   const [page, setPage] = React.useState(initialFilters.page);
+  const [view, setView] = React.useState<"list" | "map">(initialFilters.view);
 
   // Results state
   const [results, setResults] =
@@ -119,6 +138,9 @@ export function AanbodClient({
     if (page > 1) {
       params.set("page", page.toString());
     }
+    if (view === "map") {
+      params.set("view", "map");
+    }
 
     return params;
   }, [
@@ -131,6 +153,7 @@ export function AanbodClient({
     selectedFeatures,
     sortBy,
     page,
+    view,
   ]);
 
   // Fetch results when filters change
@@ -351,8 +374,13 @@ export function AanbodClient({
             </p>
           </div>
 
-          {/* Sort dropdown */}
-          <SortDropdown value={sortBy} onChange={handleSortChange} />
+          <div className="flex items-center gap-3">
+            {/* View toggle */}
+            <ViewToggle view={view} onViewChange={setView} />
+
+            {/* Sort dropdown */}
+            <SortDropdown value={sortBy} onChange={handleSortChange} />
+          </div>
         </div>
 
         {/* Active filters chips */}
@@ -389,7 +417,12 @@ export function AanbodClient({
         </div>
 
         {/* Results */}
-        {isLoading ? (
+        {view === "map" ? (
+          <PropertyMap
+            properties={results.properties}
+            className="h-[600px] lg:h-[700px]"
+          />
+        ) : isLoading ? (
           <PropertyGridSkeleton count={6} />
         ) : results.properties.length > 0 ? (
           <>

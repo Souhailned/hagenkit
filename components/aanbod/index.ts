@@ -6,4 +6,6 @@ export { ActiveFilters } from "./active-filters";
 export { SortDropdown } from "./sort-dropdown";
 export { EmptyState } from "./empty-state";
 export { ResultsPagination } from "./results-pagination";
+export { ViewToggle } from "./view-toggle";
+export { PropertyMap, PropertyDetailMap } from "./property-map";
 export * from "./filters";
