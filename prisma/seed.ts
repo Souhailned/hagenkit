@@ -1,7 +1,9 @@
-import { PrismaClient } from "@prisma/client";
-import { createHash, randomUUID } from "crypto";
+import { PrismaClient } from "../generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { randomUUID } from "crypto";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const prisma = new PrismaClient({ adapter });
 
 const SAMPLE_IMAGES = [
   "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop",

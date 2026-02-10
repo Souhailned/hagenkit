@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import type { Image as DbImage } from "@prisma/client";
+import type { Image as DbImage } from "@/generated/prisma/client";
 import { cn } from "@/lib/utils";
 
 interface ImageVersionsDialogProps {

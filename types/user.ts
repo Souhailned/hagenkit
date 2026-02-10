@@ -1,5 +1,3 @@
-import { Prisma } from "@prisma/client";
-
 /**
  * User type returned from getCurrentUser() action
  * Matches the select fields from the user query

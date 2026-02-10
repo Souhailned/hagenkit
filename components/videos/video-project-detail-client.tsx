@@ -12,7 +12,7 @@ import {
   ContentCardBody,
   ContentCardHeader,
 } from "@/components/dashboard/content-card";
-import type { VideoProject, VideoClip } from "@prisma/client";
+import type { VideoProject, VideoClip } from "@/generated/prisma/client";
 import {
   ArrowLeft,
   CheckCircle,

@@ -13,7 +13,7 @@ import {
   SearchPropertiesInput,
 } from "@/lib/validations/property";
 import prisma from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 // Standard includes for property queries
 const propertyIncludes = {

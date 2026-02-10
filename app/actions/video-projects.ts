@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types/actions";
-import type { VideoProject, Prisma } from "@prisma/client";
+import type { VideoProject, Prisma } from "@/generated/prisma/client";
 import { generateVideoTask } from "@/trigger/video-orchestrator";
 
 // Get current user's active workspace

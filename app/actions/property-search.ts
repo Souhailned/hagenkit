@@ -9,7 +9,7 @@ import {
   listPropertiesSchema,
 } from "@/lib/validations/property";
 import prisma from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 
 // ActionResult type for consistent returns
 type ActionResult<T = void> = {

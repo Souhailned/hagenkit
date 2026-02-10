@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import type { ImageStatus, ProjectStatus } from "@prisma/client";
+import type { ImageStatus, ProjectStatus } from "@/generated/prisma/client";
 
 interface ImageProjectCounters {
   imageCount: number;

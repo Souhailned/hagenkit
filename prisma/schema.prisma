@@ -1,11 +1,10 @@
 
 generator client {
-  provider = "prisma-client-js"
-  // Using default output (node_modules/.prisma/client)
+  provider = "prisma-client"
+  output   = "../generated/prisma"
 }
 
 datasource db {
-  url      = env("DATABASE_URL")
   provider = "postgresql"
 }
 

@@ -1,18 +1,13 @@
-import { defineConfig, env } from 'prisma/config'
-
-// Try to load dotenv if available (for local development)
-try {
-  await import('dotenv/config')
-} catch {
-  // dotenv not available, use environment variables directly (Docker)
-}
+import "dotenv/config";
+import { defineConfig, env } from "prisma/config";
 
 export default defineConfig({
-  schema: 'prisma/schema.prisma',
+  schema: "prisma/schema.prisma",
   migrations: {
-    path: 'prisma/migrations',
+    path: "prisma/migrations",
+    seed: "bun prisma/seed.ts",
   },
   datasource: {
-    url: env('DATABASE_URL'),
+    url: env("DATABASE_URL"),
   },
-})
+});

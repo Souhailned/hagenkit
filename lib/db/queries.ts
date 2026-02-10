@@ -3,7 +3,7 @@
  */
 
 import prisma from "@/lib/prisma";
-import type { VideoProject, VideoClip, Prisma } from "@prisma/client";
+import type { VideoProject, VideoClip, Prisma } from "@/generated/prisma/client";
 
 // Note: MusicTrack model doesn't exist yet in the schema
 export interface MusicTrack {
