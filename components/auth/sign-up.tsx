@@ -74,7 +74,7 @@ export default function SignUpAuth() {
             "absolute right-4 top-4 md:right-8 md:top-8"
           )}
         >
-          Sign In
+          Inloggen
         </Link>
         <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
           <div className="absolute inset-0 bg-zinc-900" />
@@ -105,12 +105,12 @@ export default function SignUpAuth() {
               </p>
               {isInvitation && (
                 <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                  Create an account to accept your invitation.
+                  Maak een account aan om je uitnodiging te accepteren.
                 </div>
               )}
               {formattedMethod && !isInvitation && (
                 <p className="text-xs text-muted-foreground" aria-live="polite">
-                  Last signed in with {formattedMethod}.
+                  Laatst ingelogd met {formattedMethod}.
                 </p>
               )}
             </div>
@@ -221,9 +221,9 @@ export default function SignUpAuth() {
                     {emailIsLast && (
                       <>
                         <Badge className="ml-2" variant="secondary">
-                          Last used
+                          Laatst gebruikt
                         </Badge>
-                        <span className="sr-only">Last used login method</span>
+                        <span className="sr-only">Laatst gebruikte methode</span>
                       </>
                     )}
                   </Button>
@@ -235,7 +235,7 @@ export default function SignUpAuth() {
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with
+                    Of ga verder met
                   </span>
                 </div>
               </div>
@@ -291,27 +291,27 @@ export default function SignUpAuth() {
                 {googleIsLast && (
                   <>
                     <Badge className="ml-2" variant="secondary">
-                      Last used
+                      Laatst gebruikt
                     </Badge>
-                    <span className="sr-only">Last used login method</span>
+                    <span className="sr-only">Laatst gebruikte methode</span>
                   </>
                 )}
               </Button>
             </div>
             <p className="px-8 text-center text-sm text-muted-foreground">
-              By continuing, you agree to our{" "}
+              Door verder te gaan, ga je akkoord met onze{" "}
               <Link
                 href="/terms"
                 className="underline underline-offset-4 hover:text-primary"
               >
-                Terms of Service
+                Algemene Voorwaarden
               </Link>{" "}
               and{" "}
               <Link
                 href="/privacy"
                 className="underline underline-offset-4 hover:text-primary"
               >
-                Privacy Policy
+                Privacybeleid
               </Link>
               .
             </p>

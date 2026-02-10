@@ -72,7 +72,7 @@ export default function SignInAuth() {
             "absolute right-4 top-4 md:right-8 md:top-8"
           )}
         >
-          Sign Up
+          Registreren
         </Link>
         <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
           <div className="absolute inset-0 bg-zinc-900" />
@@ -88,7 +88,7 @@ export default function SignInAuth() {
                 infrastructure.&rdquo;
               </p>
               <footer className="text-sm">
-                — Sarah Mitchell, Principal Product Designer
+                — Een tevreden ondernemer
               </footer>
             </blockquote>
           </div>
@@ -100,16 +100,16 @@ export default function SignInAuth() {
                 Inloggen
               </h1>
               <p className="text-sm text-muted-foreground">
-                Enter your email below to sign in
+                Vul je e-mail in om in te loggen
               </p>
               {isInvitation && (
                 <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                  Please sign in to accept your invitation.
+                  Log in om je uitnodiging te accepteren.
                 </div>
               )}
               {formattedMethod && !isInvitation && (
                 <p className="text-xs text-muted-foreground" aria-live="polite">
-                  Last signed in with {formattedMethod}.
+                  Laatst ingelogd met {formattedMethod}.
                 </p>
               )}
             </div>
@@ -138,12 +138,12 @@ export default function SignInAuth() {
                             toast.error("Account not found", {
                                 description: "We couldn't find an account with that email.",
                                 action: {
-                                    label: "Sign Up",
+                                    label: "Registreren",
                                     onClick: () => router.push("/sign-up"),
                                 },
                             });
                         } else {
-                            toast.error(errorMessage || "An error occurred during sign in");
+                            toast.error(errorMessage || "Er is een fout opgetreden bij het inloggen");
                         }
                       },
                     }
@@ -152,7 +152,7 @@ export default function SignInAuth() {
               >
                 <div className="grid gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">E-mail</Label>
                     <Input
                       id="email"
                       type="email"
@@ -165,12 +165,12 @@ export default function SignInAuth() {
                   </div>
                   <div className="grid gap-2">
                     <div className="flex items-center">
-                      <Label htmlFor="password">Password</Label>
+                      <Label htmlFor="password">Wachtwoord</Label>
                       <Link
                         href="/forgot-password"
                         className="ml-auto inline-block text-sm underline"
                       >
-                        Forgot password?
+                        Wachtwoord vergeten?
                       </Link>
                     </div>
                     <PasswordInput
@@ -207,13 +207,13 @@ export default function SignInAuth() {
                     {loading && (
                       <Spinner className="mr-2 size-4" aria-hidden="true" />
                     )}
-                    <span>Sign in</span>
+                    <span>Inloggen</span>
                     {emailIsLast && (
                       <>
                         <Badge className="ml-2" variant="secondary">
-                          Last used
+                          Laatst gebruikt
                         </Badge>
-                        <span className="sr-only">Last used login method</span>
+                        <span className="sr-only">Laatst gebruikte methode</span>
                       </>
                     )}
                   </Button>
@@ -225,7 +225,7 @@ export default function SignInAuth() {
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with
+                    Of ga verder met
                   </span>
                 </div>
               </div>
@@ -281,27 +281,27 @@ export default function SignInAuth() {
                 {googleIsLast && (
                   <>
                     <Badge className="ml-2" variant="secondary">
-                      Last used
+                      Laatst gebruikt
                     </Badge>
-                    <span className="sr-only">Last used login method</span>
+                    <span className="sr-only">Laatst gebruikte methode</span>
                   </>
                 )}
               </Button>
             </div>
             <p className="px-8 text-center text-sm text-muted-foreground">
-              By continuing, you agree to our{" "}
+              Door verder te gaan, ga je akkoord met onze{" "}
               <Link
                 href="/terms"
                 className="underline underline-offset-4 hover:text-primary"
               >
-                Terms of Service
+                Algemene Voorwaarden
               </Link>{" "}
               and{" "}
               <Link
                 href="/privacy"
                 className="underline underline-offset-4 hover:text-primary"
               >
-                Privacy Policy
+                Privacybeleid
               </Link>
               .
             </p>
