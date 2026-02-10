@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getPropertyBySlug } from "@/app/actions/properties";
+import { trackPropertyView } from "@/app/actions/track-view";
 import { PropertyDetail } from "./property-detail";
 
 export default async function PropertyDetailPage({
@@ -13,6 +14,9 @@ export default async function PropertyDetailPage({
   if (!result.success || !result.data) {
     notFound();
   }
+
+  // Track view (fire and forget)
+  trackPropertyView(result.data.id).catch(() => {});
 
   return <PropertyDetail property={result.data} />;
 }
