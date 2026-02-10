@@ -77,6 +77,7 @@ const navItemIcons: Record<NavItemId, React.ComponentType<{ className?: string }
   images: Image,
   videos: VideoCamera,
   favorieten: Heart,
+  panden: Buildings,
 }
 
 const footerItemIcons: Record<SidebarFooterItemId, React.ComponentType<{ className?: string }>> = {
@@ -135,6 +136,7 @@ export function AppSidebar({
     if (id === "images") return "/dashboard/images"            // Images page
     if (id === "videos") return "/dashboard/videos"            // Videos page
     if (id === "favorieten") return "/dashboard/favorieten"    // Favorieten page
+    if (id === "panden") return "/dashboard/panden"            // Mijn Panden page
     return "#"
   }
 
@@ -147,6 +149,7 @@ export function AppSidebar({
     if (id === "images") return pathname.startsWith("/dashboard/images")
     if (id === "videos") return pathname.startsWith("/dashboard/videos")
     if (id === "favorieten") return pathname.startsWith("/dashboard/favorieten")
+    if (id === "panden") return pathname.startsWith("/dashboard/panden")
     return false
   }
 

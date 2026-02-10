@@ -1,4 +1,4 @@
-export type NavItemId = "inbox" | "my-tasks" | "projects" | "clients" | "performance" | "images" | "videos" | "favorieten"
+export type NavItemId = "inbox" | "my-tasks" | "projects" | "clients" | "performance" | "images" | "videos" | "favorieten" | "panden"
 
 export type SidebarFooterItemId = "settings" | "help" | "admin"
 
@@ -30,6 +30,7 @@ export const navItems: NavItem[] = [
   { id: "images", label: "Images" },
   { id: "videos", label: "Videos" },
   { id: "favorieten", label: "Favorieten" },
+  { id: "panden", label: "Mijn Panden" },
 ]
 
 export const activeProjects: ActiveProjectSummary[] = [
