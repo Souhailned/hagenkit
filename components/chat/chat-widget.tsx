@@ -383,7 +383,7 @@ export function ChatWidget() {
       role: "user",
       content: choice,
     };
-    setMessages((prev) => prev.map((m) => ({ ...m, quickReplies: undefined })).concat(userMsg));
+    setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg));
 
     if (wizard.step === "type") {
       const selected = WIZARD_TYPES.find((t) => t.label === choice);
@@ -493,7 +493,7 @@ export function ChatWidget() {
         content: "Om panden te bewaren en alerts in te stellen, heb je een account nodig. Het is gratis en duurt maar 30 seconden! 🚀",
         quickReplies: ["🔑 Inloggen", "📝 Account aanmaken", "🔍 Verder zoeken"],
       };
-      setMessages((prev) => prev.map((m) => ({ ...m, quickReplies: undefined })).concat(userMsg, authMsg));
+      setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg, authMsg));
       return;
     }
 
@@ -505,7 +505,7 @@ export function ChatWidget() {
 
     // Remove quick replies from previous messages
     setMessages((prev) =>
-      prev.map((m) => ({ ...m, quickReplies: undefined })).concat(userMessage)
+      prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMessage)
     );
     setInput("");
     setIsLoading(true);
@@ -615,7 +615,7 @@ export function ChatWidget() {
         content: "Laten we je droomlocatie vinden! 🏢\n\nWat voor type pand zoek je?",
         quickReplies: WIZARD_TYPES.map((t) => t.label),
       };
-      setMessages((prev) => prev.map((m) => ({ ...m, quickReplies: undefined })).concat(userMsg, botMsg));
+      setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg, botMsg));
       return;
     }
 
