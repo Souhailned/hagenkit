@@ -196,7 +196,7 @@ export function AanbodClient({
         cities: selectedCities.length > 0 ? selectedCities : undefined,
         types:
           selectedTypes.length > 0 ? (selectedTypes as PropertyType[]) : undefined,
-        statuses: selectedStatuses.length > 0 ? selectedStatuses as any : undefined,
+        statuses: selectedStatuses.length > 0 ? selectedStatuses as ("DRAFT" | "PENDING_REVIEW" | "ACTIVE" | "UNDER_OFFER" | "RENTED" | "SOLD" | "ARCHIVED" | "REJECTED")[] : undefined,
         publishedWithinDays,
         priceMin,
         priceMax,

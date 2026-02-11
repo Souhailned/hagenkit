@@ -195,7 +195,7 @@ export function PropertyImageGallery({
       <div className="absolute bottom-4 left-4 z-10">
         <span className="inline-flex items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
           <Grid3X3 className="size-4" />
-          {currentSlide + 1} / {sortedImages.length}
+          Foto&apos;s {currentSlide + 1}/{sortedImages.length}
         </span>
       </div>
 

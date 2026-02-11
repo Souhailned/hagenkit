@@ -17,6 +17,8 @@ import { NeighborhoodInfo } from "@/components/property/neighborhood-info";
 import { WhatsAppButton } from "@/components/property/whatsapp-button";
 import { BuurtIntelligence } from "@/components/property/buurt-intelligence";
 import { ConceptSuggestions } from "@/components/property/concept-suggestions";
+import { ViewingRequestDialog } from "@/components/property/viewing-request-dialog";
+import { RevealPhone } from "@/components/property/reveal-phone";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -707,6 +709,18 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                 </form>
               </CardContent>
             </Card>
+
+            {/* Bezichtiging + Telefoon */}
+            <div className="mt-4 space-y-2">
+              <ViewingRequestDialog
+                propertyId={property.id}
+                propertyTitle={property.title}
+              />
+              <RevealPhone
+                phone={property.agency?.phone || null}
+                agencyName={property.agency?.name}
+              />
+            </div>
 
             {/* Quick actions */}
             <div className="mt-4 flex gap-2">

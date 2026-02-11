@@ -30,6 +30,8 @@ const propertyIncludes = {
       name: true,
       slug: true,
       logo: true,
+      phone: true,
+      email: true,
     },
   },
   createdBy: {

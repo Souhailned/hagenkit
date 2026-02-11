@@ -387,7 +387,7 @@ export interface Property {
   // Relations
   agencyId?: string;
   createdById?: string;
-  agency?: Agency | { id: string; name: string; slug: string; logo?: string };
+  agency?: Agency | { id: string; name: string; slug: string; logo?: string; phone?: string | null; email?: string | null };
   creator?: {
     id: string;
     name?: string | null;
