@@ -656,6 +656,18 @@ export function ChatWidget() {
       return;
     }
 
+    // Free-form chat mode
+    if (text === "💬 Stel een vraag") {
+      const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Stel je vraag! Ik weet alles over horecapanden, locaties, vergunningen en meer. 💡",
+      };
+      setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg, botMsg));
+      return;
+    }
+
     // Start wizard
     if (text === "🔍 Pand zoeken" || text === "🔍 Opnieuw zoeken" || text === "🔍 Nieuwe zoekopdracht") {
       setWizard({ active: true, step: "type", filters: {} });
