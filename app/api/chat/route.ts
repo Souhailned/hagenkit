@@ -2,35 +2,37 @@ import { streamText, tool } from "ai";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 
-async function getModel() {
+async function getModel(): Promise<{ model: any; supportsTools: boolean }> {
+  // 1. Groq (cloud, fast)
   if (process.env.GROQ_API_KEY) {
     const { createGroq } = await import("@ai-sdk/groq");
     const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
-    return groq("llama-3.3-70b-versatile");
+    return { model: groq("llama-3.3-70b-versatile"), supportsTools: true };
   }
-  return null;
+  // 2. Ollama (local, free) via OpenAI-compatible API
+  const { createOpenAI } = await import("@ai-sdk/openai");
+  const ollama = createOpenAI({
+    baseURL: "http://localhost:11434/v1",
+    apiKey: "ollama",
+  });
+  return { model: ollama("llama3.2:3b"), supportsTools: false };
 }
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
-  const model = await getModel();
-
-  if (!model) {
-    return new Response(
-      JSON.stringify({ error: "AI chatbot niet beschikbaar. Voeg GROQ_API_KEY toe aan .env.local" }),
-      { status: 503, headers: { "Content-Type": "application/json" } }
-    );
-  }
+  const { model, supportsTools } = await getModel();
 
   const result = streamText({
     model,
     system: `Je bent de Horecagrond Assistent, een vriendelijke AI die horeca-ondernemers helpt bij het vinden van het perfecte horecapand in Nederland.
 
 Je kunt panden zoeken, details opvragen, vergelijken, en advies geven over locaties en horecaconcepten.
-Antwoord altijd in het Nederlands. Wees beknopt maar behulpzaam.`,
+Antwoord altijd in het Nederlands. Wees beknopt maar behulpzaam.
+We hebben panden in steden als Amsterdam, Rotterdam, Utrecht, Den Haag, Eindhoven, Groningen, Maastricht, Arnhem, Tilburg, Leiden, Breda en Nijmegen.
+Types: restaurants, cafés, bars, hotels, lunchrooms, dark kitchens, bakkerijen, eetcafés, bistro's en meer.`,
     messages,
-    tools: {
+    ...(supportsTools ? { tools: {
       searchProperties: tool({
         description: "Zoek horecapanden op basis van criteria",
         inputSchema: z.object({
@@ -98,7 +100,7 @@ Antwoord altijd in het Nederlands. Wees beknopt maar behulpzaam.`,
           return cities.map((c) => ({ city: c.city, count: c._count.id }));
         },
       }),
-    },
+    } } : {}),
   });
 
   return result.toTextStreamResponse();
