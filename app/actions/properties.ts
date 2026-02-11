@@ -147,17 +147,37 @@ export async function searchProperties(
       search,
       cities,
       types,
+      statuses,
+      publishedWithinDays,
       priceMin,
       priceMax,
       areaMin,
       areaMax,
       features,
+      lat,
+      lng,
+      radius,
     } = validatedParams;
 
     // Build where clause
     const where: Prisma.PropertyWhereInput = {
-      status: "ACTIVE",
+      status: statuses?.length ? { in: statuses } : "ACTIVE",
     };
+
+    // Published within X days filter
+    if (publishedWithinDays) {
+      const sinceDate = new Date();
+      sinceDate.setDate(sinceDate.getDate() - publishedWithinDays);
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : []),
+        {
+          OR: [
+            { publishedAt: { gte: sinceDate } },
+            { createdAt: { gte: sinceDate } },
+          ],
+        },
+      ];
+    }
 
     // Search filter
     if (search?.trim()) {
@@ -253,6 +273,33 @@ export async function searchProperties(
         break;
       default:
         orderBy = { publishedAt: "desc" };
+    }
+
+    // Radius filter: get IDs of properties within radius, then add to where clause
+    if (lat !== undefined && lng !== undefined && radius !== undefined) {
+      try {
+        const nearbyIds = await prisma.$queryRawUnsafe<{ id: string }[]>(
+          `SELECT id FROM "Property"
+           WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+           AND (6371 * acos(
+             LEAST(1.0, cos(radians($1)) * cos(radians(latitude)) * cos(radians(longitude) - radians($2))
+             + sin(radians($1)) * sin(radians(latitude)))
+           )) <= $3`,
+          lat,
+          lng,
+          radius
+        );
+        const ids = nearbyIds.map((r) => r.id);
+        if (ids.length > 0) {
+          where.id = { in: ids };
+        } else {
+          // No properties in radius — return empty
+          where.id = { in: [] };
+        }
+      } catch (e) {
+        console.error("Radius query failed:", e);
+        // Fallback: skip radius filter
+      }
     }
 
     // Execute query with count

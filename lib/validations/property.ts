@@ -297,11 +297,17 @@ export const searchPropertiesSchema = z.object({
   search: z.string().max(200).optional(),
   cities: z.array(z.string()).optional(),
   types: z.array(propertyTypeEnum).optional(),
+  statuses: z.array(propertyStatusEnum).optional(),
+  publishedWithinDays: z.number().int().positive().max(365).optional(),
   priceMin: z.number().int().nonnegative().optional(),
   priceMax: z.number().int().nonnegative().optional(),
   areaMin: z.number().int().nonnegative().optional(),
   areaMax: z.number().int().nonnegative().optional(),
   features: z.array(z.string()).optional(),
+  // Radius search
+  lat: z.number().optional(),
+  lng: z.number().optional(),
+  radius: z.number().positive().max(100).optional(), // km
 });
 
 export type SearchPropertiesInput = z.infer<typeof searchPropertiesSchema>;

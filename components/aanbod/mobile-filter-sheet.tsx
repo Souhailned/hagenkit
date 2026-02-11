@@ -17,6 +17,8 @@ import { PropertyType, PropertyFeature } from "@/types/property";
 import {
   LocationFilter,
   TypeFilter,
+  StatusFilter,
+  PublishedFilter,
   PriceFilter,
   AreaFilter,
   FeaturesFilter,
@@ -30,17 +32,19 @@ interface MobileFilterSheetProps {
     priceRange: { min: number; max: number };
     areaRange: { min: number; max: number };
   };
-  // Current filter values
   selectedCities: string[];
   selectedTypes: PropertyType[];
+  selectedStatuses: string[];
+  publishedWithinDays?: number;
   priceMin?: number;
   priceMax?: number;
   areaMin?: number;
   areaMax?: number;
   selectedFeatures: PropertyFeature[];
-  // Change handlers
   onCitiesChange: (cities: string[]) => void;
   onTypesChange: (types: PropertyType[]) => void;
+  onStatusesChange: (statuses: string[]) => void;
+  onPublishedChange: (days: number | undefined) => void;
   onPriceMinChange: (value: number | undefined) => void;
   onPriceMaxChange: (value: number | undefined) => void;
   onAreaMinChange: (value: number | undefined) => void;
@@ -54,6 +58,8 @@ export function MobileFilterSheet({
   filterOptions,
   selectedCities,
   selectedTypes,
+  selectedStatuses,
+  publishedWithinDays,
   priceMin,
   priceMax,
   areaMin,
@@ -61,6 +67,8 @@ export function MobileFilterSheet({
   selectedFeatures,
   onCitiesChange,
   onTypesChange,
+  onStatusesChange,
+  onPublishedChange,
   onPriceMinChange,
   onPriceMaxChange,
   onAreaMinChange,
@@ -104,25 +112,28 @@ export function MobileFilterSheet({
 
         <ScrollArea className="h-[calc(100vh-10rem)]">
           <div className="space-y-6 p-4">
-            {/* Location filter */}
             <LocationFilter
               cities={filterOptions.cities}
               selectedCities={selectedCities}
               onChange={onCitiesChange}
             />
-
             <Separator />
-
-            {/* Type filter */}
             <TypeFilter
               types={filterOptions.types}
               selectedTypes={selectedTypes}
               onChange={onTypesChange}
             />
-
             <Separator />
-
-            {/* Price filter */}
+            <StatusFilter
+              selectedStatuses={selectedStatuses}
+              onChange={onStatusesChange}
+            />
+            <Separator />
+            <PublishedFilter
+              publishedWithinDays={publishedWithinDays}
+              onChange={onPublishedChange}
+            />
+            <Separator />
             <PriceFilter
               priceRange={filterOptions.priceRange}
               minPrice={priceMin}
@@ -130,10 +141,7 @@ export function MobileFilterSheet({
               onMinChange={onPriceMinChange}
               onMaxChange={onPriceMaxChange}
             />
-
             <Separator />
-
-            {/* Area filter */}
             <AreaFilter
               areaRange={filterOptions.areaRange}
               minArea={areaMin}
@@ -141,10 +149,7 @@ export function MobileFilterSheet({
               onMinChange={onAreaMinChange}
               onMaxChange={onAreaMaxChange}
             />
-
             <Separator />
-
-            {/* Features filter */}
             <FeaturesFilter
               features={filterOptions.features}
               selectedFeatures={selectedFeatures}

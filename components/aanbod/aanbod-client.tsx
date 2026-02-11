@@ -49,6 +49,8 @@ interface AanbodClientProps {
   initialFilters: {
     cities: string[];
     types: PropertyType[];
+    statuses?: string[];
+    publishedWithinDays?: number;
     priceMin?: number;
     priceMax?: number;
     areaMin?: number;
@@ -88,6 +90,12 @@ export function AanbodClient({
   const [areaMax, setAreaMax] = React.useState<number | undefined>(
     initialFilters.areaMax
   );
+  const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>(
+    initialFilters.statuses ?? ["ACTIVE"]
+  );
+  const [publishedWithinDays, setPublishedWithinDays] = React.useState<number | undefined>(
+    initialFilters.publishedWithinDays
+  );
   const [selectedFeatures, setSelectedFeatures] = React.useState<
     PropertyFeature[]
   >(initialFilters.features);
@@ -114,6 +122,8 @@ export function AanbodClient({
   const activeFilterCount =
     selectedCities.length +
     selectedTypes.length +
+    (selectedStatuses.length !== 1 || selectedStatuses[0] !== "ACTIVE" ? 1 : 0) +
+    (publishedWithinDays !== undefined ? 1 : 0) +
     (priceMin !== undefined ? 1 : 0) +
     (priceMax !== undefined ? 1 : 0) +
     (areaMin !== undefined ? 1 : 0) +
@@ -142,6 +152,12 @@ export function AanbodClient({
     if (areaMax !== undefined) {
       params.set("areaMax", areaMax.toString());
     }
+    if (selectedStatuses.length > 0 && (selectedStatuses.length !== 1 || selectedStatuses[0] !== "ACTIVE")) {
+      params.set("statuses", selectedStatuses.join(","));
+    }
+    if (publishedWithinDays !== undefined) {
+      params.set("publishedWithinDays", publishedWithinDays.toString());
+    }
     if (selectedFeatures.length > 0) {
       params.set("features", selectedFeatures.join(","));
     }
@@ -159,6 +175,8 @@ export function AanbodClient({
   }, [
     selectedCities,
     selectedTypes,
+    selectedStatuses,
+    publishedWithinDays,
     priceMin,
     priceMax,
     areaMin,
@@ -178,6 +196,8 @@ export function AanbodClient({
         cities: selectedCities.length > 0 ? selectedCities : undefined,
         types:
           selectedTypes.length > 0 ? (selectedTypes as PropertyType[]) : undefined,
+        statuses: selectedStatuses.length > 0 ? selectedStatuses as any : undefined,
+        publishedWithinDays,
         priceMin,
         priceMax,
         areaMin,
@@ -202,6 +222,8 @@ export function AanbodClient({
   }, [
     selectedCities,
     selectedTypes,
+    selectedStatuses,
+    publishedWithinDays,
     priceMin,
     priceMax,
     areaMin,
@@ -235,6 +257,8 @@ export function AanbodClient({
   }, [
     selectedCities,
     selectedTypes,
+    selectedStatuses,
+    publishedWithinDays,
     priceMin,
     priceMax,
     areaMin,
@@ -259,6 +283,16 @@ export function AanbodClient({
 
   const handleTypesChange = (types: PropertyType[]) => {
     setSelectedTypes(types);
+    resetPage();
+  };
+
+  const handleStatusesChange = (statuses: string[]) => {
+    setSelectedStatuses(statuses);
+    resetPage();
+  };
+
+  const handlePublishedChange = (days: number | undefined) => {
+    setPublishedWithinDays(days);
     resetPage();
   };
 
@@ -302,6 +336,8 @@ export function AanbodClient({
   const handleReset = () => {
     setSelectedCities([]);
     setSelectedTypes([]);
+    setSelectedStatuses(["ACTIVE"]);
+    setPublishedWithinDays(undefined);
     setPriceMin(undefined);
     setPriceMax(undefined);
     setAreaMin(undefined);
@@ -339,6 +375,8 @@ export function AanbodClient({
         filterOptions={filterOptions}
         selectedCities={selectedCities}
         selectedTypes={selectedTypes}
+        selectedStatuses={selectedStatuses}
+        publishedWithinDays={publishedWithinDays}
         priceMin={priceMin}
         priceMax={priceMax}
         areaMin={areaMin}
@@ -346,6 +384,8 @@ export function AanbodClient({
         selectedFeatures={selectedFeatures}
         onCitiesChange={handleCitiesChange}
         onTypesChange={handleTypesChange}
+        onStatusesChange={handleStatusesChange}
+        onPublishedChange={handlePublishedChange}
         onPriceMinChange={handlePriceMinChange}
         onPriceMaxChange={handlePriceMaxChange}
         onAreaMinChange={handleAreaMinChange}
@@ -365,6 +405,8 @@ export function AanbodClient({
                 filterOptions={filterOptions}
                 selectedCities={selectedCities}
                 selectedTypes={selectedTypes}
+                selectedStatuses={selectedStatuses}
+                publishedWithinDays={publishedWithinDays}
                 priceMin={priceMin}
                 priceMax={priceMax}
                 areaMin={areaMin}
@@ -372,6 +414,8 @@ export function AanbodClient({
                 selectedFeatures={selectedFeatures}
                 onCitiesChange={handleCitiesChange}
                 onTypesChange={handleTypesChange}
+                onStatusesChange={handleStatusesChange}
+                onPublishedChange={handlePublishedChange}
                 onPriceMinChange={handlePriceMinChange}
                 onPriceMaxChange={handlePriceMaxChange}
                 onAreaMinChange={handleAreaMinChange}

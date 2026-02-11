@@ -9,6 +9,8 @@ import { PropertyType, PropertyFeature } from "@/types/property";
 import {
   LocationFilter,
   TypeFilter,
+  StatusFilter,
+  PublishedFilter,
   PriceFilter,
   AreaFilter,
   FeaturesFilter,
@@ -25,6 +27,8 @@ interface FilterSidebarProps {
   // Current filter values
   selectedCities: string[];
   selectedTypes: PropertyType[];
+  selectedStatuses: string[];
+  publishedWithinDays?: number;
   priceMin?: number;
   priceMax?: number;
   areaMin?: number;
@@ -33,6 +37,8 @@ interface FilterSidebarProps {
   // Change handlers
   onCitiesChange: (cities: string[]) => void;
   onTypesChange: (types: PropertyType[]) => void;
+  onStatusesChange: (statuses: string[]) => void;
+  onPublishedChange: (days: number | undefined) => void;
   onPriceMinChange: (value: number | undefined) => void;
   onPriceMaxChange: (value: number | undefined) => void;
   onAreaMinChange: (value: number | undefined) => void;
@@ -46,6 +52,8 @@ export function FilterSidebar({
   filterOptions,
   selectedCities,
   selectedTypes,
+  selectedStatuses,
+  publishedWithinDays,
   priceMin,
   priceMax,
   areaMin,
@@ -53,6 +61,8 @@ export function FilterSidebar({
   selectedFeatures,
   onCitiesChange,
   onTypesChange,
+  onStatusesChange,
+  onPublishedChange,
   onPriceMinChange,
   onPriceMaxChange,
   onAreaMinChange,
@@ -64,6 +74,8 @@ export function FilterSidebar({
   const hasFilters =
     selectedCities.length > 0 ||
     selectedTypes.length > 0 ||
+    selectedStatuses.length !== 1 || selectedStatuses[0] !== "ACTIVE" ||
+    publishedWithinDays !== undefined ||
     priceMin !== undefined ||
     priceMax !== undefined ||
     areaMin !== undefined ||
@@ -107,6 +119,22 @@ export function FilterSidebar({
                 types={filterOptions.types}
                 selectedTypes={selectedTypes}
                 onChange={onTypesChange}
+              />
+
+              <Separator />
+
+              {/* Status filter */}
+              <StatusFilter
+                selectedStatuses={selectedStatuses}
+                onChange={onStatusesChange}
+              />
+
+              <Separator />
+
+              {/* Published since filter */}
+              <PublishedFilter
+                publishedWithinDays={publishedWithinDays}
+                onChange={onPublishedChange}
               />
 
               <Separator />

@@ -175,22 +175,29 @@ export function PropertyCard({ property, className, priority = false, isFavorite
           </div>
         )}
 
-        {/* Price */}
-        <div className="mt-4 flex items-baseline justify-between border-t border-border/50 pt-4">
-          <div>
-            <span className="text-xl font-bold tracking-tight text-foreground">
-              {formattedPrice}
+        {/* Price + Agency */}
+        <div className="mt-4 border-t border-border/50 pt-4">
+          <div className="flex items-baseline justify-between">
+            <div>
+              <span className="text-xl font-bold tracking-tight text-foreground">
+                {formattedPrice}
+              </span>
+              <span className="text-sm text-muted-foreground">{priceLabel}</span>
+            </div>
+            <span
+              className={cn(
+                "text-sm font-medium text-primary transition-colors",
+                "group-hover:underline"
+              )}
+            >
+              Bekijk details
             </span>
-            <span className="text-sm text-muted-foreground">{priceLabel}</span>
           </div>
-          <span
-            className={cn(
-              "text-sm font-medium text-primary transition-colors",
-              "group-hover:underline"
-            )}
-          >
-            Bekijk details
-          </span>
+          {property.agency && (
+            <p className="mt-1.5 text-xs text-muted-foreground truncate">
+              via {property.agency.name}
+            </p>
+          )}
         </div>
       </div>
     </Link>
