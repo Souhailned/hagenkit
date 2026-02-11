@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChatCircleDots, PaperPlaneTilt, X, MapPin, ArrowSquareOut, Buildings } from "@phosphor-icons/react";
+import { ChatCircleDots, PaperPlaneTilt, X, MapPin, ArrowSquareOut, Buildings, Envelope } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -122,13 +122,23 @@ function PropertyCards({ properties }: { properties: ChatProperty[] }) {
           <ChatPropertyCard key={p.slug} property={p} />
         ))}
       </div>
-      <Link
-        href="/aanbod"
-        className="flex items-center gap-1 text-xs text-primary hover:underline mt-1 ml-1"
-      >
-        <span>Bekijk alle panden</span>
-        <ArrowSquareOut className="h-3 w-3" />
-      </Link>
+      <div className="flex items-center gap-3 mt-1.5 ml-1">
+        <Link
+          href="/aanbod"
+          className="flex items-center gap-1 text-xs text-primary hover:underline"
+        >
+          <span>Bekijk alle panden</span>
+          <ArrowSquareOut className="h-3 w-3" />
+        </Link>
+        <span className="text-muted-foreground/30">|</span>
+        <Link
+          href="/contact"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+        >
+          <Envelope className="h-3 w-3" />
+          <span>Contact</span>
+        </Link>
+      </div>
     </div>
   );
 }
@@ -465,8 +475,27 @@ export function ChatWidget() {
     }
   };
 
+  // Check if message needs auth
+  const needsAuth = (text: string): boolean => {
+    const authKeywords = ["bewaar", "favoriet", "opslaan", "alert", "melding", "mijn panden", "profiel"];
+    return authKeywords.some((k) => text.toLowerCase().includes(k));
+  };
+
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
+
+    // Check if auth needed
+    if (needsAuth(text)) {
+      const userMsg: Message = { id: Date.now().toString(), role: "user", content: text.trim() };
+      const authMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Om panden te bewaren en alerts in te stellen, heb je een account nodig. Het is gratis en duurt maar 30 seconden! 🚀",
+        quickReplies: ["🔑 Inloggen", "📝 Account aanmaken", "🔍 Verder zoeken"],
+      };
+      setMessages((prev) => prev.map((m) => ({ ...m, quickReplies: undefined })).concat(userMsg, authMsg));
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -562,6 +591,20 @@ export function ChatWidget() {
   };
 
   const handleQuickReply = async (text: string) => {
+    // Auth redirects
+    if (text === "🔑 Inloggen") {
+      window.location.href = "/sign-in";
+      return;
+    }
+    if (text === "📝 Account aanmaken") {
+      window.location.href = "/sign-up";
+      return;
+    }
+    if (text === "🔍 Verder zoeken") {
+      // Just continue normal chat
+      return;
+    }
+
     // Start wizard
     if (text === "🔍 Pand zoeken" || text === "🔍 Opnieuw zoeken" || text === "🔍 Nieuwe zoekopdracht") {
       setWizard({ active: true, step: "type", filters: {} });
