@@ -297,16 +297,55 @@ function getQuickReplies(content: string, messageIndex: number, totalMessages: n
   return [];
 }
 
+// === WIZARD FLOW ===
+interface WizardState {
+  active: boolean;
+  step: "type" | "city" | "budget" | "results";
+  filters: {
+    type?: string;
+    typeLabel?: string;
+    city?: string;
+    budget?: string;
+  };
+}
+
+const WIZARD_TYPES = [
+  { label: "🍽️ Restaurant", value: "RESTAURANT" },
+  { label: "☕ Café", value: "CAFE" },
+  { label: "🍺 Bar", value: "BAR" },
+  { label: "🏨 Hotel", value: "HOTEL" },
+  { label: "🥪 Lunchroom", value: "LUNCHROOM" },
+  { label: "🍕 Alle types", value: "" },
+];
+
+const WIZARD_CITIES = [
+  "Amsterdam", "Rotterdam", "Utrecht", "Den Haag",
+  "Eindhoven", "Groningen", "Alle steden",
+];
+
+const WIZARD_BUDGETS = [
+  { label: "💰 Tot €2.000/mnd", value: "2000" },
+  { label: "💰 €2.000 - €5.000", value: "5000" },
+  { label: "💰 €5.000+", value: "99999" },
+  { label: "🏷️ Te koop", value: "koop" },
+  { label: "🤷 Maakt niet uit", value: "" },
+];
+
 export function ChatWidget() {
   const [open, setOpen] = React.useState(false);
   const [input, setInput] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
+  const [wizard, setWizard] = React.useState<WizardState>({
+    active: false,
+    step: "type",
+    filters: {},
+  });
   const [messages, setMessages] = React.useState<Message[]>([
     {
       id: "welcome",
       role: "assistant",
-      content: "Hoi! 👋 Ik ben de Horecagrond Assistent. Ik help je bij het vinden van het perfecte horecapand.\n\nWat voor type pand zoek je?",
-      quickReplies: ["🍽️ Restaurants", "☕ Cafés", "🍺 Bars", "🏨 Hotels", "📍 Alle steden"],
+      content: "Hoi! 👋 Ik ben de Horecagrond Assistent. Ik help je bij het vinden van het perfecte horecapand.\n\nWat wil je doen?",
+      quickReplies: ["🔍 Pand zoeken", "💬 Stel een vraag", "📍 Alle steden"],
     },
   ]);
   const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -325,6 +364,106 @@ export function ChatWidget() {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [open]);
+
+  // Wizard step handler
+  const handleWizardStep = async (choice: string) => {
+    // Add user choice as message
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: choice,
+    };
+    setMessages((prev) => prev.map((m) => ({ ...m, quickReplies: undefined })).concat(userMsg));
+
+    if (wizard.step === "type") {
+      const selected = WIZARD_TYPES.find((t) => t.label === choice);
+      const newFilters = {
+        ...wizard.filters,
+        type: selected?.value || "",
+        typeLabel: selected?.label || choice,
+      };
+      setWizard({ active: true, step: "city", filters: newFilters });
+
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: `${selected?.label || "Top"} — goeie keuze! 👌\n\nIn welke stad zoek je?`,
+        quickReplies: WIZARD_CITIES.map((c) => `📍 ${c}`),
+      };
+      setMessages((prev) => [...prev, botMsg]);
+    } else if (wizard.step === "city") {
+      const city = choice.replace("📍 ", "");
+      const newFilters = {
+        ...wizard.filters,
+        city: city === "Alle steden" ? "" : city,
+      };
+      setWizard({ active: true, step: "budget", filters: newFilters });
+
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: `${city === "Alle steden" ? "In heel Nederland" : city} — mooi! 🏙️\n\nWat is je budget?`,
+        quickReplies: WIZARD_BUDGETS.map((b) => b.label),
+      };
+      setMessages((prev) => [...prev, botMsg]);
+    } else if (wizard.step === "budget") {
+      const selected = WIZARD_BUDGETS.find((b) => b.label === choice);
+      const newFilters = { ...wizard.filters, budget: selected?.value || "" };
+      setWizard({ active: true, step: "results", filters: newFilters });
+
+      // Fetch results
+      setIsLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (newFilters.type) params.set("type", newFilters.type);
+        if (newFilters.city) params.set("city", newFilters.city);
+        if (newFilters.budget && newFilters.budget !== "koop" && newFilters.budget !== "99999") {
+          params.set("maxPrice", newFilters.budget);
+        }
+
+        const res = await fetch(`/api/chat/wizard?${params.toString()}`);
+        const data = await res.json();
+
+        const summary = [
+          newFilters.typeLabel || "Alle types",
+          newFilters.city || "heel Nederland",
+          selected?.label || "",
+        ]
+          .filter(Boolean)
+          .join(" • ");
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: data.properties?.length > 0
+              ? `🎉 **${data.count} panden gevonden!**\n\n${summary}\n\nHier zijn de beste matches:`
+              : `Helaas, geen panden gevonden voor ${summary}.\n\nProbeer andere filters!`,
+            properties: data.properties || [],
+            quickReplies: [
+              "🔍 Opnieuw zoeken",
+              "💬 Stel een vraag",
+              ...(newFilters.city ? ["📍 Andere stad"] : []),
+            ],
+          },
+        ]);
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: "Sorry, er ging iets mis bij het zoeken. Probeer het opnieuw!",
+            quickReplies: ["🔍 Opnieuw zoeken"],
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+        setWizard({ active: false, step: "type", filters: {} });
+      }
+    }
+  };
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
@@ -423,6 +562,27 @@ export function ChatWidget() {
   };
 
   const handleQuickReply = async (text: string) => {
+    // Start wizard
+    if (text === "🔍 Pand zoeken" || text === "🔍 Opnieuw zoeken" || text === "🔍 Nieuwe zoekopdracht") {
+      setWizard({ active: true, step: "type", filters: {} });
+      const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Laten we je droomlocatie vinden! 🏢\n\nWat voor type pand zoek je?",
+        quickReplies: WIZARD_TYPES.map((t) => t.label),
+      };
+      setMessages((prev) => prev.map((m) => ({ ...m, quickReplies: undefined })).concat(userMsg, botMsg));
+      return;
+    }
+
+    // Wizard flow
+    if (wizard.active) {
+      await handleWizardStep(text);
+      return;
+    }
+
+    // Normal chat
     await sendMessage(text);
   };
 
