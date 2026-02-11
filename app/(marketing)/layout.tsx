@@ -3,6 +3,7 @@ import { Header } from "@/components/marketing/header";
 import { CookieBanner } from "@/components/cookie-banner";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { CompareBar } from "@/components/property/compare-bar";
+import { ChatWidget } from "@/components/chat/chat-widget";
 
 export default function MarketingLayout({
   children,
@@ -19,6 +20,7 @@ export default function MarketingLayout({
       <CookieBanner />
       <CompareBar />
       <ScrollToTop />
+      <ChatWidget />
     </>
   );
 }
