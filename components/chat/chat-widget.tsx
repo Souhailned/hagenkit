@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { ChatCircleDots, PaperPlaneTilt, X } from "@phosphor-icons/react";
-import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,6 +11,171 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  quickReplies?: string[];
+}
+
+// Simple markdown-ish rendering: bold, italic, bullet lists, links
+function ChatMarkdown({ content }: { content: string }) {
+  const lines = content.split("\n");
+
+  return (
+    <div className="space-y-1">
+      {lines.map((line, i) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <br key={i} />;
+
+        // Bullet list items (- or * or •)
+        const bulletMatch = trimmed.match(/^[-*•]\s+(.+)/);
+        if (bulletMatch) {
+          return (
+            <div key={i} className="flex gap-1.5 ml-1">
+              <span className="text-muted-foreground shrink-0">•</span>
+              <span>{renderInline(bulletMatch[1])}</span>
+            </div>
+          );
+        }
+
+        // Numbered list items
+        const numMatch = trimmed.match(/^(\d+)[.)]\s+(.+)/);
+        if (numMatch) {
+          return (
+            <div key={i} className="flex gap-1.5 ml-1">
+              <span className="text-muted-foreground shrink-0">{numMatch[1]}.</span>
+              <span>{renderInline(numMatch[2])}</span>
+            </div>
+          );
+        }
+
+        return <p key={i}>{renderInline(trimmed)}</p>;
+      })}
+    </div>
+  );
+}
+
+function renderInline(text: string): React.ReactNode {
+  // Process bold, italic, and links
+  const parts: React.ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+
+  while (remaining.length > 0) {
+    // Bold: **text**
+    const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
+    // Link: [text](url)
+    const linkMatch = remaining.match(/\[(.+?)\]\((.+?)\)/);
+
+    // Find earliest match
+    const boldIdx = boldMatch ? remaining.indexOf(boldMatch[0]) : Infinity;
+    const linkIdx = linkMatch ? remaining.indexOf(linkMatch[0]) : Infinity;
+
+    if (boldIdx === Infinity && linkIdx === Infinity) {
+      parts.push(remaining);
+      break;
+    }
+
+    if (boldIdx <= linkIdx && boldMatch) {
+      if (boldIdx > 0) parts.push(remaining.slice(0, boldIdx));
+      parts.push(<strong key={key++} className="font-semibold">{boldMatch[1]}</strong>);
+      remaining = remaining.slice(boldIdx + boldMatch[0].length);
+    } else if (linkMatch) {
+      if (linkIdx > 0) parts.push(remaining.slice(0, linkIdx));
+      parts.push(
+        <a key={key++} href={linkMatch[2]} className="text-primary underline hover:no-underline" target="_blank" rel="noopener">
+          {linkMatch[1]}
+        </a>
+      );
+      remaining = remaining.slice(linkIdx + linkMatch[0].length);
+    }
+  }
+
+  return parts.length === 1 ? parts[0] : <>{parts}</>;
+}
+
+// Typing indicator with bouncing dots
+function TypingIndicator() {
+  return (
+    <div className="flex justify-start">
+      <div className="flex items-center gap-1 rounded-2xl bg-muted px-4 py-3 rounded-bl-md">
+        <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:0ms]" />
+        <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:150ms]" />
+        <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:300ms]" />
+      </div>
+    </div>
+  );
+}
+
+// Quick reply buttons
+function QuickReplies({
+  replies,
+  onSelect,
+  disabled,
+}: {
+  replies: string[];
+  onSelect: (text: string) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-2 ml-1">
+      {replies.map((reply) => (
+        <button
+          key={reply}
+          type="button"
+          disabled={disabled}
+          className={cn(
+            "rounded-full border border-primary/30 bg-background px-3 py-1.5 text-xs font-medium",
+            "text-primary hover:bg-primary/5 hover:border-primary/50",
+            "active:scale-95 transition-all",
+            "disabled:opacity-50 disabled:cursor-not-allowed"
+          )}
+          onClick={() => onSelect(reply)}
+        >
+          {reply}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Generate contextual quick replies based on the conversation
+function getQuickReplies(content: string, messageIndex: number, totalMessages: number): string[] {
+  const lower = content.toLowerCase();
+
+  // Welcome message
+  if (messageIndex === 0) {
+    return ["🍽️ Restaurants", "☕ Cafés", "🍺 Bars", "🏨 Hotels", "📍 Alle steden"];
+  }
+
+  // If bot mentioned specific cities or is asking about location
+  if (lower.includes("welke stad") || lower.includes("in welke")) {
+    return ["📍 Amsterdam", "📍 Rotterdam", "📍 Utrecht", "📍 Den Haag", "📍 Andere stad"];
+  }
+
+  // If bot mentioned budget or pricing
+  if (lower.includes("budget") || lower.includes("prijs") || lower.includes("kosten")) {
+    return ["💰 Tot €2.000/mnd", "💰 €2.000-5.000", "💰 €5.000+", "🏷️ Te koop"];
+  }
+
+  // If bot showed results or mentioned panden
+  if (lower.includes("gevonden") || lower.includes("beschikbaar") || lower.includes("panden")) {
+    return ["📋 Meer details", "💰 Goedkoper", "📍 Andere stad", "🔍 Nieuwe zoekopdracht"];
+  }
+
+  // If bot mentioned Amsterdam
+  if (lower.includes("amsterdam")) {
+    return ["🍽️ Restaurants", "☕ Cafés", "🍺 Bars", "📍 Andere stad"];
+  }
+
+  // If bot mentioned restaurants
+  if (lower.includes("restaurant")) {
+    return ["🪑 Met terras", "📍 In Amsterdam", "💰 Budget opties", "🔍 Andere types"];
+  }
+
+  // Default follow-up options
+  if (totalMessages > 2) {
+    return ["🔍 Nieuwe zoekopdracht", "📍 Alle steden", "❓ Meer info"];
+  }
+
+  return [];
 }
 
 export function ChatWidget() {
@@ -22,37 +186,50 @@ export function ChatWidget() {
     {
       id: "welcome",
       role: "assistant",
-      content: "Hoi! 👋 Ik ben de Horecagrond Assistent. Ik help je bij het vinden van het perfecte horecapand. Wat zoek je?",
+      content: "Hoi! 👋 Ik ben de Horecagrond Assistent. Ik help je bij het vinden van het perfecte horecapand.\n\nWat voor type pand zoek je?",
+      quickReplies: ["🍽️ Restaurants", "☕ Cafés", "🍺 Bars", "🏨 Hotels", "📍 Alle steden"],
     },
   ]);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
+  // Auto-scroll on new messages
   React.useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isLoading]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  // Focus input when chat opens
+  React.useEffect(() => {
+    if (open && inputRef.current) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [open]);
+
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input.trim(),
+      content: text.trim(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    // Remove quick replies from previous messages
+    setMessages((prev) =>
+      prev.map((m) => ({ ...m, quickReplies: undefined })).concat(userMessage)
+    );
     setInput("");
     setIsLoading(true);
 
     try {
+      const allMessages = [...messages, userMessage];
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [...messages, userMessage].map((m) => ({
+          messages: allMessages.map((m) => ({
             role: m.role,
             content: m.content,
           })),
@@ -85,13 +262,25 @@ export function ChatWidget() {
           );
         }
       }
+
+      // Add quick replies after streaming completes
+      const msgIndex = allMessages.length;
+      const quickReplies = getQuickReplies(assistantContent, msgIndex, allMessages.length + 1);
+      if (quickReplies.length > 0) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId ? { ...m, quickReplies } : m
+          )
+        );
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           role: "assistant",
-          content: "Sorry, er ging iets mis. De chatbot is momenteel niet beschikbaar. Probeer het later opnieuw.",
+          content: "Sorry, er ging iets mis. Probeer het later opnieuw.",
+          quickReplies: ["🔄 Opnieuw proberen"],
         },
       ]);
     } finally {
@@ -99,8 +288,18 @@ export function ChatWidget() {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await sendMessage(input);
+  };
+
+  const handleQuickReply = async (text: string) => {
+    await sendMessage(text);
+  };
+
   return (
     <>
+      {/* Floating button */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
@@ -114,11 +313,13 @@ export function ChatWidget() {
         </button>
       )}
 
+      {/* Chat window */}
       {open && (
         <div
           className={cn(
-            "fixed bottom-6 right-6 z-50 w-[380px] max-h-[600px]",
+            "fixed bottom-6 right-6 z-50 w-[400px] max-h-[600px]",
             "flex flex-col rounded-2xl border bg-background shadow-2xl",
+            "animate-in slide-in-from-bottom-5 fade-in duration-200",
             "max-sm:bottom-0 max-sm:right-0 max-sm:left-0 max-sm:w-full max-sm:max-h-full max-sm:rounded-none"
           )}
         >
@@ -130,7 +331,9 @@ export function ChatWidget() {
               </div>
               <div>
                 <p className="text-sm font-semibold">Horecagrond Assistent</p>
-                <p className="text-xs text-muted-foreground">Online</p>
+                <p className="text-xs text-muted-foreground">
+                  {isLoading ? "Aan het typen..." : "Online"}
+                </p>
               </div>
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOpen(false)}>
@@ -139,32 +342,43 @@ export function ChatWidget() {
           </div>
 
           {/* Messages */}
-          <ScrollArea className="flex-1 p-4 min-h-[300px]" ref={scrollRef}>
-            <div className="space-y-4">
+          <ScrollArea className="flex-1 p-4 min-h-[350px]" ref={scrollRef}>
+            <div className="space-y-3">
               {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}
-                >
+                <div key={message.id}>
                   <div
-                    className={cn(
-                      "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground rounded-br-md"
-                        : "bg-muted rounded-bl-md"
-                    )}
+                    className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}
                   >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
+                    <div
+                      className={cn(
+                        "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground rounded-br-md"
+                          : "bg-muted rounded-bl-md"
+                      )}
+                    >
+                      {message.role === "assistant" ? (
+                        <ChatMarkdown content={message.content} />
+                      ) : (
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Quick replies under this message */}
+                  {message.role === "assistant" && message.quickReplies && message.quickReplies.length > 0 && (
+                    <QuickReplies
+                      replies={message.quickReplies}
+                      onSelect={handleQuickReply}
+                      disabled={isLoading}
+                    />
+                  )}
                 </div>
               ))}
+
+              {/* Typing indicator */}
               {isLoading && messages[messages.length - 1]?.role === "user" && (
-                <div className="flex justify-start">
-                  <div className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-2.5 text-sm rounded-bl-md">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-muted-foreground">Bezig met zoeken...</span>
-                  </div>
-                </div>
+                <TypingIndicator />
               )}
             </div>
           </ScrollArea>
@@ -172,6 +386,7 @@ export function ChatWidget() {
           {/* Input */}
           <form onSubmit={handleSubmit} className="flex items-center gap-2 border-t p-3">
             <Input
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Typ je vraag..."
@@ -187,29 +402,6 @@ export function ChatWidget() {
               <PaperPlaneTilt className="h-4 w-4" weight="fill" />
             </Button>
           </form>
-
-          {/* Quick suggestions */}
-          {messages.length <= 1 && (
-            <div className="border-t px-3 py-2">
-              <p className="text-xs text-muted-foreground mb-2">Snel starten:</p>
-              <div className="flex flex-wrap gap-1.5">
-                {[
-                  "Wat is er in Amsterdam?",
-                  "Restaurants met terras",
-                  "Hoeveel panden zijn er?",
-                ].map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    type="button"
-                    className="rounded-full border bg-background px-3 py-1 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
-                    onClick={() => setInput(suggestion)}
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </>
