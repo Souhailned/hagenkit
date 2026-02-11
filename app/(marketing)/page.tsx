@@ -243,7 +243,18 @@ export default async function Home() {
 
             {/* Search bar */}
             <div className="mx-auto mt-10 max-w-2xl">
-              <SearchBar size="lg" placeholder="Zoek op stad, type of pandnaam..." />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <SearchBar size="lg" placeholder="Zoek op stad, type of pandnaam..." />
+                </div>
+                <Link
+                  href="/aanbod?view=map"
+                  className="flex h-12 items-center gap-2 rounded-lg border bg-background px-4 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors shrink-0"
+                >
+                  <MapPin className="h-4 w-4" />
+                  <span className="hidden sm:inline">Zoek op kaart</span>
+                </Link>
+              </div>
 
               {/* Quick links */}
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">

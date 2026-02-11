@@ -19,6 +19,7 @@ import { BuurtIntelligence } from "@/components/property/buurt-intelligence";
 import { ConceptSuggestions } from "@/components/property/concept-suggestions";
 import { ViewingRequestDialog } from "@/components/property/viewing-request-dialog";
 import { RevealPhone } from "@/components/property/reveal-phone";
+import { SaveReminderBar } from "@/components/property/save-reminder-bar";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -853,6 +854,9 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
           </div>
         </div>
       )}
+
+      {/* Mobile save reminder */}
+      <SaveReminderBar propertyId={property.id} />
     </>
   );
 }
