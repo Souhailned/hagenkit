@@ -132,25 +132,12 @@ export default async function AanbodPage({ searchParams }: AanbodPageProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero section */}
-      <section className="relative overflow-hidden border-b border-border/40 bg-gradient-to-b from-muted/50 to-background">
-        <div className="container mx-auto px-4 py-16 sm:py-20">
-          <div className="mx-auto max-w-3xl text-center">
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              <span className="block">Ontdek uw</span>
-              <span className="mt-1 block bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
-                ideale horecapand
-              </span>
-            </h1>
-            <p className="mt-6 text-lg text-muted-foreground sm:text-xl">
-              Van sfeervolle restaurants tot bruisende cafés. Vind het perfecte
-              pand voor uw horecadroom in heel Nederland.
-            </p>
-          </div>
+      <section className="border-b bg-background">
+        <div className="container mx-auto px-4 py-8 sm:py-10">
+          <h1 className="text-center text-2xl font-bold tracking-tight sm:text-3xl">
+            Horecapanden
+          </h1>
         </div>
-
-        {/* Decorative elements */}
-        <div className="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-primary/5 blur-3xl" />
       </section>
 
       {/* Recent views */}

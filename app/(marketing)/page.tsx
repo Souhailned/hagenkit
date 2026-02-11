@@ -206,92 +206,44 @@ export default async function Home() {
   return (
     <>
       {/* ─────────────────────────── HERO ─────────────────────────── */}
-      <section className="relative overflow-hidden border-b bg-gradient-to-b from-primary/[0.04] via-background to-background">
-        {/* Subtle grid pattern */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.025]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000' fill-opacity='1'%3E%3Cpath d='M0 0h1v40H0zM40 0h1v40h-1zM0 0h40v1H0zM0 40h40v1H0z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }}
-        />
+      <section className="border-b bg-background">
+        <div className="mx-auto max-w-3xl px-6 pb-16 pt-24 sm:pb-20 sm:pt-32 text-center">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            Zoek een horecapand
+          </h1>
 
-        <div className="relative mx-auto max-w-6xl px-6 pb-20 pt-28 sm:pb-28 sm:pt-40 lg:px-12">
-          <div className="mx-auto max-w-3xl text-center">
-            {/* Live indicator */}
-            <div className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-primary/15 bg-primary/[0.06] px-4 py-1.5">
-              <span className="relative flex size-2">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/60 opacity-75" />
-                <span className="relative inline-flex size-2 rounded-full bg-primary" />
-              </span>
-              <span className="text-sm font-medium text-primary">
-                {stats.properties}+ horecapanden beschikbaar
-              </span>
+          <p className="mt-3 text-muted-foreground">
+            {stats.properties}+ panden in {stats.cities} steden
+          </p>
+
+          {/* Single search bar */}
+          <div className="mx-auto mt-8 max-w-xl">
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <SearchBar size="lg" placeholder="Zoek op stad, type of pandnaam..." />
+              </div>
+              <Link
+                href="/aanbod?view=map"
+                className="flex h-12 items-center gap-2 rounded-lg border bg-background px-4 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors shrink-0"
+              >
+                <MapPin className="h-4 w-4" />
+                Kaart
+              </Link>
             </div>
 
-            {/* Headline */}
-            <h1 className="text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-              Vind jouw ideale{" "}
-              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                horecalocatie
-              </span>
-            </h1>
-
-            <p className="mx-auto mt-6 max-w-xl text-balance text-lg text-muted-foreground">
-              Doorzoek {stats.properties}+ panden van {stats.agents} makelaars
-              in {stats.cities} steden. Van restaurant tot dark kitchen.
-            </p>
-
-            {/* Search bar */}
-            <div className="mx-auto mt-10 max-w-2xl">
-              {/* AI Search */}
-              <AiSearchBar />
-
-              {/* Regular search + map */}
-              <div className="flex gap-2 mt-3">
-                <div className="flex-1">
-                  <SearchBar size="lg" placeholder="Of zoek op stad, type of pandnaam..." />
-                </div>
-                <Link
-                  href="/aanbod?view=map"
-                  className="flex h-12 items-center gap-2 rounded-lg border bg-background px-4 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors shrink-0"
-                >
-                  <MapPin className="h-4 w-4" />
-                  <span className="hidden sm:inline">Kaart</span>
-                </Link>
-              </div>
-
-              {/* Quick links */}
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
-                <span className="text-muted-foreground">Populair:</span>
-                {["Amsterdam", "Rotterdam", "Utrecht", "Den Haag"].map(
-                  (city) => (
-                    <Link
-                      key={city}
-                      href={`/aanbod?cities=${city}`}
-                      className="rounded-full border bg-card px-3 py-1 text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
-                    >
-                      {city}
-                    </Link>
-                  )
-                )}
-              </div>
-            </div>
-
-            {/* Trust indicators */}
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="size-4 text-emerald-500" />
-                <span>Gratis zoeken</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="size-4 text-emerald-500" />
-                <span>Direct contact</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="size-4 text-emerald-500" />
-                <span>Dagelijks nieuwe panden</span>
-              </div>
+            {/* Popular cities */}
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
+              {["Amsterdam", "Rotterdam", "Utrecht", "Den Haag", "Eindhoven"].map(
+                (city) => (
+                  <Link
+                    key={city}
+                    href={`/aanbod?cities=${city}`}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {city}
+                  </Link>
+                )
+              )}
             </div>
           </div>
         </div>
