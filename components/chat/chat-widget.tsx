@@ -444,12 +444,17 @@ export function ChatWidget() {
 
       {/* Chat window */}
       {open && (
+        <>
+        {/* Mobile backdrop */}
+        <div className="fixed inset-0 z-40 bg-background sm:hidden" />
         <div
           className={cn(
-            "fixed bottom-6 right-6 z-50 w-[400px] max-h-[600px]",
-            "flex flex-col rounded-2xl border bg-background shadow-2xl",
+            "fixed z-50 flex flex-col border bg-background shadow-2xl",
             "animate-in slide-in-from-bottom-5 fade-in duration-200",
-            "max-sm:bottom-0 max-sm:right-0 max-sm:left-0 max-sm:w-full max-sm:max-h-full max-sm:rounded-none"
+            // Desktop: floating card
+            "sm:bottom-6 sm:right-6 sm:w-[400px] sm:max-h-[600px] sm:rounded-2xl",
+            // Mobile: fullscreen
+            "max-sm:inset-0 max-sm:w-full max-sm:h-full max-sm:rounded-none"
           )}
         >
           {/* Header */}
@@ -471,7 +476,7 @@ export function ChatWidget() {
           </div>
 
           {/* Messages */}
-          <ScrollArea className="flex-1 p-4 min-h-[350px]" ref={scrollRef}>
+          <ScrollArea className="flex-1 p-4 min-h-0" ref={scrollRef}>
             <div className="space-y-3">
               {messages.map((message) => (
                 <div key={message.id}>
@@ -537,6 +542,7 @@ export function ChatWidget() {
             </Button>
           </form>
         </div>
+        </>
       )}
     </>
   );
