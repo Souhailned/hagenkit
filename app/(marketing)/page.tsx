@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { SearchBar } from "@/components/search/search-bar";
+import { AiSearchBar } from "@/components/search/ai-search-bar";
 import { Testimonials } from "@/components/marketing/testimonials";
 import { CtaSection } from "@/components/marketing/cta-section";
 import { FeaturesSection } from "@/components/marketing/features-section";
@@ -243,16 +244,20 @@ export default async function Home() {
 
             {/* Search bar */}
             <div className="mx-auto mt-10 max-w-2xl">
-              <div className="flex gap-2">
+              {/* AI Search */}
+              <AiSearchBar />
+
+              {/* Regular search + map */}
+              <div className="flex gap-2 mt-3">
                 <div className="flex-1">
-                  <SearchBar size="lg" placeholder="Zoek op stad, type of pandnaam..." />
+                  <SearchBar size="lg" placeholder="Of zoek op stad, type of pandnaam..." />
                 </div>
                 <Link
                   href="/aanbod?view=map"
                   className="flex h-12 items-center gap-2 rounded-lg border bg-background px-4 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors shrink-0"
                 >
                   <MapPin className="h-4 w-4" />
-                  <span className="hidden sm:inline">Zoek op kaart</span>
+                  <span className="hidden sm:inline">Kaart</span>
                 </Link>
               </div>
 
