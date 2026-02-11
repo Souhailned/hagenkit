@@ -18,7 +18,25 @@ async function getModel(): Promise<{ model: any; supportsTools: boolean }> {
   return { model: ollama("llama3.2:3b"), supportsTools: false };
 }
 
-// Extract search intent from user message for property card injection
+const cityMap: Record<string, string> = {
+  amsterdam: "Amsterdam", rotterdam: "Rotterdam", utrecht: "Utrecht",
+  "den haag": "Den Haag", eindhoven: "Eindhoven", groningen: "Groningen",
+  maastricht: "Maastricht", arnhem: "Arnhem", tilburg: "Tilburg",
+  leiden: "Leiden", breda: "Breda", nijmegen: "Nijmegen",
+};
+
+const typeMap: Record<string, string> = {
+  restaurant: "RESTAURANT", restaurants: "RESTAURANT",
+  café: "CAFE", cafés: "CAFE", cafe: "CAFE", cafes: "CAFE", koffie: "CAFE",
+  bar: "BAR", bars: "BAR", kroeg: "BAR",
+  hotel: "HOTEL", hotels: "HOTEL",
+  lunchroom: "LUNCHROOM", lunchrooms: "LUNCHROOM", lunch: "LUNCHROOM",
+  "dark kitchen": "DARK_KITCHEN", bezorg: "DARK_KITCHEN",
+  bakkerij: "BAKERY", bakker: "BAKERY",
+  bistro: "BISTRO",
+};
+
+// Extract search intent with conversation context (looks at all messages for context)
 function extractSearchIntent(messages: { role: string; content: string }[]): {
   city?: string;
   type?: string;
@@ -27,32 +45,56 @@ function extractSearchIntent(messages: { role: string; content: string }[]): {
   if (!lastUser) return null;
   const text = lastUser.content.toLowerCase();
 
-  // City detection
-  const cityMap: Record<string, string> = {
-    amsterdam: "Amsterdam", rotterdam: "Rotterdam", utrecht: "Utrecht",
-    "den haag": "Den Haag", eindhoven: "Eindhoven", groningen: "Groningen",
-    maastricht: "Maastricht", arnhem: "Arnhem", tilburg: "Tilburg",
-    leiden: "Leiden", breda: "Breda", nijmegen: "Nijmegen",
-  };
+  // Current message intent
   const city = Object.keys(cityMap).find((c) => text.includes(c));
-
-  // Type detection
-  const typeMap: Record<string, string> = {
-    restaurant: "RESTAURANT", restaurants: "RESTAURANT",
-    café: "CAFE", cafés: "CAFE", cafe: "CAFE", cafes: "CAFE", koffie: "CAFE",
-    bar: "BAR", bars: "BAR", kroeg: "BAR",
-    hotel: "HOTEL", hotels: "HOTEL",
-    lunchroom: "LUNCHROOM", lunchrooms: "LUNCHROOM", lunch: "LUNCHROOM",
-    "dark kitchen": "DARK_KITCHEN", bezorg: "DARK_KITCHEN",
-    bakkerij: "BAKERY", bakker: "BAKERY",
-    bistro: "BISTRO",
-  };
   const type = Object.keys(typeMap).find((t) => text.includes(t));
 
-  if (!city && !type) return null;
+  // If no intent in current message, check conversation context
+  // "en in Rotterdam?" → keep type from earlier, change city
+  // "iets goedkopers" → keep city+type from earlier
+  if (!city && !type) {
+    // Look for context in previous messages
+    const allUserTexts = messages
+      .filter((m) => m.role === "user")
+      .map((m) => m.content.toLowerCase());
+
+    let contextCity: string | undefined;
+    let contextType: string | undefined;
+
+    for (const prevText of allUserTexts) {
+      const prevCity = Object.keys(cityMap).find((c) => prevText.includes(c));
+      const prevType = Object.keys(typeMap).find((t) => prevText.includes(t));
+      if (prevCity) contextCity = prevCity;
+      if (prevType) contextType = prevType;
+    }
+
+    // Only use context if current message suggests a follow-up
+    const isFollowUp = /^(en |ook |wat |meer|andere|goedkoper|duurder|groter|kleiner)/i.test(text.trim());
+    if (isFollowUp && (contextCity || contextType)) {
+      // Override with any new mentions in current message
+      return {
+        city: cityMap[city || contextCity || ""] || undefined,
+        type: typeMap[type || contextType || ""] || undefined,
+      };
+    }
+
+    return null;
+  }
+
+  // Also carry forward context from previous messages
+  let contextCity: string | undefined;
+  let contextType: string | undefined;
+  for (const msg of messages.filter((m) => m.role === "user")) {
+    const t = msg.content.toLowerCase();
+    const c = Object.keys(cityMap).find((k) => t.includes(k));
+    const tp = Object.keys(typeMap).find((k) => t.includes(k));
+    if (c) contextCity = c;
+    if (tp) contextType = tp;
+  }
+
   return {
-    city: city ? cityMap[city] : undefined,
-    type: type ? typeMap[type] : undefined,
+    city: cityMap[city || contextCity || ""] || undefined,
+    type: typeMap[type || contextType || ""] || undefined,
   };
 }
 
@@ -106,7 +148,10 @@ Je kunt panden zoeken, details opvragen, vergelijken, en advies geven over locat
 Antwoord altijd in het Nederlands. Wees beknopt maar behulpzaam.
 We hebben panden in steden als Amsterdam, Rotterdam, Utrecht, Den Haag, Eindhoven, Groningen, Maastricht, Arnhem, Tilburg, Leiden, Breda en Nijmegen.
 Types: restaurants, cafés, bars, hotels, lunchrooms, dark kitchens, bakkerijen, eetcafés, bistro's en meer.
-Als iemand naar panden zoekt, beschrijf kort wat we hebben en verwijs naar het aanbod.`;
+Als iemand naar panden zoekt, beschrijf kort wat we hebben en verwijs naar het aanbod.
+Als iemand zegt "en in [stad]?" of "ook in [stad]?", begrijp dat ze hetzelfde type pand zoeken maar in een andere stad.
+Als iemand zegt "iets goedkopers" of "groter", pas de vorige zoekcriteria aan.
+Onthoud de context van het gesprek.`;
 
   const result = streamText({
     model,
