@@ -151,6 +151,7 @@ export async function searchProperties(
       types,
       statuses,
       publishedWithinDays,
+      buildPeriods,
       priceMin,
       priceMax,
       areaMin,
@@ -179,6 +180,30 @@ export async function searchProperties(
           ],
         },
       ];
+    }
+
+    // Build period filter
+    if (buildPeriods?.length) {
+      const periodMap: Record<string, { min: number; max: number }> = {
+        "pre-1920": { min: 0, max: 1919 },
+        "1920-1945": { min: 1920, max: 1945 },
+        "1946-1970": { min: 1946, max: 1970 },
+        "1971-1990": { min: 1971, max: 1990 },
+        "1991-2010": { min: 1991, max: 2010 },
+        "2011-now": { min: 2011, max: 9999 },
+      };
+      const yearConditions = buildPeriods
+        .map((p) => periodMap[p])
+        .filter(Boolean)
+        .map((range) => ({
+          buildYear: { gte: range.min, lte: range.max },
+        }));
+      if (yearConditions.length > 0) {
+        where.AND = [
+          ...(Array.isArray(where.AND) ? where.AND : []),
+          { OR: yearConditions },
+        ];
+      }
     }
 
     // Search filter

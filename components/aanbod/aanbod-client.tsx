@@ -51,6 +51,7 @@ interface AanbodClientProps {
     types: PropertyType[];
     statuses?: string[];
     publishedWithinDays?: number;
+    buildPeriods?: string[];
     priceMin?: number;
     priceMax?: number;
     areaMin?: number;
@@ -96,6 +97,9 @@ export function AanbodClient({
   const [publishedWithinDays, setPublishedWithinDays] = React.useState<number | undefined>(
     initialFilters.publishedWithinDays
   );
+  const [selectedBuildPeriods, setSelectedBuildPeriods] = React.useState<string[]>(
+    initialFilters.buildPeriods ?? []
+  );
   const [selectedFeatures, setSelectedFeatures] = React.useState<
     PropertyFeature[]
   >(initialFilters.features);
@@ -124,6 +128,7 @@ export function AanbodClient({
     selectedTypes.length +
     (selectedStatuses.length !== 1 || selectedStatuses[0] !== "ACTIVE" ? 1 : 0) +
     (publishedWithinDays !== undefined ? 1 : 0) +
+    selectedBuildPeriods.length +
     (priceMin !== undefined ? 1 : 0) +
     (priceMax !== undefined ? 1 : 0) +
     (areaMin !== undefined ? 1 : 0) +
@@ -157,6 +162,9 @@ export function AanbodClient({
     }
     if (publishedWithinDays !== undefined) {
       params.set("publishedWithinDays", publishedWithinDays.toString());
+    }
+    if (selectedBuildPeriods.length > 0) {
+      params.set("buildPeriods", selectedBuildPeriods.join(","));
     }
     if (selectedFeatures.length > 0) {
       params.set("features", selectedFeatures.join(","));
@@ -198,6 +206,7 @@ export function AanbodClient({
           selectedTypes.length > 0 ? (selectedTypes as PropertyType[]) : undefined,
         statuses: selectedStatuses.length > 0 ? selectedStatuses as ("DRAFT" | "PENDING_REVIEW" | "ACTIVE" | "UNDER_OFFER" | "RENTED" | "SOLD" | "ARCHIVED" | "REJECTED")[] : undefined,
         publishedWithinDays,
+        buildPeriods: selectedBuildPeriods.length > 0 ? selectedBuildPeriods : undefined,
         priceMin,
         priceMax,
         areaMin,
@@ -296,6 +305,11 @@ export function AanbodClient({
     resetPage();
   };
 
+  const handleBuildPeriodsChange = (periods: string[]) => {
+    setSelectedBuildPeriods(periods);
+    resetPage();
+  };
+
   const handlePriceMinChange = (value: number | undefined) => {
     setPriceMin(value);
     resetPage();
@@ -338,6 +352,7 @@ export function AanbodClient({
     setSelectedTypes([]);
     setSelectedStatuses(["ACTIVE"]);
     setPublishedWithinDays(undefined);
+    setSelectedBuildPeriods([]);
     setPriceMin(undefined);
     setPriceMax(undefined);
     setAreaMin(undefined);
@@ -377,6 +392,7 @@ export function AanbodClient({
         selectedTypes={selectedTypes}
         selectedStatuses={selectedStatuses}
         publishedWithinDays={publishedWithinDays}
+        selectedBuildPeriods={selectedBuildPeriods}
         priceMin={priceMin}
         priceMax={priceMax}
         areaMin={areaMin}
@@ -386,6 +402,7 @@ export function AanbodClient({
         onTypesChange={handleTypesChange}
         onStatusesChange={handleStatusesChange}
         onPublishedChange={handlePublishedChange}
+        onBuildPeriodsChange={handleBuildPeriodsChange}
         onPriceMinChange={handlePriceMinChange}
         onPriceMaxChange={handlePriceMaxChange}
         onAreaMinChange={handleAreaMinChange}
@@ -407,6 +424,7 @@ export function AanbodClient({
                 selectedTypes={selectedTypes}
                 selectedStatuses={selectedStatuses}
                 publishedWithinDays={publishedWithinDays}
+                selectedBuildPeriods={selectedBuildPeriods}
                 priceMin={priceMin}
                 priceMax={priceMax}
                 areaMin={areaMin}
@@ -416,6 +434,7 @@ export function AanbodClient({
                 onTypesChange={handleTypesChange}
                 onStatusesChange={handleStatusesChange}
                 onPublishedChange={handlePublishedChange}
+                onBuildPeriodsChange={handleBuildPeriodsChange}
                 onPriceMinChange={handlePriceMinChange}
                 onPriceMaxChange={handlePriceMaxChange}
                 onAreaMinChange={handleAreaMinChange}

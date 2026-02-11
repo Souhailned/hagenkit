@@ -13,6 +13,7 @@ import {
   PublishedFilter,
   PriceFilter,
   AreaFilter,
+  BuildYearFilter,
   FeaturesFilter,
 } from "./filters";
 
@@ -29,6 +30,7 @@ interface FilterSidebarProps {
   selectedTypes: PropertyType[];
   selectedStatuses: string[];
   publishedWithinDays?: number;
+  selectedBuildPeriods: string[];
   priceMin?: number;
   priceMax?: number;
   areaMin?: number;
@@ -39,6 +41,7 @@ interface FilterSidebarProps {
   onTypesChange: (types: PropertyType[]) => void;
   onStatusesChange: (statuses: string[]) => void;
   onPublishedChange: (days: number | undefined) => void;
+  onBuildPeriodsChange: (periods: string[]) => void;
   onPriceMinChange: (value: number | undefined) => void;
   onPriceMaxChange: (value: number | undefined) => void;
   onAreaMinChange: (value: number | undefined) => void;
@@ -54,6 +57,7 @@ export function FilterSidebar({
   selectedTypes,
   selectedStatuses,
   publishedWithinDays,
+  selectedBuildPeriods,
   priceMin,
   priceMax,
   areaMin,
@@ -63,6 +67,7 @@ export function FilterSidebar({
   onTypesChange,
   onStatusesChange,
   onPublishedChange,
+  onBuildPeriodsChange,
   onPriceMinChange,
   onPriceMaxChange,
   onAreaMinChange,
@@ -76,6 +81,7 @@ export function FilterSidebar({
     selectedTypes.length > 0 ||
     selectedStatuses.length !== 1 || selectedStatuses[0] !== "ACTIVE" ||
     publishedWithinDays !== undefined ||
+    selectedBuildPeriods.length > 0 ||
     priceMin !== undefined ||
     priceMax !== undefined ||
     areaMin !== undefined ||
@@ -135,6 +141,14 @@ export function FilterSidebar({
               <PublishedFilter
                 publishedWithinDays={publishedWithinDays}
                 onChange={onPublishedChange}
+              />
+
+              <Separator />
+
+              {/* Build year filter */}
+              <BuildYearFilter
+                selectedPeriods={selectedBuildPeriods}
+                onChange={onBuildPeriodsChange}
               />
 
               <Separator />

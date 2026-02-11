@@ -19,6 +19,7 @@ import {
   TypeFilter,
   StatusFilter,
   PublishedFilter,
+  BuildYearFilter,
   PriceFilter,
   AreaFilter,
   FeaturesFilter,
@@ -36,6 +37,7 @@ interface MobileFilterSheetProps {
   selectedTypes: PropertyType[];
   selectedStatuses: string[];
   publishedWithinDays?: number;
+  selectedBuildPeriods: string[];
   priceMin?: number;
   priceMax?: number;
   areaMin?: number;
@@ -45,6 +47,7 @@ interface MobileFilterSheetProps {
   onTypesChange: (types: PropertyType[]) => void;
   onStatusesChange: (statuses: string[]) => void;
   onPublishedChange: (days: number | undefined) => void;
+  onBuildPeriodsChange: (periods: string[]) => void;
   onPriceMinChange: (value: number | undefined) => void;
   onPriceMaxChange: (value: number | undefined) => void;
   onAreaMinChange: (value: number | undefined) => void;
@@ -60,6 +63,7 @@ export function MobileFilterSheet({
   selectedTypes,
   selectedStatuses,
   publishedWithinDays,
+  selectedBuildPeriods,
   priceMin,
   priceMax,
   areaMin,
@@ -69,6 +73,7 @@ export function MobileFilterSheet({
   onTypesChange,
   onStatusesChange,
   onPublishedChange,
+  onBuildPeriodsChange,
   onPriceMinChange,
   onPriceMaxChange,
   onAreaMinChange,
@@ -132,6 +137,11 @@ export function MobileFilterSheet({
             <PublishedFilter
               publishedWithinDays={publishedWithinDays}
               onChange={onPublishedChange}
+            />
+            <Separator />
+            <BuildYearFilter
+              selectedPeriods={selectedBuildPeriods}
+              onChange={onBuildPeriodsChange}
             />
             <Separator />
             <PriceFilter

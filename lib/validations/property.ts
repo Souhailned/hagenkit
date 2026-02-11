@@ -299,6 +299,7 @@ export const searchPropertiesSchema = z.object({
   types: z.array(propertyTypeEnum).optional(),
   statuses: z.array(propertyStatusEnum).optional(),
   publishedWithinDays: z.number().int().positive().max(365).optional(),
+  buildPeriods: z.array(z.string()).optional(),
   priceMin: z.number().int().nonnegative().optional(),
   priceMax: z.number().int().nonnegative().optional(),
   areaMin: z.number().int().nonnegative().optional(),
