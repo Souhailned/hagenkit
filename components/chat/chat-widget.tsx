@@ -345,6 +345,8 @@ export function ChatWidget() {
   const [open, setOpen] = React.useState(false);
   const [input, setInput] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
+  const [userName, setUserName] = React.useState<string | null>(null);
+  const [userRole, setUserRole] = React.useState<string | null>(null);
   const [wizard, setWizard] = React.useState<WizardState>({
     active: false,
     step: "type",
@@ -358,6 +360,37 @@ export function ChatWidget() {
       quickReplies: ["🔍 Pand zoeken", "💬 Stel een vraag", "📍 Alle steden"],
     },
   ]);
+
+  // Fetch auth session on mount
+  React.useEffect(() => {
+    fetch("/api/auth/get-session")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.session?.user) {
+          const user = data.session.user;
+          setUserName(user.name || user.email?.split("@")[0] || null);
+          setUserRole(user.role || null);
+
+          // Update welcome message for logged-in users
+          const isAgent = user.role === "agent";
+          setMessages([
+            {
+              id: "welcome",
+              role: "assistant",
+              content: isAgent
+                ? `Welkom terug, ${user.name || "makelaar"}! 🏢\n\nWat kan ik voor je doen?`
+                : `Welkom terug, ${user.name || "daar"}! 👋\n\nWaarmee kan ik je helpen?`,
+              quickReplies: isAgent
+                ? ["📊 Mijn statistieken", "🏠 Mijn panden", "🔍 Pand zoeken", "💬 Stel een vraag"]
+                : ["🔍 Pand zoeken", "❤️ Mijn favorieten", "🔔 Mijn alerts", "💬 Stel een vraag"],
+            },
+          ]);
+        }
+      })
+      .catch(() => {
+        // Not logged in, keep default welcome
+      });
+  }, []);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -484,8 +517,8 @@ export function ChatWidget() {
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
 
-    // Check if auth needed
-    if (needsAuth(text)) {
+    // Check if auth needed (only for logged-out users)
+    if (!userName && needsAuth(text)) {
       const userMsg: Message = { id: Date.now().toString(), role: "user", content: text.trim() };
       const authMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -591,6 +624,24 @@ export function ChatWidget() {
   };
 
   const handleQuickReply = async (text: string) => {
+    // Dashboard redirects (logged in users)
+    if (text === "❤️ Mijn favorieten") {
+      window.location.href = "/dashboard/favorieten";
+      return;
+    }
+    if (text === "🔔 Mijn alerts") {
+      window.location.href = "/dashboard/alerts";
+      return;
+    }
+    if (text === "🏠 Mijn panden") {
+      window.location.href = "/dashboard/panden";
+      return;
+    }
+    if (text === "📊 Mijn statistieken") {
+      window.location.href = "/dashboard/analytics";
+      return;
+    }
+
     // Auth redirects
     if (text === "🔑 Inloggen") {
       window.location.href = "/sign-in";
