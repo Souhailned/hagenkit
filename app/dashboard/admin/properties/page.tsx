@@ -5,8 +5,7 @@ import prisma from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/property/status-badge";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { PropertyActions } from "@/components/admin/property-actions";
 
 export default async function AdminPropertiesPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -25,6 +24,7 @@ export default async function AdminPropertiesPage() {
       propertyType: true,
       viewCount: true,
       inquiryCount: true,
+      featured: true,
       createdAt: true,
       createdBy: { select: { name: true, email: true } },
       agency: { select: { name: true } },
@@ -78,9 +78,12 @@ export default async function AdminPropertiesPage() {
                       {new Date(p.createdAt).toLocaleDateString("nl-NL")}
                     </td>
                     <td className="p-4">
-                      <Link href={`/aanbod/${p.slug}`} target="_blank" className="text-primary hover:underline">
-                        <ExternalLink className="h-4 w-4" />
-                      </Link>
+                      <PropertyActions
+                        propertyId={p.id}
+                        slug={p.slug}
+                        status={p.status}
+                        featured={p.featured}
+                      />
                     </td>
                   </tr>
                 ))}

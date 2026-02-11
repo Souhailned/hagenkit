@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Buildings, Users, Eye, Envelope, TrendUp, ChartBar } from "@phosphor-icons/react";
+import { Buildings, Users, Eye, TrendUp, ChartBar, Storefront, ArrowRight } from "@phosphor-icons/react";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getMarketOverview } from "@/app/actions/market-intelligence";
 import { formatPrice } from "@/lib/format";
@@ -91,6 +92,43 @@ export function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Quick Links */}
+      <div className="grid grid-cols-3 gap-4">
+        <Link href="/dashboard/admin/users" className="group">
+          <Card className="hover:border-primary/50 transition-colors">
+            <CardContent className="pt-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Users className="h-5 w-5 text-primary" weight="duotone" />
+                <span className="font-medium">Gebruikers beheren</span>
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/dashboard/admin/properties" className="group">
+          <Card className="hover:border-primary/50 transition-colors">
+            <CardContent className="pt-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Buildings className="h-5 w-5 text-primary" weight="duotone" />
+                <span className="font-medium">Alle panden</span>
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/dashboard/admin/agencies" className="group">
+          <Card className="hover:border-primary/50 transition-colors">
+            <CardContent className="pt-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Storefront className="h-5 w-5 text-primary" weight="duotone" />
+                <span className="font-medium">Makelaarskantoren</span>
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">

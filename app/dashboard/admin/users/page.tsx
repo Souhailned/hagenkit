@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Building2, Search as SearchIcon, Shield } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { UserActions } from "@/components/admin/user-actions";
 
 export default async function AdminUsersPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -23,6 +24,7 @@ export default async function AdminUsersPage() {
         role: true,
         createdAt: true,
         emailVerified: true,
+        banned: true,
       },
       orderBy: { createdAt: "desc" },
       take: 100,
@@ -104,6 +106,7 @@ export default async function AdminUsersPage() {
                   <th className="pb-3 font-medium text-muted-foreground">Rol</th>
                   <th className="pb-3 font-medium text-muted-foreground">Geverifieerd</th>
                   <th className="pb-3 font-medium text-muted-foreground">Lid sinds</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Acties</th>
                 </tr>
               </thead>
               <tbody>
@@ -121,6 +124,13 @@ export default async function AdminUsersPage() {
                     </td>
                     <td className="py-3 text-muted-foreground">
                       {new Date(user.createdAt).toLocaleDateString("nl-NL")}
+                    </td>
+                    <td className="py-3">
+                      <UserActions
+                        userId={user.id}
+                        currentRole={user.role || "seeker"}
+                        isBanned={user.banned || false}
+                      />
                     </td>
                   </tr>
                 ))}
