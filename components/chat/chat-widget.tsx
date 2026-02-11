@@ -1,17 +1,136 @@
 "use client";
 
 import * as React from "react";
-import { ChatCircleDots, PaperPlaneTilt, X } from "@phosphor-icons/react";
+import { ChatCircleDots, PaperPlaneTilt, X, MapPin, ArrowSquareOut, Buildings } from "@phosphor-icons/react";
+import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+
+interface ChatProperty {
+  title: string;
+  slug: string;
+  city: string;
+  type: string;
+  price: string;
+  area?: string;
+  imageUrl?: string | null;
+}
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   quickReplies?: string[];
+  properties?: ChatProperty[];
+}
+
+const PROPERTIES_MARKER = "\n<!--PROPERTIES:";
+const PROPERTIES_END = ":PROPERTIES-->";
+
+// Parse properties from streamed content
+function parsePropertiesFromContent(content: string): {
+  text: string;
+  properties: ChatProperty[];
+} {
+  const markerIdx = content.indexOf(PROPERTIES_MARKER);
+  if (markerIdx === -1) return { text: content, properties: [] };
+
+  const endIdx = content.indexOf(PROPERTIES_END);
+  if (endIdx === -1) return { text: content.substring(0, markerIdx), properties: [] };
+
+  const jsonStr = content.substring(markerIdx + PROPERTIES_MARKER.length, endIdx);
+  try {
+    const properties = JSON.parse(jsonStr) as ChatProperty[];
+    return { text: content.substring(0, markerIdx).trim(), properties };
+  } catch {
+    return { text: content.substring(0, markerIdx), properties: [] };
+  }
+}
+
+// Property type labels
+const typeLabels: Record<string, string> = {
+  RESTAURANT: "Restaurant",
+  CAFE: "Café",
+  BAR: "Bar",
+  HOTEL: "Hotel",
+  LUNCHROOM: "Lunchroom",
+  DARK_KITCHEN: "Dark Kitchen",
+  BAKERY: "Bakkerij",
+  BISTRO: "Bistro",
+  GRAND_CAFE: "Grand Café",
+  EETCAFE: "Eetcafé",
+  PARTY_CENTER: "Partycentrum",
+};
+
+// Property card component for chat
+function ChatPropertyCard({ property }: { property: ChatProperty }) {
+  return (
+    <Link
+      href={`/aanbod/${property.slug}`}
+      className={cn(
+        "flex gap-3 rounded-xl border bg-background p-2.5 min-w-[260px] max-w-[280px]",
+        "hover:border-primary/30 hover:shadow-sm transition-all",
+        "shrink-0"
+      )}
+    >
+      {/* Image */}
+      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
+        {property.imageUrl ? (
+          <Image
+            src={property.imageUrl}
+            alt={property.title}
+            fill
+            className="object-cover"
+            sizes="64px"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <Buildings className="h-6 w-6 text-muted-foreground/50" />
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="flex flex-col justify-between min-w-0 flex-1">
+        <div>
+          <p className="text-xs font-semibold leading-tight truncate">{property.title}</p>
+          <div className="flex items-center gap-1 mt-0.5">
+            <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+            <span className="text-[11px] text-muted-foreground truncate">{property.city}</span>
+          </div>
+        </div>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-xs font-bold text-primary">{property.price}</span>
+          {property.area && (
+            <span className="text-[10px] text-muted-foreground">{property.area}</span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+// Property cards row
+function PropertyCards({ properties }: { properties: ChatProperty[] }) {
+  return (
+    <div className="mt-2 -mx-1">
+      <div className="flex gap-2 overflow-x-auto pb-2 px-1 scrollbar-hide">
+        {properties.map((p) => (
+          <ChatPropertyCard key={p.slug} property={p} />
+        ))}
+      </div>
+      <Link
+        href="/aanbod"
+        className="flex items-center gap-1 text-xs text-primary hover:underline mt-1 ml-1"
+      >
+        <span>Bekijk alle panden</span>
+        <ArrowSquareOut className="h-3 w-3" />
+      </Link>
+    </div>
+  );
 }
 
 // Simple markdown-ish rendering: bold, italic, bullet lists, links
@@ -255,24 +374,34 @@ export function ChatWidget() {
           const { done, value } = await reader.read();
           if (done) break;
           assistantContent += decoder.decode(value, { stream: true });
+          // Parse out properties marker during streaming (show only text part)
+          const { text: visibleText } = parsePropertiesFromContent(assistantContent);
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === assistantId ? { ...m, content: assistantContent } : m
+              m.id === assistantId ? { ...m, content: visibleText } : m
             )
           );
         }
       }
 
-      // Add quick replies after streaming completes
+      // Parse properties from final content
+      const { text: finalText, properties } = parsePropertiesFromContent(assistantContent);
+
+      // Add quick replies and properties after streaming completes
       const msgIndex = allMessages.length;
-      const quickReplies = getQuickReplies(assistantContent, msgIndex, allMessages.length + 1);
-      if (quickReplies.length > 0) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId ? { ...m, quickReplies } : m
-          )
-        );
-      }
+      const quickReplies = getQuickReplies(finalText, msgIndex, allMessages.length + 1);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? {
+                ...m,
+                content: finalText,
+                ...(quickReplies.length > 0 ? { quickReplies } : {}),
+                ...(properties.length > 0 ? { properties } : {}),
+              }
+            : m
+        )
+      );
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -364,6 +493,11 @@ export function ChatWidget() {
                       )}
                     </div>
                   </div>
+
+                  {/* Property cards */}
+                  {message.role === "assistant" && message.properties && message.properties.length > 0 && (
+                    <PropertyCards properties={message.properties} />
+                  )}
 
                   {/* Quick replies under this message */}
                   {message.role === "assistant" && message.quickReplies && message.quickReplies.length > 0 && (
