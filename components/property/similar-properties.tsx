@@ -1,64 +1,88 @@
+"use client";
+
+import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { getSimilarProperties } from "@/app/actions/similar-properties";
+import { Sparkle, MapPin, Ruler, ArrowRight } from "@phosphor-icons/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Maximize2 } from "lucide-react";
+import { getSimilarProperties } from "@/app/actions/recommendations";
+import { formatPrice } from "@/lib/format";
 
-const typeLabels: Record<string, string> = {
-  RESTAURANT: "Restaurant", CAFE: "Café", BAR: "Bar", HOTEL: "Hotel",
-  EETCAFE: "Eetcafé", LUNCHROOM: "Lunchroom", KOFFIEBAR: "Koffiebar",
-  PIZZERIA: "Pizzeria", SNACKBAR: "Snackbar", BAKERY: "Bakkerij",
-};
+interface SimilarPropertiesProps {
+  propertyId: string;
+}
 
-export async function SimilarProperties({ propertyId }: { propertyId: string }) {
-  const similar = await getSimilarProperties(propertyId);
+export function SimilarProperties({ propertyId }: SimilarPropertiesProps) {
+  const [properties, setProperties] = React.useState<Awaited<ReturnType<typeof getSimilarProperties>>["properties"]>([]);
+  const [loaded, setLoaded] = React.useState(false);
 
-  if (similar.length === 0) return null;
+  React.useEffect(() => {
+    getSimilarProperties(propertyId, 4).then((result) => {
+      if (result.success) setProperties(result.properties);
+      setLoaded(true);
+    });
+  }, [propertyId]);
+
+  if (loaded && properties.length === 0) return null;
+  if (!loaded) return null;
 
   return (
-    <section className="mt-16">
-      <h2 className="text-2xl font-bold tracking-tight mb-6">Vergelijkbare panden</h2>
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {similar.map((p) => {
-          const price = p.rentPrice || p.salePrice;
-          const formatted = price
-            ? new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(price / 100)
-            : "Prijs n.t.b.";
-          const suffix = p.priceType === "RENT" || p.priceType === "RENT_OR_SALE" ? "/mnd" : "";
-          const imgUrl = p.images[0]?.thumbnailUrl || p.images[0]?.originalUrl;
+    <section className="mt-12">
+      <div className="flex items-center gap-2 mb-6">
+        <Sparkle className="h-5 w-5 text-primary" weight="duotone" />
+        <h2 className="text-xl font-semibold">Vergelijkbare panden</h2>
+      </div>
 
-          return (
-            <Link key={p.id} href={`/aanbod/${p.slug}`}>
-              <Card className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
-                <div className="relative aspect-[4/3] bg-muted">
-                  {imgUrl ? (
-                    <Image src={imgUrl} alt={p.title} fill className="object-cover" sizes="(max-width: 640px) 100vw, 33vw" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
-                      Geen foto
-                    </div>
-                  )}
-                  <Badge className="absolute top-3 left-3 bg-black/50 backdrop-blur-sm text-white border-0">
-                    {typeLabels[p.propertyType] || p.propertyType}
-                  </Badge>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {properties.map((property) => (
+          <Link key={property.id} href={`/aanbod/${property.slug}`}>
+            <Card className="group overflow-hidden hover:shadow-md transition-shadow h-full">
+              <div className="relative aspect-[4/3] overflow-hidden">
+                <Image
+                  src={property.images[0] || "/placeholder.jpg"}
+                  alt={property.title}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                />
+                <Badge variant="secondary" className="absolute top-2 left-2 text-[10px]">
+                  {property.matchReason}
+                </Badge>
+              </div>
+              <CardContent className="p-3 space-y-1.5">
+                <h3 className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
+                  {property.title}
+                </h3>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <MapPin className="h-3 w-3" weight="fill" />
+                  {property.city}
                 </div>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold line-clamp-1">{p.title}</h3>
-                  <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5" /> {p.city}
-                  </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="font-bold">{formatted}{suffix}</span>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-semibold text-primary">
+                    {property.rentPrice ? `${formatPrice(property.rentPrice)}/mnd` : "Op aanvraag"}
+                  </span>
+                  {property.surfaceTotal && (
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Maximize2 className="h-3 w-3" /> {p.surfaceTotal} m²
+                      <Ruler className="h-3 w-3" />
+                      {property.surfaceTotal} m²
                     </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+
+      <div className="flex justify-center mt-6">
+        <Link
+          href="/aanbod"
+          className="flex items-center gap-1.5 text-sm text-primary hover:underline"
+        >
+          Bekijk alle panden
+          <ArrowRight className="h-3.5 w-3.5" weight="bold" />
+        </Link>
       </div>
     </section>
   );

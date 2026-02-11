@@ -7,6 +7,7 @@ import {
 } from "@/types/property";
 import { searchProperties } from "@/app/actions/properties";
 import { AanbodClient } from "@/components/aanbod/aanbod-client";
+import { RecentViews } from "@/components/property/recent-views";
 
 export const metadata: Metadata = {
   title: "Horecapanden | Vind jouw perfecte horecalocatie",
@@ -151,6 +152,9 @@ export default async function AanbodPage({ searchParams }: AanbodPageProps) {
         <div className="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-primary/5 blur-3xl" />
         <div className="absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-primary/5 blur-3xl" />
       </section>
+
+      {/* Recent views */}
+      <RecentViews />
 
       {/* Main content */}
       <section className="container mx-auto px-4 py-10 lg:py-12">

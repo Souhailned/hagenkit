@@ -20,6 +20,8 @@ import { ConceptSuggestions } from "@/components/property/concept-suggestions";
 import { ViewingRequestDialog } from "@/components/property/viewing-request-dialog";
 import { RevealPhone } from "@/components/property/reveal-phone";
 import { SaveReminderBar } from "@/components/property/save-reminder-bar";
+import { SimilarProperties } from "@/components/property/similar-properties";
+import { addRecentView } from "@/lib/recent-views";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -125,7 +127,15 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
       city: property.city,
       type: property.propertyType,
     });
-  }, [property.id, property.title, property.slug, property.city, property.propertyType]);
+    addRecentView({
+      id: property.id,
+      slug: property.slug,
+      title: property.title,
+      city: property.city,
+      image: property.images[0]?.originalUrl || "",
+      price: property.rentPrice ?? null,
+    });
+  }, [property.id, property.title, property.slug, property.city, property.propertyType, property.images, property.rentPrice]);
 
   // Get images from mock data - handle both string[] and PropertyImage[]
   const images: string[] = Array.isArray(property.images)
@@ -856,6 +866,11 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
       )}
 
       {/* Mobile save reminder */}
+      {/* Similar properties */}
+      <div className="container py-8">
+        <SimilarProperties propertyId={property.id} />
+      </div>
+
       <SaveReminderBar propertyId={property.id} />
     </>
   );
