@@ -656,6 +656,12 @@ export function ChatWidget() {
       return;
     }
 
+    // Browse all cities
+    if (text === "📍 Alle steden" || text === "📍 Andere stad") {
+      window.location.href = "/steden";
+      return;
+    }
+
     // Free-form chat mode
     if (text === "💬 Stel een vraag") {
       const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
