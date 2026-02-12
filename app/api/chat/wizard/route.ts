@@ -24,6 +24,8 @@ export async function GET(req: NextRequest) {
           rentPrice: true,
           salePrice: true,
           surfaceTotal: true,
+          latitude: true,
+          longitude: true,
           images: { select: { originalUrl: true }, take: 4 },
         },
         take: 6,
@@ -47,6 +49,8 @@ export async function GET(req: NextRequest) {
         area: p.surfaceTotal ? `${p.surfaceTotal} m²` : undefined,
         imageUrl: p.images[0]?.originalUrl || null,
         images: p.images.map((img) => img.originalUrl).filter(Boolean),
+        lat: p.latitude ? Number(p.latitude) : undefined,
+        lng: p.longitude ? Number(p.longitude) : undefined,
       })),
     });
   } catch (error) {

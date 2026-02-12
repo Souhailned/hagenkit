@@ -18,6 +18,8 @@ interface ChatProperty {
   area?: string;
   imageUrl?: string | null;
   images?: string[];
+  lat?: number;
+  lng?: number;
 }
 
 interface Message {
@@ -155,6 +157,42 @@ function ChatPropertyCard({ property }: { property: ChatProperty }) {
   );
 }
 
+// Static mini map for chat (OSM tile)
+function ChatMiniMap({ properties }: { properties: ChatProperty[] }) {
+  const withCoords = properties.filter((p) => p.lat && p.lng);
+  if (withCoords.length === 0) return null;
+
+  // Calculate center and zoom from properties
+  const lats = withCoords.map((p) => p.lat!);
+  const lngs = withCoords.map((p) => p.lng!);
+  const centerLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+  const centerLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
+  const zoom = withCoords.length === 1 ? 14 : 12;
+
+  // Use OSM static map via openstreetmap embed
+  const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${centerLng - 0.02},${centerLat - 0.01},${centerLng + 0.02},${centerLat + 0.01}&layer=mapnik&marker=${centerLat},${centerLng}`;
+
+  return (
+    <div className="mt-2 rounded-lg overflow-hidden border">
+      <iframe
+        src={mapUrl}
+        width="100%"
+        height="120"
+        className="border-0"
+        loading="lazy"
+        title="Locatie"
+      />
+      <Link
+        href={`/aanbod?view=map&lat=${centerLat}&lng=${centerLng}`}
+        className="flex items-center justify-center gap-1 py-1.5 text-[11px] text-primary hover:bg-muted/50 transition-colors"
+      >
+        <MapPin className="h-3 w-3" />
+        <span>Bekijk op grote kaart</span>
+      </Link>
+    </div>
+  );
+}
+
 // Property cards row
 function PropertyCards({ properties }: { properties: ChatProperty[] }) {
   return (
@@ -164,6 +202,7 @@ function PropertyCards({ properties }: { properties: ChatProperty[] }) {
           <ChatPropertyCard key={p.slug} property={p} />
         ))}
       </div>
+      <ChatMiniMap properties={properties} />
       <div className="flex items-center gap-3 mt-1.5 ml-1">
         <Link
           href="/aanbod"

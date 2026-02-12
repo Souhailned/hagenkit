@@ -114,6 +114,8 @@ async function searchProperties(intent: { city?: string; type?: string }) {
       rentPrice: true,
       salePrice: true,
       surfaceTotal: true,
+      latitude: true,
+      longitude: true,
       images: { select: { originalUrl: true }, take: 4 },
     },
     take: 4,
@@ -133,6 +135,8 @@ async function searchProperties(intent: { city?: string; type?: string }) {
     area: p.surfaceTotal ? `${p.surfaceTotal} m²` : undefined,
     imageUrl: p.images[0]?.originalUrl || null,
     images: p.images.map((img) => img.originalUrl).filter(Boolean),
+    lat: p.latitude ? Number(p.latitude) : undefined,
+    lng: p.longitude ? Number(p.longitude) : undefined,
   }));
 }
 
