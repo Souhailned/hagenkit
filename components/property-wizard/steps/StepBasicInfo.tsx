@@ -116,13 +116,13 @@ export function StepBasicInfo({ data, onUpdate, errors }: StepBasicInfoProps) {
         </Label>
         <Input
           id="shortDescription"
-          value={data.shortDescription}
-          onChange={(e) => onUpdate({ shortDescription: e.target.value.slice(0, 200) })}
+          value={data.description}
+          onChange={(e) => onUpdate({ description: e.target.value.slice(0, 200) })}
           placeholder="Een beknopte samenvatting voor zoekresultaten..."
           maxLength={200}
         />
         <p className="text-xs text-muted-foreground">
-          {data.shortDescription.length}/200 karakters
+          {data.description.length}/200 karakters
         </p>
       </div>
 
