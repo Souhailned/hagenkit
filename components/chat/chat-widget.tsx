@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChatCircleDots, PaperPlaneTilt, X, MapPin, ArrowSquareOut, Buildings, Envelope, Heart, CalendarBlank } from "@phosphor-icons/react";
+import { ChatCircleDots, PaperPlaneTilt, X, MapPin, ArrowSquareOut, Buildings, Envelope, Heart, CalendarBlank, Copy, Check } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -261,6 +261,31 @@ function PropertyCards({ properties }: { properties: ChatProperty[] }) {
   );
 }
 
+// Copy button for messages
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = React.useState(false);
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(text).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        });
+      }}
+      className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md bg-background/80 hover:bg-background border shadow-sm"
+      title="Kopieer tekst"
+    >
+      {copied ? (
+        <Check className="h-3 w-3 text-green-500" />
+      ) : (
+        <Copy className="h-3 w-3 text-muted-foreground" />
+      )}
+    </button>
+  );
+}
+
 // Simple markdown-ish rendering: bold, italic, bullet lists, links
 function ChatMarkdown({ content }: { content: string }) {
   const lines = content.split("\n");
@@ -505,7 +530,7 @@ export function ChatWidget() {
                 ? `Welkom terug, ${user.name || "makelaar"}! 🏢\n\nWat kan ik voor je doen?`
                 : `Welkom terug, ${user.name || "daar"}! 👋\n\nWaarmee kan ik je helpen?`,
               quickReplies: isAgent
-                ? ["📊 Mijn statistieken", "🏠 Mijn panden", "🔍 Pand zoeken", "💬 Stel een vraag"]
+                ? ["📊 Mijn statistieken", "🏠 Mijn panden", "✍️ Beschrijving maken", "💬 Stel een vraag"]
                 : ["🔍 Pand zoeken", "❤️ Mijn favorieten", "🔔 Mijn alerts", "💬 Stel een vraag"],
             },
           ]);
@@ -786,6 +811,28 @@ export function ChatWidget() {
       return;
     }
 
+    // AI description generator for makelaars
+    if (text === "✍️ Beschrijving maken") {
+      const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Ik help je een professionele pandbeschrijving te maken! ✍️\n\nGeef me de details van je pand:\n- **Type** (restaurant, café, bar, etc.)\n- **Locatie** (stad, buurt)\n- **Oppervlakte** en **zitplaatsen**\n- **Bijzonderheden** (terras, keuken, vergunningen)\n\nBijvoorbeeld: *\"Restaurant in Amsterdam Zuid, 180m², 60 zitplaatsen, groot terras, professionele keuken\"*",
+        quickReplies: ["🍽️ Restaurant voorbeeld", "☕ Café voorbeeld", "🍺 Bar voorbeeld"],
+      };
+      setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg, botMsg));
+      return;
+    }
+    if (text === "🍽️ Restaurant voorbeeld" || text === "☕ Café voorbeeld" || text === "🍺 Bar voorbeeld") {
+      const examples: Record<string, string> = {
+        "🍽️ Restaurant voorbeeld": "Maak een beschrijving voor een restaurant in Amsterdam, 200m², 80 zitplaatsen, met terras aan de gracht, volledig ingerichte professionele keuken, bestaande horecavergunning",
+        "☕ Café voorbeeld": "Maak een beschrijving voor een café in Utrecht centrum, 120m², 40 zitplaatsen binnen, klein terras, espressomachine, verse gebakjes",
+        "🍺 Bar voorbeeld": "Maak een beschrijving voor een cocktailbar in Rotterdam, 150m², industrieel interieur, twee bars, geluidsinstallatie, rookruimte",
+      };
+      await sendMessage(examples[text] || text);
+      return;
+    }
+
     // Context-aware follow-ups — send as natural language to LLM
     if (text === "📍 Andere stad") {
       await sendMessage("Laat dezelfde soort panden zien maar dan in een andere stad");
@@ -903,7 +950,7 @@ export function ChatWidget() {
                   >
                     <div
                       className={cn(
-                        "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                        "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed relative group",
                         message.role === "user"
                           ? "bg-primary text-primary-foreground rounded-br-md"
                           : "bg-muted rounded-bl-md"
@@ -913,6 +960,10 @@ export function ChatWidget() {
                         <ChatMarkdown content={message.content} />
                       ) : (
                         <p className="whitespace-pre-wrap">{message.content}</p>
+                      )}
+                      {/* Copy button for long assistant messages */}
+                      {message.role === "assistant" && message.content.length > 100 && (
+                        <CopyButton text={message.content} />
                       )}
                     </div>
                   </div>
