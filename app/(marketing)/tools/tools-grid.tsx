@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendUp, Sparkle, ClipboardText, Presentation, X } from "@phosphor-icons/react";
+import { TrendUp, Sparkle, ClipboardText, Presentation, MapPin, X } from "@phosphor-icons/react";
 import { RevenuePredictor } from "@/components/ai/revenue-predictor";
 import { NameGenerator } from "@/components/ai/name-generator";
 import { StartupChecklist } from "@/components/ai/startup-checklist";
 import { PitchGenerator } from "@/components/ai/pitch-generator";
+import { LocationScoreTool } from "@/components/ai/location-score";
 
 const tools = [
   {
@@ -40,6 +41,14 @@ const tools = [
     description: "Genereer een professionele investeerderspitch voor je horecaconcept.",
     color: "text-amber-600 bg-amber-100",
     component: PitchGenerator,
+  },
+  {
+    id: "location",
+    icon: MapPin,
+    title: "Locatie Score",
+    description: "Beoordeel hoe geschikt een locatie is voor jouw horecaconcept — van voetverkeer tot concurrentie.",
+    color: "text-red-600 bg-red-100",
+    component: LocationScoreTool,
   },
 ];
 
