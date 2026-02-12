@@ -40,6 +40,17 @@ export async function generateMetadata({
       title: p.title,
       description: `${type} in ${p.city} | ${p.surfaceTotal} m² | ${price}`,
       type: "website",
+      ...(p.images?.[0] && {
+        images: [{ url: (p.images[0] as any).originalUrl || p.images[0], width: 1200, height: 630 }],
+      }),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: p.title,
+      description: `${type} in ${p.city} | ${p.surfaceTotal} m² | ${price}`,
+      ...(p.images?.[0] && {
+        images: [(p.images[0] as any).originalUrl || p.images[0]],
+      }),
     },
   };
 }
