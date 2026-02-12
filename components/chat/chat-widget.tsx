@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChatCircleDots, PaperPlaneTilt, X, MapPin, ArrowSquareOut, Buildings, Envelope, Heart, CalendarBlank, Copy, Check } from "@phosphor-icons/react";
+import { ChatCircleDots, PaperPlaneTilt, X, MapPin, ArrowSquareOut, Buildings, Envelope, Heart, CalendarBlank, Copy, Check, Scales, UserCircle, ChartBar } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -230,6 +230,59 @@ function ChatMiniMap({ properties }: { properties: ChatProperty[] }) {
   );
 }
 
+// Compare table for chat
+function ChatCompareTable({ properties, onClose }: { properties: ChatProperty[]; onClose: () => void }) {
+  if (properties.length < 2) return null;
+  const items = properties.slice(0, 3);
+  const rows = [
+    { label: "Prijs", key: "price" as const },
+    { label: "Stad", key: "city" as const },
+    { label: "Type", key: "type" as const },
+    { label: "Oppervlakte", key: "area" as const },
+  ];
+
+  return (
+    <div className="mt-2 rounded-lg border overflow-hidden">
+      <div className="flex items-center justify-between bg-muted/50 px-3 py-1.5">
+        <span className="text-[11px] font-medium flex items-center gap-1">
+          <Scales className="h-3 w-3" /> Vergelijking
+        </span>
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[11px]">
+          <thead>
+            <tr className="border-b">
+              <th className="p-2 text-left text-muted-foreground font-normal w-20"></th>
+              {items.map((p) => (
+                <th key={p.slug} className="p-2 text-left font-semibold max-w-[100px]">
+                  <Link href={`/aanbod/${p.slug}`} className="hover:text-primary truncate block">
+                    {p.title.length > 20 ? p.title.substring(0, 20) + "…" : p.title}
+                  </Link>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.label} className="border-b last:border-0">
+                <td className="p-2 text-muted-foreground">{row.label}</td>
+                {items.map((p) => (
+                  <td key={p.slug} className="p-2">
+                    {row.key === "type" ? (typeLabels[p[row.key]] || p[row.key]) : (p[row.key] || "—")}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 // Property cards row
 function PropertyCards({ properties }: { properties: ChatProperty[] }) {
   return (
@@ -419,7 +472,7 @@ function getQuickReplies(content: string, messageIndex: number, totalMessages: n
 
   // If bot showed property results
   if (hasProperties) {
-    return ["📍 Andere stad", "💰 Goedkoper", "🔍 Andere types", "🔍 Nieuwe zoekopdracht"];
+    return ["⚖️ Vergelijk", "📍 Andere stad", "💰 Goedkoper", "🔍 Nieuwe zoekopdracht"];
   }
 
   // If bot mentioned specific cities or is asking about location
@@ -496,6 +549,8 @@ export function ChatWidget() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [userName, setUserName] = React.useState<string | null>(null);
   const [userRole, setUserRole] = React.useState<string | null>(null);
+  const [compareItems, setCompareItems] = React.useState<ChatProperty[]>([]);
+  const [showCompare, setShowCompare] = React.useState(false);
   const [wizard, setWizard] = React.useState<WizardState>({
     active: false,
     step: "type",
@@ -631,13 +686,21 @@ export function ChatWidget() {
             role: "assistant",
             content: data.properties?.length > 0
               ? `🎉 **${data.count} panden gevonden!**\n\n${summary}\n\nHier zijn de beste matches:`
-              : `Helaas, geen panden gevonden voor ${summary}.\n\nProbeer andere filters!`,
+              + (data.count > 4 ? `\n\n💡 *Tip: Er zijn nog ${data.count - 4} andere panden. Verfijn je zoekopdracht voor betere matches!*` : "")
+              : `Helaas, geen panden gevonden voor ${summary}.\n\n💡 *Tip: Probeer een andere stad of breder budget!*`,
             properties: data.properties || [],
-            quickReplies: [
-              "🔍 Opnieuw zoeken",
-              "💬 Stel een vraag",
-              ...(newFilters.city ? ["📍 Andere stad"] : []),
-            ],
+            quickReplies: data.properties?.length > 0
+              ? [
+                  "⚖️ Vergelijk",
+                  "📍 Andere stad",
+                  "💰 Goedkoper",
+                  "🔍 Nieuwe zoekopdracht",
+                ]
+              : [
+                  "🔍 Opnieuw zoeken",
+                  "📍 Andere stad",
+                  "💬 Stel een vraag",
+                ],
           },
         ]);
       } catch {
@@ -787,17 +850,72 @@ export function ChatWidget() {
       return;
     }
     if (text === "📊 Mijn statistieken") {
-      window.location.href = "/dashboard/analytics";
+      // Fetch stats inline instead of redirect
+      const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
+      setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg));
+      setIsLoading(true);
+      try {
+        const res = await fetch("/api/dashboard/stats");
+        if (res.ok) {
+          const stats = await res.json();
+          const botMsg: Message = {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: `📊 **Jouw dashboard overzicht:**\n\n- 🏠 **${stats.properties || 0}** actieve panden\n- 👁️ **${stats.views || 0}** views deze maand\n- 📩 **${stats.inquiries || 0}** aanvragen\n- ❤️ **${stats.favorites || 0}** keer als favoriet bewaard`,
+            quickReplies: ["🏠 Mijn panden", "📈 Meer analytics", "🔍 Pand zoeken"],
+          };
+          setMessages((prev) => [...prev, botMsg]);
+        } else {
+          throw new Error("Stats not available");
+        }
+      } catch {
+        // Fallback: redirect
+        const botMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: "Ga naar je dashboard voor uitgebreide statistieken! 📊",
+          quickReplies: ["📈 Meer analytics"],
+        };
+        setMessages((prev) => [...prev, botMsg]);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
     // Auth redirects
     if (text === "🔑 Inloggen") {
+      const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Je kunt inloggen via onze inlogpagina. Na het inloggen kom je automatisch terug! 🔐",
+        quickReplies: ["➡️ Naar inlogpagina", "📝 Account aanmaken", "🔍 Verder zoeken"],
+      };
+      setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg, botMsg));
+      return;
+    }
+    if (text === "➡️ Naar inlogpagina") {
       window.location.href = "/sign-in";
       return;
     }
     if (text === "📝 Account aanmaken") {
-      window.location.href = "/sign-up";
+      const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Super! Met een account kun je:\n\n- ❤️ Panden **bewaren** als favoriet\n- 🔔 **Alerts** instellen voor nieuwe matches\n- 📊 **Statistieken** bekijken (makelaars)\n\nBen je een ondernemer of makelaar?",
+        quickReplies: ["🔍 Ik zoek een pand", "🏢 Ik ben makelaar"],
+      };
+      setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg, botMsg));
+      return;
+    }
+    if (text === "🔍 Ik zoek een pand") {
+      window.location.href = "/sign-up?role=seeker";
+      return;
+    }
+    if (text === "🏢 Ik ben makelaar") {
+      window.location.href = "/sign-up?role=agent";
       return;
     }
     if (text === "🔍 Verder zoeken") {
@@ -808,6 +926,25 @@ export function ChatWidget() {
     // Browse all cities (only redirect for "Alle steden", "Andere stad" goes to chat)
     if (text === "📍 Alle steden") {
       window.location.href = "/steden";
+      return;
+    }
+
+    // Compare mode
+    if (text === "⚖️ Vergelijk") {
+      // Find last message with properties
+      const lastWithProps = [...messages].reverse().find((m) => m.properties && m.properties.length >= 2);
+      if (lastWithProps?.properties) {
+        setCompareItems(lastWithProps.properties.slice(0, 3));
+        setShowCompare(true);
+        const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
+        const botMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: `Hier is een vergelijking van ${Math.min(lastWithProps.properties.length, 3)} panden:`,
+          quickReplies: ["🔍 Nieuwe zoekopdracht", "💬 Stel een vraag"],
+        };
+        setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg, botMsg));
+      }
       return;
     }
 
@@ -830,6 +967,11 @@ export function ChatWidget() {
         "🍺 Bar voorbeeld": "Maak een beschrijving voor een cocktailbar in Rotterdam, 150m², industrieel interieur, twee bars, geluidsinstallatie, rookruimte",
       };
       await sendMessage(examples[text] || text);
+      return;
+    }
+
+    if (text === "📈 Meer analytics") {
+      window.location.href = "/dashboard/analytics";
       return;
     }
 
@@ -983,6 +1125,11 @@ export function ChatWidget() {
                   )}
                 </div>
               ))}
+
+              {/* Compare table */}
+              {showCompare && compareItems.length >= 2 && (
+                <ChatCompareTable properties={compareItems} onClose={() => setShowCompare(false)} />
+              )}
 
               {/* Typing indicator */}
               {isLoading && messages[messages.length - 1]?.role === "user" && (
