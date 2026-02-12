@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
           rentPrice: true,
           salePrice: true,
           surfaceTotal: true,
-          images: { select: { originalUrl: true }, take: 1 },
+          images: { select: { originalUrl: true }, take: 4 },
         },
         take: 6,
         orderBy: { publishedAt: "desc" },
@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
             : "Prijs op aanvraag",
         area: p.surfaceTotal ? `${p.surfaceTotal} m²` : undefined,
         imageUrl: p.images[0]?.originalUrl || null,
+        images: p.images.map((img) => img.originalUrl).filter(Boolean),
       })),
     });
   } catch (error) {

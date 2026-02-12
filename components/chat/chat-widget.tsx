@@ -17,6 +17,7 @@ interface ChatProperty {
   price: string;
   area?: string;
   imageUrl?: string | null;
+  images?: string[];
 }
 
 interface Message {
@@ -65,8 +66,61 @@ const typeLabels: Record<string, string> = {
   PARTY_CENTER: "Partycentrum",
 };
 
+// Mini image carousel for chat cards
+function ChatImageCarousel({ images, alt }: { images: string[]; alt: string }) {
+  const [idx, setIdx] = React.useState(0);
+  const count = images.length;
+
+  if (count === 0) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <Buildings className="h-6 w-6 text-muted-foreground/50" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-full w-full group">
+      <Image src={images[idx]} alt={alt} fill className="object-cover" sizes="80px" />
+      {count > 1 && (
+        <>
+          {/* Dots */}
+          <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
+            {images.slice(0, 4).map((_, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "h-1 w-1 rounded-full transition-colors",
+                  i === idx ? "bg-white" : "bg-white/50"
+                )}
+              />
+            ))}
+          </div>
+          {/* Click zones for prev/next */}
+          <button
+            type="button"
+            className="absolute inset-y-0 left-0 w-1/2 opacity-0"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIdx((idx - 1 + count) % count); }}
+          />
+          <button
+            type="button"
+            className="absolute inset-y-0 right-0 w-1/2 opacity-0"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIdx((idx + 1) % count); }}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
 // Property card component for chat
 function ChatPropertyCard({ property }: { property: ChatProperty }) {
+  const allImages = property.images?.length
+    ? property.images
+    : property.imageUrl
+      ? [property.imageUrl]
+      : [];
+
   return (
     <Link
       href={`/aanbod/${property.slug}`}
@@ -76,21 +130,9 @@ function ChatPropertyCard({ property }: { property: ChatProperty }) {
         "shrink-0"
       )}
     >
-      {/* Image */}
+      {/* Image with carousel */}
       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
-        {property.imageUrl ? (
-          <Image
-            src={property.imageUrl}
-            alt={property.title}
-            fill
-            className="object-cover"
-            sizes="64px"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <Buildings className="h-6 w-6 text-muted-foreground/50" />
-          </div>
-        )}
+        <ChatImageCarousel images={allImages} alt={property.title} />
       </div>
 
       {/* Info */}
