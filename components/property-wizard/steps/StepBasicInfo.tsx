@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { PROPERTY_TYPES, type PropertyWizardData } from "../types";
+import { PROPERTY_TYPES, PROPERTY_TYPE_LABELS, type PropertyWizardData } from "../types";
 import {
   UtensilsCrossed,
   Coffee,
@@ -67,14 +67,14 @@ export function StepBasicInfo({ data, onUpdate, errors }: StepBasicInfoProps) {
         </Label>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {PROPERTY_TYPES.map((type) => {
-            const Icon = propertyTypeIcons[type.value];
-            const isSelected = data.propertyType === type.value;
+            const Icon = propertyTypeIcons[type];
+            const isSelected = data.propertyType === type;
 
             return (
               <button
-                key={type.value}
+                key={type}
                 type="button"
-                onClick={() => onUpdate({ propertyType: type.value })}
+                onClick={() => onUpdate({ propertyType: type })}
                 className={cn(
                   "group flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200",
                   isSelected
@@ -90,7 +90,7 @@ export function StepBasicInfo({ data, onUpdate, errors }: StepBasicInfoProps) {
                       : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
                   )}
                 >
-                  <Icon className="h-5 w-5" />
+                  {Icon ? <Icon className="h-5 w-5" /> : <span className="h-5 w-5" />}
                 </span>
                 <span
                   className={cn(
@@ -98,7 +98,7 @@ export function StepBasicInfo({ data, onUpdate, errors }: StepBasicInfoProps) {
                     isSelected ? "text-primary" : "text-foreground"
                   )}
                 >
-                  {type.label}
+                  {PROPERTY_TYPE_LABELS[type] || type}
                 </span>
               </button>
             );
