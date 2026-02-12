@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { PropertyTypes, type PropertyWizardData } from "../types";
+import { PROPERTY_TYPES, type PropertyWizardData } from "../types";
 import {
   UtensilsCrossed,
   Coffee,
@@ -66,7 +66,7 @@ export function StepBasicInfo({ data, onUpdate, errors }: StepBasicInfoProps) {
           Type horecagelegenheid <span className="text-destructive">*</span>
         </Label>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {PropertyTypes.map((type) => {
+          {PROPERTY_TYPES.map((type) => {
             const Icon = propertyTypeIcons[type.value];
             const isSelected = data.propertyType === type.value;
 
