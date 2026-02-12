@@ -266,12 +266,17 @@ function QuickReplies({
 }
 
 // Generate contextual quick replies based on the conversation
-function getQuickReplies(content: string, messageIndex: number, totalMessages: number): string[] {
+function getQuickReplies(content: string, messageIndex: number, totalMessages: number, hasProperties?: boolean): string[] {
   const lower = content.toLowerCase();
 
   // Welcome message
   if (messageIndex === 0) {
     return ["🍽️ Restaurants", "☕ Cafés", "🍺 Bars", "🏨 Hotels", "📍 Alle steden"];
+  }
+
+  // If bot showed property results
+  if (hasProperties) {
+    return ["📍 Andere stad", "💰 Goedkoper", "🔍 Andere types", "🔍 Nieuwe zoekopdracht"];
   }
 
   // If bot mentioned specific cities or is asking about location
@@ -289,14 +294,15 @@ function getQuickReplies(content: string, messageIndex: number, totalMessages: n
     return ["📋 Meer details", "💰 Goedkoper", "📍 Andere stad", "🔍 Nieuwe zoekopdracht"];
   }
 
-  // If bot mentioned Amsterdam
-  if (lower.includes("amsterdam")) {
+  // If bot mentioned a city
+  const cities = ["amsterdam", "rotterdam", "utrecht", "den haag", "eindhoven", "groningen"];
+  if (cities.some((c) => lower.includes(c))) {
     return ["🍽️ Restaurants", "☕ Cafés", "🍺 Bars", "📍 Andere stad"];
   }
 
   // If bot mentioned restaurants
   if (lower.includes("restaurant")) {
-    return ["🪑 Met terras", "📍 In Amsterdam", "💰 Budget opties", "🔍 Andere types"];
+    return ["📍 In Amsterdam", "📍 In Rotterdam", "💰 Budget opties", "🔍 Andere types"];
   }
 
   // Default follow-up options
@@ -590,7 +596,7 @@ export function ChatWidget() {
 
       // Add quick replies and properties after streaming completes
       const msgIndex = allMessages.length;
-      const quickReplies = getQuickReplies(finalText, msgIndex, allMessages.length + 1);
+      const quickReplies = getQuickReplies(finalText, msgIndex, allMessages.length + 1, properties.length > 0);
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
@@ -656,9 +662,31 @@ export function ChatWidget() {
       return;
     }
 
-    // Browse all cities
-    if (text === "📍 Alle steden" || text === "📍 Andere stad") {
+    // Browse all cities (only redirect for "Alle steden", "Andere stad" goes to chat)
+    if (text === "📍 Alle steden") {
       window.location.href = "/steden";
+      return;
+    }
+
+    // Context-aware follow-ups — send as natural language to LLM
+    if (text === "📍 Andere stad") {
+      await sendMessage("Laat dezelfde soort panden zien maar dan in een andere stad");
+      return;
+    }
+    if (text === "💰 Goedkoper") {
+      await sendMessage("Heb je ook goedkopere opties?");
+      return;
+    }
+    if (text === "🔍 Andere types") {
+      await sendMessage("Wat voor andere types panden zijn er beschikbaar?");
+      return;
+    }
+    if (text === "📋 Meer details") {
+      await sendMessage("Kun je meer details geven over deze panden?");
+      return;
+    }
+    if (text === "💰 Budget opties") {
+      await sendMessage("Wat zijn de goedkoopste opties?");
       return;
     }
 
