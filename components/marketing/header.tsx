@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 const navLinks = [
   { name: "Aanbod", href: "/aanbod", icon: Search },
   { name: "Kaart", href: "/aanbod?view=map", icon: Map },
-  
+  { name: "Tools", href: "/tools", icon: Map },
   { name: "Voor makelaars", href: "/voor-makelaars", icon: Users },
 ];
 
