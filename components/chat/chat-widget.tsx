@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChatCircleDots, PaperPlaneTilt, X, MapPin, ArrowSquareOut, Buildings, Envelope } from "@phosphor-icons/react";
+import { ChatCircleDots, PaperPlaneTilt, X, MapPin, ArrowSquareOut, Buildings, Envelope, Heart, CalendarBlank } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -117,43 +117,80 @@ function ChatImageCarousel({ images, alt }: { images: string[]; alt: string }) {
 
 // Property card component for chat
 function ChatPropertyCard({ property }: { property: ChatProperty }) {
+  const [saved, setSaved] = React.useState(false);
   const allImages = property.images?.length
     ? property.images
     : property.imageUrl
       ? [property.imageUrl]
       : [];
 
-  return (
-    <Link
-      href={`/aanbod/${property.slug}`}
-      className={cn(
-        "flex gap-3 rounded-xl border bg-background p-2.5 min-w-[260px] max-w-[280px]",
-        "hover:border-primary/30 hover:shadow-sm transition-all",
-        "shrink-0"
-      )}
-    >
-      {/* Image with carousel */}
-      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
-        <ChatImageCarousel images={allImages} alt={property.title} />
-      </div>
+  const handleSave = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const res = await fetch("/api/favorites", {
+        method: saved ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: property.slug }),
+      });
+      if (res.ok) setSaved(!saved);
+    } catch {
+      // silently fail if not logged in
+    }
+  };
 
-      {/* Info */}
-      <div className="flex flex-col justify-between min-w-0 flex-1">
-        <div>
-          <p className="text-xs font-semibold leading-tight truncate">{property.title}</p>
-          <div className="flex items-center gap-1 mt-0.5">
-            <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
-            <span className="text-[11px] text-muted-foreground truncate">{property.city}</span>
+  return (
+    <div className={cn(
+      "rounded-xl border bg-background min-w-[260px] max-w-[280px]",
+      "hover:border-primary/30 hover:shadow-sm transition-all",
+      "shrink-0"
+    )}>
+      <Link href={`/aanbod/${property.slug}`} className="flex gap-3 p-2.5">
+        {/* Image with carousel */}
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
+          <ChatImageCarousel images={allImages} alt={property.title} />
+        </div>
+
+        {/* Info */}
+        <div className="flex flex-col justify-between min-w-0 flex-1">
+          <div>
+            <p className="text-xs font-semibold leading-tight truncate">{property.title}</p>
+            <div className="flex items-center gap-1 mt-0.5">
+              <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+              <span className="text-[11px] text-muted-foreground truncate">{property.city}</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-xs font-bold text-primary">{property.price}</span>
+            {property.area && (
+              <span className="text-[10px] text-muted-foreground">{property.area}</span>
+            )}
           </div>
         </div>
-        <div className="flex items-center justify-between mt-1">
-          <span className="text-xs font-bold text-primary">{property.price}</span>
-          {property.area && (
-            <span className="text-[10px] text-muted-foreground">{property.area}</span>
+      </Link>
+      {/* Action buttons */}
+      <div className="flex border-t">
+        <button
+          onClick={handleSave}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-1 py-1.5 text-[10px] transition-colors",
+            "hover:bg-muted/50 rounded-bl-xl",
+            saved ? "text-red-500" : "text-muted-foreground"
           )}
-        </div>
+        >
+          <Heart className="h-3 w-3" weight={saved ? "fill" : "regular"} />
+          <span>{saved ? "Bewaard" : "Bewaren"}</span>
+        </button>
+        <div className="w-px bg-border" />
+        <Link
+          href={`/aanbod/${property.slug}#contact`}
+          className="flex-1 flex items-center justify-center gap-1 py-1.5 text-[10px] text-muted-foreground hover:bg-muted/50 hover:text-primary rounded-br-xl transition-colors"
+        >
+          <CalendarBlank className="h-3 w-3" />
+          <span>Bezichtiging</span>
+        </Link>
       </div>
-    </Link>
+    </div>
   );
 }
 
