@@ -118,24 +118,25 @@ export interface PropertyWizardData {
   address: string;
   city: string;
   postalCode: string;
-  latitude?: number;
-  longitude?: number;
+  latitude: number | null;
+  longitude: number | null;
 
   // Step 3: Pricing
   priceType: PriceType | null;
-  rentPrice?: number;
-  salePrice?: number;
-  servicesCosts?: number;
-  depositMonths?: number;
+  rentPrice: number | null;
+  salePrice: number | null;
+  servicesCosts: number | null;
+  depositMonths: number | null;
 
   // Step 4: Dimensions
   surfaceTotal: number | null;
-  surfaceCommercial?: number;
-  surfaceKitchen?: number;
-  surfaceStorage?: number;
-  surfaceTerrace?: number;
+  surfaceCommercial: number | null;
+  surfaceKitchen: number | null;
+  surfaceStorage: number | null;
+  surfaceTerrace: number | null;
+  surfaceBasement: number | null;
   floors: number;
-  ceilingHeight?: number;
+  ceilingHeight: number | null;
 
   // Step 5: Features
   features: Record<string, boolean>;
@@ -157,6 +158,18 @@ export const INITIAL_WIZARD_DATA: PropertyWizardData = {
   postalCode: "",
   priceType: null,
   surfaceTotal: null,
+  surfaceCommercial: null,
+  surfaceKitchen: null,
+  surfaceTerrace: null,
+  surfaceStorage: null,
+  surfaceBasement: null,
+  ceilingHeight: null,
+  latitude: null,
+  longitude: null,
+  rentPrice: null,
+  salePrice: null,
+  servicesCosts: null,
+  depositMonths: null,
   floors: 1,
   features: {},
   photos: [],

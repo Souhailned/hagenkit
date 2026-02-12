@@ -1,7 +1,7 @@
-export { StepBasicInfo } from "./step-basic-info";
-export { StepLocation } from "./step-location";
-export { StepPricing } from "./step-pricing";
-export { StepDimensions } from "./step-dimensions";
-export { StepFeatures } from "./step-features";
-export { StepPhotos } from "./step-photos";
-export { StepReview } from "./step-review";
+export { StepBasicInfo } from "./StepBasicInfo";
+export { StepLocation } from "./StepLocation";
+export { StepPricing } from "./StepPricing";
+export { StepDimensions } from "./StepDimensions";
+export { StepFeatures } from "./StepFeatures";
+export { StepPhotos } from "./StepPhotos";
+export { StepReview } from "./StepReview";
