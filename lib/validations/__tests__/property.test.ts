@@ -111,7 +111,7 @@ describe("Property Validation Schemas", () => {
       });
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.errors[0].message).toContain("at least 5");
+        expect(result.error.issues[0].message).toContain("at least 5");
       }
     });
 
@@ -122,7 +122,7 @@ describe("Property Validation Schemas", () => {
       });
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.errors[0].message).toContain("at most 200");
+        expect(result.error.issues[0].message).toContain("at most 200");
       }
     });
 

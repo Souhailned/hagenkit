@@ -64,6 +64,8 @@
     "@tabler/icons-react": "^3.35.0",
     "@tanstack/react-table": "^8.21.3",
     "@trigger.dev/sdk": "^4.3.2",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.36.2",
     "ai": "^6.0.79",
     "better-auth": "^1.3.11",
     "canvas-confetti": "^1.9.4",
@@ -114,6 +116,9 @@
     "@eslint/eslintrc": "^3",
     "@react-email/preview-server": "4.3.2",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/bun": "^1.3.9",
     "@types/canvas-confetti": "^1.9.0",
     "@types/github-slugger": "^2.0.0",
     "@types/node": "^20",
@@ -136,7 +141,8 @@
     "tailwindcss": "^4",
     "tsx": "^4.20.5",
     "tw-animate-css": "^1.3.8",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

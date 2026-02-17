@@ -19,6 +19,7 @@ import {
   type BlogPost,
   type ChangelogPost,
 } from "content-collections"
+import dynamic from "next/dynamic"
 import Link from "next/link"
 
 import BlurImage from "@/lib/blog/blur-image"
@@ -33,7 +34,10 @@ import { CodeSandbox, StackBlitz } from "./codesandbox"
 import CopyBox from "./copy-box"
 import HelpArticleLink from "./help-article-link"
 import ExpandingArrow from "./icons/expanding-arrow"
-import { Mermaid } from "./mermaid"
+const Mermaid = dynamic(
+  () => import("./mermaid").then((mod) => mod.Mermaid),
+  { ssr: false, loading: () => <div className="flex h-48 items-center justify-center text-muted-foreground">Loading diagram...</div> }
+)
 import { Tabs, CodeTabs } from "./tabs"
 import { Video } from "./video"
 import ZoomImage from "./zoom-image"

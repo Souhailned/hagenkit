@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createProperty } from "@/app/actions/create-property";
+import type { PropertyType, PriceType } from "@/lib/validations/property";
 import { DescriptionGenerator } from "@/components/ai/description-generator";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -61,8 +62,8 @@ export function PropertyWizard() {
 
   // Form data
   const [title, setTitle] = useState("");
-  const [propertyType, setPropertyType] = useState("");
-  const [priceType, setPriceType] = useState("");
+  const [propertyType, setPropertyType] = useState<PropertyType | "">("");
+  const [priceType, setPriceType] = useState<PriceType | "">("");
   const [rentPrice, setRentPrice] = useState("");
   const [salePrice, setSalePrice] = useState("");
   const [address, setAddress] = useState("");
@@ -79,6 +80,7 @@ export function PropertyWizard() {
   const [shortDescription, setShortDescription] = useState("");
 
   function handleSubmit() {
+    if (!propertyType || !priceType) return;
     startTransition(async () => {
       const result = await createProperty({
         title,
@@ -173,7 +175,7 @@ export function PropertyWizard() {
           </div>
           <div>
             <Label>Type pand *</Label>
-            <Select value={propertyType} onValueChange={setPropertyType}>
+            <Select value={propertyType} onValueChange={(v) => setPropertyType(v as PropertyType)}>
               <SelectTrigger className="mt-1.5">
                 <SelectValue placeholder="Selecteer type" />
               </SelectTrigger>
@@ -186,7 +188,7 @@ export function PropertyWizard() {
           </div>
           <div>
             <Label>Aanbieding type *</Label>
-            <Select value={priceType} onValueChange={setPriceType}>
+            <Select value={priceType} onValueChange={(v) => setPriceType(v as PriceType)}>
               <SelectTrigger className="mt-1.5">
                 <SelectValue placeholder="Te huur of te koop?" />
               </SelectTrigger>
