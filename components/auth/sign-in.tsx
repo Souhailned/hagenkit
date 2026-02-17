@@ -84,8 +84,8 @@ export default function SignInAuth() {
             <blockquote className="space-y-2">
               <p className="text-lg">
                 &ldquo;Horecagrond maakt het vinden van het perfecte horecapand
-                single weekend. Our team shipped features instead of scaffolding
-                infrastructure.&rdquo;
+                eenvoudig en snel. Ons team focust op functies in plaats van
+                infrastructuur.&rdquo;
               </p>
               <footer className="text-sm">
                 — Een tevreden ondernemer
@@ -135,8 +135,8 @@ export default function SignInAuth() {
                         setLoading(false);
                         const errorMessage = ctx.error?.message;
                         if (errorMessage?.includes("User not found") || ctx.error?.status === 401) {
-                            toast.error("Account not found", {
-                                description: "We couldn't find an account with that email.",
+                            toast.error("Account niet gevonden", {
+                                description: "We konden geen account vinden met dit e-mailadres.",
                                 action: {
                                     label: "Registreren",
                                     onClick: () => router.push("/sign-up"),
@@ -195,7 +195,7 @@ export default function SignInAuth() {
                       htmlFor="remember"
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
-                      Remember me
+                      Onthoud mij
                     </label>
                   </div>
                   <Button

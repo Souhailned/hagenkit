@@ -1,13 +1,32 @@
 "use client";
 
 import * as React from "react";
-import { ChatCircleDots, PaperPlaneTilt, X, MapPin, ArrowSquareOut, Buildings, Envelope, Heart, CalendarBlank, Copy, Check, Scales, UserCircle, ChartBar } from "@phosphor-icons/react";
+import {
+  ChatCircleDots,
+  PaperPlaneTilt,
+  X,
+  MapPin,
+  ArrowSquareOut,
+  Buildings,
+  Envelope,
+  Heart,
+  CalendarBlank,
+  Copy,
+  Check,
+  Scales,
+} from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useChat } from "@ai-sdk/react";
+import type { UIMessage } from "ai";
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface ChatProperty {
   title: string;
@@ -22,54 +41,105 @@ interface ChatProperty {
   lng?: number;
 }
 
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  quickReplies?: string[];
-  properties?: ChatProperty[];
+interface WizardState {
+  active: boolean;
+  step: "type" | "city" | "budget" | "results";
+  filters: {
+    type?: string;
+    typeLabel?: string;
+    city?: string;
+    budget?: string;
+  };
 }
 
-const PROPERTIES_MARKER = "\n<!--PROPERTIES:";
-const PROPERTIES_END = ":PROPERTIES-->";
+// ============================================================================
+// Constants
+// ============================================================================
 
-// Parse properties from streamed content
-function parsePropertiesFromContent(content: string): {
-  text: string;
-  properties: ChatProperty[];
-} {
-  const markerIdx = content.indexOf(PROPERTIES_MARKER);
-  if (markerIdx === -1) return { text: content, properties: [] };
-
-  const endIdx = content.indexOf(PROPERTIES_END);
-  if (endIdx === -1) return { text: content.substring(0, markerIdx), properties: [] };
-
-  const jsonStr = content.substring(markerIdx + PROPERTIES_MARKER.length, endIdx);
-  try {
-    const properties = JSON.parse(jsonStr) as ChatProperty[];
-    return { text: content.substring(0, markerIdx).trim(), properties };
-  } catch {
-    return { text: content.substring(0, markerIdx), properties: [] };
-  }
-}
-
-// Property type labels
 const typeLabels: Record<string, string> = {
   RESTAURANT: "Restaurant",
-  CAFE: "Café",
+  CAFE: "Cafe",
   BAR: "Bar",
   HOTEL: "Hotel",
   LUNCHROOM: "Lunchroom",
   DARK_KITCHEN: "Dark Kitchen",
   BAKERY: "Bakkerij",
   BISTRO: "Bistro",
-  GRAND_CAFE: "Grand Café",
-  EETCAFE: "Eetcafé",
+  GRAND_CAFE: "Grand Cafe",
+  EETCAFE: "Eetcafe",
   PARTY_CENTER: "Partycentrum",
 };
 
-// Mini image carousel for chat cards
-function ChatImageCarousel({ images, alt }: { images: string[]; alt: string }) {
+const WIZARD_TYPES = [
+  { label: "Restaurant", value: "RESTAURANT" },
+  { label: "Cafe", value: "CAFE" },
+  { label: "Bar", value: "BAR" },
+  { label: "Hotel", value: "HOTEL" },
+  { label: "Lunchroom", value: "LUNCHROOM" },
+  { label: "Alle types", value: "" },
+];
+
+const WIZARD_CITIES = [
+  "Amsterdam",
+  "Rotterdam",
+  "Utrecht",
+  "Den Haag",
+  "Eindhoven",
+  "Groningen",
+  "Alle steden",
+];
+
+const WIZARD_BUDGETS = [
+  { label: "Tot 2.000/mnd", value: "2000" },
+  { label: "2.000 - 5.000", value: "5000" },
+  { label: "5.000+", value: "99999" },
+  { label: "Te koop", value: "koop" },
+  { label: "Maakt niet uit", value: "" },
+];
+
+// ============================================================================
+// Helper: Extract text from UIMessage parts
+// ============================================================================
+
+function getMessageText(message: UIMessage): string {
+  return message.parts
+    .filter((p): p is { type: "text"; text: string } => p.type === "text")
+    .map((p) => p.text)
+    .join("");
+}
+
+// ============================================================================
+// Helper: Extract tool results (property search) from UIMessage parts
+// ============================================================================
+
+function getToolProperties(message: UIMessage): ChatProperty[] {
+  for (const part of message.parts) {
+    if (
+      part.type === "tool-invocation" &&
+      "toolName" in part &&
+      (part as any).toolName === "searchProperties" &&
+      "state" in part &&
+      (part as any).state === "result" &&
+      "result" in part &&
+      Array.isArray((part as any).result)
+    ) {
+      return (part as any).result as ChatProperty[];
+    }
+  }
+  return [];
+}
+
+// ============================================================================
+// Sub-components
+// ============================================================================
+
+function ChatImageCarousel({
+  images,
+  alt,
+}: {
+  images: string[];
+  alt: string;
+}) {
   const [idx, setIdx] = React.useState(0);
   const count = images.length;
 
@@ -83,10 +153,15 @@ function ChatImageCarousel({ images, alt }: { images: string[]; alt: string }) {
 
   return (
     <div className="relative h-full w-full group">
-      <Image src={images[idx]} alt={alt} fill className="object-cover" sizes="80px" />
+      <Image
+        src={images[idx]}
+        alt={alt}
+        fill
+        className="object-cover"
+        sizes="80px"
+      />
       {count > 1 && (
         <>
-          {/* Dots */}
           <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
             {images.slice(0, 4).map((_, i) => (
               <div
@@ -98,16 +173,23 @@ function ChatImageCarousel({ images, alt }: { images: string[]; alt: string }) {
               />
             ))}
           </div>
-          {/* Click zones for prev/next */}
           <button
             type="button"
             className="absolute inset-y-0 left-0 w-1/2 opacity-0"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIdx((idx - 1 + count) % count); }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIdx((idx - 1 + count) % count);
+            }}
           />
           <button
             type="button"
             className="absolute inset-y-0 right-0 w-1/2 opacity-0"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIdx((idx + 1) % count); }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIdx((idx + 1) % count);
+            }}
           />
         </>
       )}
@@ -115,7 +197,6 @@ function ChatImageCarousel({ images, alt }: { images: string[]; alt: string }) {
   );
 }
 
-// Property card component for chat
 function ChatPropertyCard({ property }: { property: ChatProperty }) {
   const [saved, setSaved] = React.useState(false);
   const allImages = property.images?.length
@@ -140,35 +221,41 @@ function ChatPropertyCard({ property }: { property: ChatProperty }) {
   };
 
   return (
-    <div className={cn(
-      "rounded-xl border bg-background min-w-[260px] max-w-[280px]",
-      "hover:border-primary/30 hover:shadow-sm transition-all",
-      "shrink-0"
-    )}>
+    <div
+      className={cn(
+        "rounded-xl border bg-background min-w-[260px] max-w-[280px]",
+        "hover:border-primary/30 hover:shadow-sm transition-all",
+        "shrink-0"
+      )}
+    >
       <Link href={`/aanbod/${property.slug}`} className="flex gap-3 p-2.5">
-        {/* Image with carousel */}
         <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
           <ChatImageCarousel images={allImages} alt={property.title} />
         </div>
-
-        {/* Info */}
         <div className="flex flex-col justify-between min-w-0 flex-1">
           <div>
-            <p className="text-xs font-semibold leading-tight truncate">{property.title}</p>
+            <p className="text-xs font-semibold leading-tight truncate">
+              {property.title}
+            </p>
             <div className="flex items-center gap-1 mt-0.5">
               <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
-              <span className="text-[11px] text-muted-foreground truncate">{property.city}</span>
+              <span className="text-[11px] text-muted-foreground truncate">
+                {property.city}
+              </span>
             </div>
           </div>
           <div className="flex items-center justify-between mt-1">
-            <span className="text-xs font-bold text-primary">{property.price}</span>
+            <span className="text-xs font-bold text-primary">
+              {property.price}
+            </span>
             {property.area && (
-              <span className="text-[10px] text-muted-foreground">{property.area}</span>
+              <span className="text-[10px] text-muted-foreground">
+                {property.area}
+              </span>
             )}
           </div>
         </div>
       </Link>
-      {/* Action buttons */}
       <div className="flex border-t">
         <button
           onClick={handleSave}
@@ -194,19 +281,15 @@ function ChatPropertyCard({ property }: { property: ChatProperty }) {
   );
 }
 
-// Static mini map for chat (OSM tile)
 function ChatMiniMap({ properties }: { properties: ChatProperty[] }) {
   const withCoords = properties.filter((p) => p.lat && p.lng);
   if (withCoords.length === 0) return null;
 
-  // Calculate center and zoom from properties
   const lats = withCoords.map((p) => p.lat!);
   const lngs = withCoords.map((p) => p.lng!);
   const centerLat = lats.reduce((a, b) => a + b, 0) / lats.length;
   const centerLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
-  const zoom = withCoords.length === 1 ? 14 : 12;
 
-  // Use OSM static map via openstreetmap embed
   const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${centerLng - 0.02},${centerLat - 0.01},${centerLng + 0.02},${centerLat + 0.01}&layer=mapnik&marker=${centerLat},${centerLng}`;
 
   return (
@@ -230,8 +313,13 @@ function ChatMiniMap({ properties }: { properties: ChatProperty[] }) {
   );
 }
 
-// Compare table for chat
-function ChatCompareTable({ properties, onClose }: { properties: ChatProperty[]; onClose: () => void }) {
+function ChatCompareTable({
+  properties,
+  onClose,
+}: {
+  properties: ChatProperty[];
+  onClose: () => void;
+}) {
   if (properties.length < 2) return null;
   const items = properties.slice(0, 3);
   const rows = [
@@ -247,7 +335,10 @@ function ChatCompareTable({ properties, onClose }: { properties: ChatProperty[];
         <span className="text-[11px] font-medium flex items-center gap-1">
           <Scales className="h-3 w-3" /> Vergelijking
         </span>
-        <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+        <button
+          onClick={onClose}
+          className="text-muted-foreground hover:text-foreground"
+        >
           <X className="h-3 w-3" />
         </button>
       </div>
@@ -255,11 +346,19 @@ function ChatCompareTable({ properties, onClose }: { properties: ChatProperty[];
         <table className="w-full text-[11px]">
           <thead>
             <tr className="border-b">
-              <th className="p-2 text-left text-muted-foreground font-normal w-20"></th>
+              <th className="p-2 text-left text-muted-foreground font-normal w-20" />
               {items.map((p) => (
-                <th key={p.slug} className="p-2 text-left font-semibold max-w-[100px]">
-                  <Link href={`/aanbod/${p.slug}`} className="hover:text-primary truncate block">
-                    {p.title.length > 20 ? p.title.substring(0, 20) + "…" : p.title}
+                <th
+                  key={p.slug}
+                  className="p-2 text-left font-semibold max-w-[100px]"
+                >
+                  <Link
+                    href={`/aanbod/${p.slug}`}
+                    className="hover:text-primary truncate block"
+                  >
+                    {p.title.length > 20
+                      ? p.title.substring(0, 20) + "..."
+                      : p.title}
                   </Link>
                 </th>
               ))}
@@ -271,7 +370,9 @@ function ChatCompareTable({ properties, onClose }: { properties: ChatProperty[];
                 <td className="p-2 text-muted-foreground">{row.label}</td>
                 {items.map((p) => (
                   <td key={p.slug} className="p-2">
-                    {row.key === "type" ? (typeLabels[p[row.key]] || p[row.key]) : (p[row.key] || "—")}
+                    {row.key === "type"
+                      ? typeLabels[p[row.key]] || p[row.key]
+                      : p[row.key] || "--"}
                   </td>
                 ))}
               </tr>
@@ -283,7 +384,6 @@ function ChatCompareTable({ properties, onClose }: { properties: ChatProperty[];
   );
 }
 
-// Property cards row
 function PropertyCards({ properties }: { properties: ChatProperty[] }) {
   return (
     <div className="mt-2 -mx-1">
@@ -314,7 +414,6 @@ function PropertyCards({ properties }: { properties: ChatProperty[] }) {
   );
 }
 
-// Copy button for messages
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = React.useState(false);
   return (
@@ -339,84 +438,6 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-// Simple markdown-ish rendering: bold, italic, bullet lists, links
-function ChatMarkdown({ content }: { content: string }) {
-  const lines = content.split("\n");
-
-  return (
-    <div className="space-y-1">
-      {lines.map((line, i) => {
-        const trimmed = line.trim();
-        if (!trimmed) return <br key={i} />;
-
-        // Bullet list items (- or * or •)
-        const bulletMatch = trimmed.match(/^[-*•]\s+(.+)/);
-        if (bulletMatch) {
-          return (
-            <div key={i} className="flex gap-1.5 ml-1">
-              <span className="text-muted-foreground shrink-0">•</span>
-              <span>{renderInline(bulletMatch[1])}</span>
-            </div>
-          );
-        }
-
-        // Numbered list items
-        const numMatch = trimmed.match(/^(\d+)[.)]\s+(.+)/);
-        if (numMatch) {
-          return (
-            <div key={i} className="flex gap-1.5 ml-1">
-              <span className="text-muted-foreground shrink-0">{numMatch[1]}.</span>
-              <span>{renderInline(numMatch[2])}</span>
-            </div>
-          );
-        }
-
-        return <p key={i}>{renderInline(trimmed)}</p>;
-      })}
-    </div>
-  );
-}
-
-function renderInline(text: string): React.ReactNode {
-  // Process bold, italic, and links
-  const parts: React.ReactNode[] = [];
-  let remaining = text;
-  let key = 0;
-
-  while (remaining.length > 0) {
-    // Bold: **text**
-    const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
-    // Link: [text](url)
-    const linkMatch = remaining.match(/\[(.+?)\]\((.+?)\)/);
-
-    // Find earliest match
-    const boldIdx = boldMatch ? remaining.indexOf(boldMatch[0]) : Infinity;
-    const linkIdx = linkMatch ? remaining.indexOf(linkMatch[0]) : Infinity;
-
-    if (boldIdx === Infinity && linkIdx === Infinity) {
-      parts.push(remaining);
-      break;
-    }
-
-    if (boldIdx <= linkIdx && boldMatch) {
-      if (boldIdx > 0) parts.push(remaining.slice(0, boldIdx));
-      parts.push(<strong key={key++} className="font-semibold">{boldMatch[1]}</strong>);
-      remaining = remaining.slice(boldIdx + boldMatch[0].length);
-    } else if (linkMatch) {
-      if (linkIdx > 0) parts.push(remaining.slice(0, linkIdx));
-      parts.push(
-        <a key={key++} href={linkMatch[2]} className="text-primary underline hover:no-underline" target="_blank" rel="noopener">
-          {linkMatch[1]}
-        </a>
-      );
-      remaining = remaining.slice(linkIdx + linkMatch[0].length);
-    }
-  }
-
-  return parts.length === 1 ? parts[0] : <>{parts}</>;
-}
-
-// Typing indicator with bouncing dots
 function TypingIndicator() {
   return (
     <div className="flex justify-start">
@@ -429,7 +450,6 @@ function TypingIndicator() {
   );
 }
 
-// Quick reply buttons
 function QuickReplies({
   replies,
   onSelect,
@@ -461,92 +481,133 @@ function QuickReplies({
   );
 }
 
-// Generate contextual quick replies based on the conversation
-function getQuickReplies(content: string, messageIndex: number, totalMessages: number, hasProperties?: boolean): string[] {
+// ============================================================================
+// Markdown renderer
+// ============================================================================
+
+function ChatMarkdown({ content }: { content: string }) {
+  const lines = content.split("\n");
+
+  return (
+    <div className="space-y-1">
+      {lines.map((line, i) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <br key={i} />;
+
+        const bulletMatch = trimmed.match(/^[-*]\s+(.+)/);
+        if (bulletMatch) {
+          return (
+            <div key={i} className="flex gap-1.5 ml-1">
+              <span className="text-muted-foreground shrink-0">-</span>
+              <span>{renderInline(bulletMatch[1])}</span>
+            </div>
+          );
+        }
+
+        const numMatch = trimmed.match(/^(\d+)[.)]\s+(.+)/);
+        if (numMatch) {
+          return (
+            <div key={i} className="flex gap-1.5 ml-1">
+              <span className="text-muted-foreground shrink-0">
+                {numMatch[1]}.
+              </span>
+              <span>{renderInline(numMatch[2])}</span>
+            </div>
+          );
+        }
+
+        return <p key={i}>{renderInline(trimmed)}</p>;
+      })}
+    </div>
+  );
+}
+
+function renderInline(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+
+  while (remaining.length > 0) {
+    const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
+    const linkMatch = remaining.match(/\[(.+?)\]\((.+?)\)/);
+
+    const boldIdx = boldMatch ? remaining.indexOf(boldMatch[0]) : Infinity;
+    const linkIdx = linkMatch ? remaining.indexOf(linkMatch[0]) : Infinity;
+
+    if (boldIdx === Infinity && linkIdx === Infinity) {
+      parts.push(remaining);
+      break;
+    }
+
+    if (boldIdx <= linkIdx && boldMatch) {
+      if (boldIdx > 0) parts.push(remaining.slice(0, boldIdx));
+      parts.push(
+        <strong key={key++} className="font-semibold">
+          {boldMatch[1]}
+        </strong>
+      );
+      remaining = remaining.slice(boldIdx + boldMatch[0].length);
+    } else if (linkMatch) {
+      if (linkIdx > 0) parts.push(remaining.slice(0, linkIdx));
+      parts.push(
+        <a
+          key={key++}
+          href={linkMatch[2]}
+          className="text-primary underline hover:no-underline"
+          target="_blank"
+          rel="noopener"
+        >
+          {linkMatch[1]}
+        </a>
+      );
+      remaining = remaining.slice(linkIdx + linkMatch[0].length);
+    }
+  }
+
+  return parts.length === 1 ? parts[0] : <>{parts}</>;
+}
+
+// ============================================================================
+// Quick reply generation
+// ============================================================================
+
+function getQuickReplies(content: string, hasProperties: boolean): string[] {
   const lower = content.toLowerCase();
 
-  // Welcome message
-  if (messageIndex === 0) {
-    return ["🍽️ Restaurants", "☕ Cafés", "🍺 Bars", "🏨 Hotels", "📍 Alle steden"];
-  }
-
-  // If bot showed property results
   if (hasProperties) {
-    return ["⚖️ Vergelijk", "📍 Andere stad", "💰 Goedkoper", "🔍 Nieuwe zoekopdracht"];
+    return ["Vergelijk", "Andere stad", "Goedkoper", "Nieuwe zoekopdracht"];
   }
 
-  // If bot mentioned specific cities or is asking about location
   if (lower.includes("welke stad") || lower.includes("in welke")) {
-    return ["📍 Amsterdam", "📍 Rotterdam", "📍 Utrecht", "📍 Den Haag", "📍 Andere stad"];
+    return ["Amsterdam", "Rotterdam", "Utrecht", "Den Haag", "Andere stad"];
   }
 
-  // If bot mentioned budget or pricing
-  if (lower.includes("budget") || lower.includes("prijs") || lower.includes("kosten")) {
-    return ["💰 Tot €2.000/mnd", "💰 €2.000-5.000", "💰 €5.000+", "🏷️ Te koop"];
+  if (
+    lower.includes("budget") ||
+    lower.includes("prijs") ||
+    lower.includes("kosten")
+  ) {
+    return ["Tot 2.000/mnd", "2.000-5.000", "5.000+", "Te koop"];
   }
 
-  // If bot showed results or mentioned panden
-  if (lower.includes("gevonden") || lower.includes("beschikbaar") || lower.includes("panden")) {
-    return ["📋 Meer details", "💰 Goedkoper", "📍 Andere stad", "🔍 Nieuwe zoekopdracht"];
-  }
-
-  // If bot mentioned a city
-  const cities = ["amsterdam", "rotterdam", "utrecht", "den haag", "eindhoven", "groningen"];
-  if (cities.some((c) => lower.includes(c))) {
-    return ["🍽️ Restaurants", "☕ Cafés", "🍺 Bars", "📍 Andere stad"];
-  }
-
-  // If bot mentioned restaurants
-  if (lower.includes("restaurant")) {
-    return ["📍 In Amsterdam", "📍 In Rotterdam", "💰 Budget opties", "🔍 Andere types"];
-  }
-
-  // Default follow-up options
-  if (totalMessages > 2) {
-    return ["🔍 Nieuwe zoekopdracht", "📍 Alle steden", "❓ Meer info"];
+  if (
+    lower.includes("gevonden") ||
+    lower.includes("beschikbaar") ||
+    lower.includes("panden")
+  ) {
+    return ["Meer details", "Goedkoper", "Andere stad", "Nieuwe zoekopdracht"];
   }
 
   return [];
 }
 
-// === WIZARD FLOW ===
-interface WizardState {
-  active: boolean;
-  step: "type" | "city" | "budget" | "results";
-  filters: {
-    type?: string;
-    typeLabel?: string;
-    city?: string;
-    budget?: string;
-  };
-}
-
-const WIZARD_TYPES = [
-  { label: "🍽️ Restaurant", value: "RESTAURANT" },
-  { label: "☕ Café", value: "CAFE" },
-  { label: "🍺 Bar", value: "BAR" },
-  { label: "🏨 Hotel", value: "HOTEL" },
-  { label: "🥪 Lunchroom", value: "LUNCHROOM" },
-  { label: "🍕 Alle types", value: "" },
-];
-
-const WIZARD_CITIES = [
-  "Amsterdam", "Rotterdam", "Utrecht", "Den Haag",
-  "Eindhoven", "Groningen", "Alle steden",
-];
-
-const WIZARD_BUDGETS = [
-  { label: "💰 Tot €2.000/mnd", value: "2000" },
-  { label: "💰 €2.000 - €5.000", value: "5000" },
-  { label: "💰 €5.000+", value: "99999" },
-  { label: "🏷️ Te koop", value: "koop" },
-  { label: "🤷 Maakt niet uit", value: "" },
-];
+// ============================================================================
+// Main Component
+// ============================================================================
 
 export function ChatWidget() {
   const [open, setOpen] = React.useState(false);
-  const [input, setInput] = React.useState("");
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [inputValue, setInputValue] = React.useState("");
   const [userName, setUserName] = React.useState<string | null>(null);
   const [userRole, setUserRole] = React.useState<string | null>(null);
   const [compareItems, setCompareItems] = React.useState<ChatProperty[]>([]);
@@ -556,14 +617,32 @@ export function ChatWidget() {
     step: "type",
     filters: {},
   });
-  const [messages, setMessages] = React.useState<Message[]>([
+
+  // Local messages for wizard flow and quick replies (non-AI messages)
+  const [localMessages, setLocalMessages] = React.useState<
+    Array<{
+      id: string;
+      role: "user" | "assistant";
+      content: string;
+      quickReplies?: string[];
+      properties?: ChatProperty[];
+    }>
+  >([
     {
       id: "welcome",
       role: "assistant",
-      content: "Hoi! 👋 Ik ben de Horecagrond Assistent. Ik help je bij het vinden van het perfecte horecapand.\n\nWat wil je doen?",
-      quickReplies: ["🔍 Pand zoeken", "💬 Stel een vraag", "📍 Alle steden"],
+      content:
+        "Hoi! Ik ben de Horecagrond Assistent. Ik help je bij het vinden van het perfecte horecapand.\n\nWat wil je doen?",
+      quickReplies: ["Pand zoeken", "Stel een vraag", "Alle steden"],
     },
   ]);
+
+  // AI SDK useChat hook
+  const { messages: aiMessages, sendMessage, status } = useChat({
+    id: "horecagrond-chat",
+  });
+
+  const isLoading = status === "streaming" || status === "submitted";
 
   // Fetch auth session on mount
   React.useEffect(() => {
@@ -575,35 +654,43 @@ export function ChatWidget() {
           setUserName(user.name || user.email?.split("@")[0] || null);
           setUserRole(user.role || null);
 
-          // Update welcome message for logged-in users
           const isAgent = user.role === "agent";
-          setMessages([
+          setLocalMessages([
             {
               id: "welcome",
               role: "assistant",
               content: isAgent
-                ? `Welkom terug, ${user.name || "makelaar"}! 🏢\n\nWat kan ik voor je doen?`
-                : `Welkom terug, ${user.name || "daar"}! 👋\n\nWaarmee kan ik je helpen?`,
+                ? `Welkom terug, ${user.name || "makelaar"}!\n\nWat kan ik voor je doen?`
+                : `Welkom terug, ${user.name || "daar"}!\n\nWaarmee kan ik je helpen?`,
               quickReplies: isAgent
-                ? ["📊 Mijn statistieken", "🏠 Mijn panden", "✍️ Beschrijving maken", "💬 Stel een vraag"]
-                : ["🔍 Pand zoeken", "❤️ Mijn favorieten", "🔔 Mijn alerts", "💬 Stel een vraag"],
+                ? [
+                    "Mijn statistieken",
+                    "Mijn panden",
+                    "Beschrijving maken",
+                    "Stel een vraag",
+                  ]
+                : [
+                    "Pand zoeken",
+                    "Mijn favorieten",
+                    "Mijn alerts",
+                    "Stel een vraag",
+                  ],
             },
           ]);
         }
       })
-      .catch(() => {
-        // Not logged in, keep default welcome
-      });
+      .catch(() => {});
   }, []);
+
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  // Auto-scroll on new messages
+  // Auto-scroll
   React.useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isLoading]);
+  }, [localMessages, aiMessages, isLoading]);
 
   // Focus input when chat opens
   React.useEffect(() => {
@@ -612,414 +699,329 @@ export function ChatWidget() {
     }
   }, [open]);
 
-  // Wizard step handler
-  const handleWizardStep = async (choice: string) => {
-    // Add user choice as message
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: choice,
-    };
-    setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg));
+  // Combine local + AI messages for rendering
+  const allMessages = React.useMemo(() => {
+    const combined: Array<{
+      id: string;
+      role: "user" | "assistant";
+      content: string;
+      quickReplies?: string[];
+      properties?: ChatProperty[];
+    }> = [];
 
+    // Local messages first
+    for (const m of localMessages) {
+      combined.push(m);
+    }
+
+    // Then AI messages
+    for (const m of aiMessages) {
+      const text = getMessageText(m);
+      const properties = getToolProperties(m);
+      const quickReplies =
+        m.role === "assistant" && text
+          ? getQuickReplies(text, properties.length > 0)
+          : [];
+
+      combined.push({
+        id: m.id,
+        role: m.role as "user" | "assistant",
+        content: text,
+        properties: properties.length > 0 ? properties : undefined,
+        quickReplies: quickReplies.length > 0 ? quickReplies : undefined,
+      });
+    }
+
+    return combined;
+  }, [localMessages, aiMessages]);
+
+  // Add a local message pair (user + bot)
+  const addLocalExchange = (
+    userText: string,
+    botContent: string,
+    options?: {
+      quickReplies?: string[];
+      properties?: ChatProperty[];
+    }
+  ) => {
+    const msgs: typeof localMessages = [];
+    if (userText) {
+      msgs.push({
+        id: Date.now().toString(),
+        role: "user",
+        content: userText,
+      });
+    }
+    msgs.push({
+      id: (Date.now() + 1).toString(),
+      role: "assistant",
+      content: botContent,
+      ...options,
+    });
+
+    setLocalMessages((prev) => [
+      ...prev.map((m) => ({ ...m, quickReplies: undefined })),
+      ...msgs,
+    ]);
+  };
+
+  // Send message to AI
+  const sendToAi = async (text: string) => {
+    // Clear quick replies from local messages
+    setLocalMessages((prev) =>
+      prev.map((m) => ({ ...m, quickReplies: undefined }))
+    );
+    await sendMessage({ text });
+  };
+
+  // ========== Wizard Flow ==========
+  const handleWizardStep = async (choice: string) => {
     if (wizard.step === "type") {
       const selected = WIZARD_TYPES.find((t) => t.label === choice);
-      const newFilters = {
-        ...wizard.filters,
-        type: selected?.value || "",
-        typeLabel: selected?.label || choice,
-      };
-      setWizard({ active: true, step: "city", filters: newFilters });
-
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: `${selected?.label || "Top"} — goeie keuze! 👌\n\nIn welke stad zoek je?`,
-        quickReplies: WIZARD_CITIES.map((c) => `📍 ${c}`),
-      };
-      setMessages((prev) => [...prev, botMsg]);
+      setWizard({
+        active: true,
+        step: "city",
+        filters: {
+          type: selected?.value || "",
+          typeLabel: selected?.label || choice,
+        },
+      });
+      addLocalExchange(
+        choice,
+        `${selected?.label || "Top"} -- goeie keuze!\n\nIn welke stad zoek je?`,
+        { quickReplies: WIZARD_CITIES }
+      );
     } else if (wizard.step === "city") {
-      const city = choice.replace("📍 ", "");
-      const newFilters = {
-        ...wizard.filters,
-        city: city === "Alle steden" ? "" : city,
-      };
-      setWizard({ active: true, step: "budget", filters: newFilters });
-
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: `${city === "Alle steden" ? "In heel Nederland" : city} — mooi! 🏙️\n\nWat is je budget?`,
-        quickReplies: WIZARD_BUDGETS.map((b) => b.label),
-      };
-      setMessages((prev) => [...prev, botMsg]);
+      const city = choice;
+      setWizard((prev) => ({
+        active: true,
+        step: "budget",
+        filters: {
+          ...prev.filters,
+          city: city === "Alle steden" ? "" : city,
+        },
+      }));
+      addLocalExchange(
+        choice,
+        `${city === "Alle steden" ? "In heel Nederland" : city} -- mooi!\n\nWat is je budget?`,
+        { quickReplies: WIZARD_BUDGETS.map((b) => b.label) }
+      );
     } else if (wizard.step === "budget") {
       const selected = WIZARD_BUDGETS.find((b) => b.label === choice);
-      const newFilters = { ...wizard.filters, budget: selected?.value || "" };
-      setWizard({ active: true, step: "results", filters: newFilters });
+      const filters = { ...wizard.filters, budget: selected?.value || "" };
 
-      // Fetch results
-      setIsLoading(true);
-      try {
-        const params = new URLSearchParams();
-        if (newFilters.type) params.set("type", newFilters.type);
-        if (newFilters.city) params.set("city", newFilters.city);
-        if (newFilters.budget && newFilters.budget !== "koop" && newFilters.budget !== "99999") {
-          params.set("maxPrice", newFilters.budget);
-        }
+      // Clear quick replies and add user choice
+      setLocalMessages((prev) => [
+        ...prev.map((m) => ({ ...m, quickReplies: undefined })),
+        { id: Date.now().toString(), role: "user" as const, content: choice },
+      ]);
 
-        const res = await fetch(`/api/chat/wizard?${params.toString()}`);
-        const data = await res.json();
-
-        const summary = [
-          newFilters.typeLabel || "Alle types",
-          newFilters.city || "heel Nederland",
-          selected?.label || "",
-        ]
-          .filter(Boolean)
-          .join(" • ");
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            role: "assistant",
-            content: data.properties?.length > 0
-              ? `🎉 **${data.count} panden gevonden!**\n\n${summary}\n\nHier zijn de beste matches:`
-              + (data.count > 4 ? `\n\n💡 *Tip: Er zijn nog ${data.count - 4} andere panden. Verfijn je zoekopdracht voor betere matches!*` : "")
-              : `Helaas, geen panden gevonden voor ${summary}.\n\n💡 *Tip: Probeer een andere stad of breder budget!*`,
-            properties: data.properties || [],
-            quickReplies: data.properties?.length > 0
-              ? [
-                  "⚖️ Vergelijk",
-                  "📍 Andere stad",
-                  "💰 Goedkoper",
-                  "🔍 Nieuwe zoekopdracht",
-                ]
-              : [
-                  "🔍 Opnieuw zoeken",
-                  "📍 Andere stad",
-                  "💬 Stel een vraag",
-                ],
-          },
-        ]);
-      } catch {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            role: "assistant",
-            content: "Sorry, er ging iets mis bij het zoeken. Probeer het opnieuw!",
-            quickReplies: ["🔍 Opnieuw zoeken"],
-          },
-        ]);
-      } finally {
-        setIsLoading(false);
-        setWizard({ active: false, step: "type", filters: {} });
+      // Build search query and send to AI with tools
+      const parts: string[] = [];
+      if (filters.typeLabel && filters.typeLabel !== "Alle types") {
+        parts.push(filters.typeLabel);
       }
-    }
-  };
+      if (filters.city) {
+        parts.push(`in ${filters.city}`);
+      }
+      if (
+        filters.budget &&
+        filters.budget !== "koop" &&
+        filters.budget !== "99999"
+      ) {
+        parts.push(`tot ${filters.budget} euro per maand`);
+      }
 
-  // Check if message needs auth
-  const needsAuth = (text: string): boolean => {
-    const authKeywords = ["bewaar", "favoriet", "opslaan", "alert", "melding", "mijn panden", "profiel"];
-    return authKeywords.some((k) => text.toLowerCase().includes(k));
-  };
+      setWizard({ active: false, step: "type", filters: {} });
 
-  const sendMessage = async (text: string) => {
-    if (!text.trim() || isLoading) return;
-
-    // Check if auth needed (only for logged-out users)
-    if (!userName && needsAuth(text)) {
-      const userMsg: Message = { id: Date.now().toString(), role: "user", content: text.trim() };
-      const authMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "Om panden te bewaren en alerts in te stellen, heb je een account nodig. Het is gratis en duurt maar 30 seconden! 🚀",
-        quickReplies: ["🔑 Inloggen", "📝 Account aanmaken", "🔍 Verder zoeken"],
-      };
-      setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg, authMsg));
-      return;
-    }
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: text.trim(),
-    };
-
-    // Remove quick replies from previous messages
-    setMessages((prev) =>
-      prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMessage)
-    );
-    setInput("");
-    setIsLoading(true);
-
-    try {
-      const allMessages = [...messages, userMessage];
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: allMessages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
+      // Send the constructed search query to the AI with tools
+      await sendMessage({
+        text: `Zoek ${parts.join(" ") || "horecapanden"}`,
       });
-
-      if (!response.ok) {
-        throw new Error("Chat niet beschikbaar");
-      }
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let assistantContent = "";
-      const assistantId = (Date.now() + 1).toString();
-
-      setMessages((prev) => [
-        ...prev,
-        { id: assistantId, role: "assistant", content: "" },
-      ]);
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          assistantContent += decoder.decode(value, { stream: true });
-          // Parse out properties marker during streaming (show only text part)
-          const { text: visibleText } = parsePropertiesFromContent(assistantContent);
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId ? { ...m, content: visibleText } : m
-            )
-          );
-        }
-      }
-
-      // Parse properties from final content
-      const { text: finalText, properties } = parsePropertiesFromContent(assistantContent);
-
-      // Add quick replies and properties after streaming completes
-      const msgIndex = allMessages.length;
-      const quickReplies = getQuickReplies(finalText, msgIndex, allMessages.length + 1, properties.length > 0);
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId
-            ? {
-                ...m,
-                content: finalText,
-                ...(quickReplies.length > 0 ? { quickReplies } : {}),
-                ...(properties.length > 0 ? { properties } : {}),
-              }
-            : m
-        )
-      );
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: "Sorry, er ging iets mis. Probeer het later opnieuw.",
-          quickReplies: ["🔄 Opnieuw proberen"],
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await sendMessage(input);
-  };
-
+  // ========== Quick Reply Handler ==========
   const handleQuickReply = async (text: string) => {
-    // Dashboard redirects (logged in users)
-    if (text === "❤️ Mijn favorieten") {
+    // Dashboard redirects
+    if (text === "Mijn favorieten") {
       window.location.href = "/dashboard/favorieten";
       return;
     }
-    if (text === "🔔 Mijn alerts") {
+    if (text === "Mijn alerts") {
       window.location.href = "/dashboard/alerts";
       return;
     }
-    if (text === "🏠 Mijn panden") {
+    if (text === "Mijn panden") {
       window.location.href = "/dashboard/panden";
       return;
     }
-    if (text === "📊 Mijn statistieken") {
-      // Fetch stats inline instead of redirect
-      const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
-      setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg));
-      setIsLoading(true);
+    if (text === "Alle steden") {
+      window.location.href = "/steden";
+      return;
+    }
+    if (text === "Meer analytics") {
+      window.location.href = "/dashboard/analytics";
+      return;
+    }
+
+    // Stats (inline)
+    if (text === "Mijn statistieken") {
       try {
         const res = await fetch("/api/dashboard/stats");
         if (res.ok) {
           const stats = await res.json();
-          const botMsg: Message = {
-            id: (Date.now() + 1).toString(),
-            role: "assistant",
-            content: `📊 **Jouw dashboard overzicht:**\n\n- 🏠 **${stats.properties || 0}** actieve panden\n- 👁️ **${stats.views || 0}** views deze maand\n- 📩 **${stats.inquiries || 0}** aanvragen\n- ❤️ **${stats.favorites || 0}** keer als favoriet bewaard`,
-            quickReplies: ["🏠 Mijn panden", "📈 Meer analytics", "🔍 Pand zoeken"],
-          };
-          setMessages((prev) => [...prev, botMsg]);
-        } else {
-          throw new Error("Stats not available");
+          addLocalExchange(
+            text,
+            `**Jouw dashboard overzicht:**\n\n- **${stats.properties || 0}** actieve panden\n- **${stats.views || 0}** views deze maand\n- **${stats.inquiries || 0}** aanvragen\n- **${stats.favorites || 0}** keer als favoriet bewaard`,
+            {
+              quickReplies: ["Mijn panden", "Meer analytics", "Pand zoeken"],
+            }
+          );
+          return;
         }
       } catch {
-        // Fallback: redirect
-        const botMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: "Ga naar je dashboard voor uitgebreide statistieken! 📊",
-          quickReplies: ["📈 Meer analytics"],
-        };
-        setMessages((prev) => [...prev, botMsg]);
-      } finally {
-        setIsLoading(false);
+        // fallback
       }
+      addLocalExchange(
+        text,
+        "Ga naar je dashboard voor uitgebreide statistieken!",
+        { quickReplies: ["Meer analytics"] }
+      );
       return;
     }
 
     // Auth redirects
-    if (text === "🔑 Inloggen") {
-      const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "Je kunt inloggen via onze inlogpagina. Na het inloggen kom je automatisch terug! 🔐",
-        quickReplies: ["➡️ Naar inlogpagina", "📝 Account aanmaken", "🔍 Verder zoeken"],
-      };
-      setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg, botMsg));
+    if (text === "Inloggen") {
+      addLocalExchange(
+        text,
+        "Je kunt inloggen via onze inlogpagina. Na het inloggen kom je automatisch terug!",
+        {
+          quickReplies: [
+            "Naar inlogpagina",
+            "Account aanmaken",
+            "Verder zoeken",
+          ],
+        }
+      );
       return;
     }
-    if (text === "➡️ Naar inlogpagina") {
+    if (text === "Naar inlogpagina") {
       window.location.href = "/sign-in";
       return;
     }
-    if (text === "📝 Account aanmaken") {
-      const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "Super! Met een account kun je:\n\n- ❤️ Panden **bewaren** als favoriet\n- 🔔 **Alerts** instellen voor nieuwe matches\n- 📊 **Statistieken** bekijken (makelaars)\n\nBen je een ondernemer of makelaar?",
-        quickReplies: ["🔍 Ik zoek een pand", "🏢 Ik ben makelaar"],
-      };
-      setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg, botMsg));
+    if (text === "Account aanmaken") {
+      addLocalExchange(
+        text,
+        "Super! Met een account kun je:\n\n- Panden **bewaren** als favoriet\n- **Alerts** instellen voor nieuwe matches\n- **Statistieken** bekijken (makelaars)\n\nBen je een ondernemer of makelaar?",
+        { quickReplies: ["Ik zoek een pand", "Ik ben makelaar"] }
+      );
       return;
     }
-    if (text === "🔍 Ik zoek een pand") {
+    if (text === "Ik zoek een pand") {
       window.location.href = "/sign-up?role=seeker";
       return;
     }
-    if (text === "🏢 Ik ben makelaar") {
+    if (text === "Ik ben makelaar") {
       window.location.href = "/sign-up?role=agent";
       return;
     }
-    if (text === "🔍 Verder zoeken") {
-      // Just continue normal chat
-      return;
-    }
-
-    // Browse all cities (only redirect for "Alle steden", "Andere stad" goes to chat)
-    if (text === "📍 Alle steden") {
-      window.location.href = "/steden";
-      return;
-    }
+    if (text === "Verder zoeken") return;
 
     // Compare mode
-    if (text === "⚖️ Vergelijk") {
-      // Find last message with properties
-      const lastWithProps = [...messages].reverse().find((m) => m.properties && m.properties.length >= 2);
+    if (text === "Vergelijk") {
+      const lastWithProps = [...allMessages]
+        .reverse()
+        .find((m) => m.properties && m.properties.length >= 2);
       if (lastWithProps?.properties) {
         setCompareItems(lastWithProps.properties.slice(0, 3));
         setShowCompare(true);
-        const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
-        const botMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: `Hier is een vergelijking van ${Math.min(lastWithProps.properties.length, 3)} panden:`,
-          quickReplies: ["🔍 Nieuwe zoekopdracht", "💬 Stel een vraag"],
-        };
-        setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg, botMsg));
+        addLocalExchange(
+          text,
+          `Hier is een vergelijking van ${Math.min(lastWithProps.properties.length, 3)} panden:`,
+          { quickReplies: ["Nieuwe zoekopdracht", "Stel een vraag"] }
+        );
       }
       return;
     }
 
     // AI description generator for makelaars
-    if (text === "✍️ Beschrijving maken") {
-      const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "Ik help je een professionele pandbeschrijving te maken! ✍️\n\nGeef me de details van je pand:\n- **Type** (restaurant, café, bar, etc.)\n- **Locatie** (stad, buurt)\n- **Oppervlakte** en **zitplaatsen**\n- **Bijzonderheden** (terras, keuken, vergunningen)\n\nBijvoorbeeld: *\"Restaurant in Amsterdam Zuid, 180m², 60 zitplaatsen, groot terras, professionele keuken\"*",
-        quickReplies: ["🍽️ Restaurant voorbeeld", "☕ Café voorbeeld", "🍺 Bar voorbeeld"],
-      };
-      setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg, botMsg));
+    if (text === "Beschrijving maken") {
+      addLocalExchange(
+        text,
+        'Ik help je een professionele pandbeschrijving te maken!\n\nGeef me de details van je pand:\n- **Type** (restaurant, cafe, bar, etc.)\n- **Locatie** (stad, buurt)\n- **Oppervlakte** en **zitplaatsen**\n- **Bijzonderheden** (terras, keuken, vergunningen)\n\nBijvoorbeeld: *"Restaurant in Amsterdam Zuid, 180m2, 60 zitplaatsen, groot terras, professionele keuken"*',
+        {
+          quickReplies: [
+            "Restaurant voorbeeld",
+            "Cafe voorbeeld",
+            "Bar voorbeeld",
+          ],
+        }
+      );
       return;
     }
-    if (text === "🍽️ Restaurant voorbeeld" || text === "☕ Café voorbeeld" || text === "🍺 Bar voorbeeld") {
+    if (
+      text === "Restaurant voorbeeld" ||
+      text === "Cafe voorbeeld" ||
+      text === "Bar voorbeeld"
+    ) {
       const examples: Record<string, string> = {
-        "🍽️ Restaurant voorbeeld": "Maak een beschrijving voor een restaurant in Amsterdam, 200m², 80 zitplaatsen, met terras aan de gracht, volledig ingerichte professionele keuken, bestaande horecavergunning",
-        "☕ Café voorbeeld": "Maak een beschrijving voor een café in Utrecht centrum, 120m², 40 zitplaatsen binnen, klein terras, espressomachine, verse gebakjes",
-        "🍺 Bar voorbeeld": "Maak een beschrijving voor een cocktailbar in Rotterdam, 150m², industrieel interieur, twee bars, geluidsinstallatie, rookruimte",
+        "Restaurant voorbeeld":
+          "Maak een beschrijving voor een restaurant in Amsterdam, 200m2, 80 zitplaatsen, met terras aan de gracht, volledig ingerichte professionele keuken, bestaande horecavergunning",
+        "Cafe voorbeeld":
+          "Maak een beschrijving voor een cafe in Utrecht centrum, 120m2, 40 zitplaatsen binnen, klein terras, espressomachine, verse gebakjes",
+        "Bar voorbeeld":
+          "Maak een beschrijving voor een cocktailbar in Rotterdam, 150m2, industrieel interieur, twee bars, geluidsinstallatie, rookruimte",
       };
-      await sendMessage(examples[text] || text);
+      await sendToAi(examples[text] || text);
       return;
     }
 
-    if (text === "📈 Meer analytics") {
-      window.location.href = "/dashboard/analytics";
+    // Context-aware follow-ups via AI
+    if (text === "Andere stad") {
+      await sendToAi(
+        "Laat dezelfde soort panden zien maar dan in een andere stad"
+      );
+      return;
+    }
+    if (text === "Goedkoper") {
+      await sendToAi("Heb je ook goedkopere opties?");
+      return;
+    }
+    if (text === "Andere types") {
+      await sendToAi("Wat voor andere types panden zijn er beschikbaar?");
+      return;
+    }
+    if (text === "Meer details") {
+      await sendToAi("Kun je meer details geven over deze panden?");
+      return;
+    }
+    if (text === "Budget opties") {
+      await sendToAi("Wat zijn de goedkoopste opties?");
       return;
     }
 
-    // Context-aware follow-ups — send as natural language to LLM
-    if (text === "📍 Andere stad") {
-      await sendMessage("Laat dezelfde soort panden zien maar dan in een andere stad");
-      return;
-    }
-    if (text === "💰 Goedkoper") {
-      await sendMessage("Heb je ook goedkopere opties?");
-      return;
-    }
-    if (text === "🔍 Andere types") {
-      await sendMessage("Wat voor andere types panden zijn er beschikbaar?");
-      return;
-    }
-    if (text === "📋 Meer details") {
-      await sendMessage("Kun je meer details geven over deze panden?");
-      return;
-    }
-    if (text === "💰 Budget opties") {
-      await sendMessage("Wat zijn de goedkoopste opties?");
-      return;
-    }
-
-    // Free-form chat mode
-    if (text === "💬 Stel een vraag") {
-      const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "Stel je vraag! Ik weet alles over horecapanden, locaties, vergunningen en meer. 💡",
-      };
-      setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg, botMsg));
+    // Free-form chat
+    if (text === "Stel een vraag") {
+      addLocalExchange(
+        text,
+        "Stel je vraag! Ik weet alles over horecapanden, locaties, vergunningen en meer."
+      );
       return;
     }
 
     // Start wizard
-    if (text === "🔍 Pand zoeken" || text === "🔍 Opnieuw zoeken" || text === "🔍 Nieuwe zoekopdracht") {
+    if (
+      text === "Pand zoeken" ||
+      text === "Opnieuw zoeken" ||
+      text === "Nieuwe zoekopdracht"
+    ) {
       setWizard({ active: true, step: "type", filters: {} });
-      const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "Laten we je droomlocatie vinden! 🏢\n\nWat voor type pand zoek je?",
-        quickReplies: WIZARD_TYPES.map((t) => t.label),
-      };
-      setMessages((prev) => prev.map((m): Message => ({ ...m, quickReplies: undefined })).concat(userMsg, botMsg));
+      addLocalExchange(
+        text,
+        "Laten we je droomlocatie vinden!\n\nWat voor type pand zoek je?",
+        { quickReplies: WIZARD_TYPES.map((t) => t.label) }
+      );
       return;
     }
 
@@ -1029,10 +1031,53 @@ export function ChatWidget() {
       return;
     }
 
-    // Normal chat
-    await sendMessage(text);
+    // Default: send to AI
+    await sendToAi(text);
   };
 
+  // Check if message needs auth
+  const needsAuth = (text: string): boolean => {
+    const authKeywords = [
+      "bewaar",
+      "favoriet",
+      "opslaan",
+      "alert",
+      "melding",
+      "mijn panden",
+      "profiel",
+    ];
+    return authKeywords.some((k) => text.toLowerCase().includes(k));
+  };
+
+  // Form submit handler
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = inputValue.trim();
+    if (!text || isLoading) return;
+
+    setInputValue("");
+
+    // Check if auth needed
+    if (!userName && needsAuth(text)) {
+      addLocalExchange(
+        text,
+        "Om panden te bewaren en alerts in te stellen, heb je een account nodig. Het is gratis en duurt maar 30 seconden!",
+        { quickReplies: ["Inloggen", "Account aanmaken", "Verder zoeken"] }
+      );
+      return;
+    }
+
+    // Wizard flow
+    if (wizard.active) {
+      await handleWizardStep(text);
+      return;
+    }
+
+    // Send to AI
+    await sendToAi(text);
+  };
+
+  // ========== Render ==========
   return (
     <>
       {/* Floating button */}
@@ -1052,112 +1097,137 @@ export function ChatWidget() {
       {/* Chat window */}
       {open && (
         <>
-        {/* Mobile backdrop */}
-        <div className="fixed inset-0 z-40 bg-background sm:hidden" />
-        <div
-          className={cn(
-            "fixed z-50 flex flex-col border bg-background shadow-2xl",
-            "animate-in slide-in-from-bottom-5 fade-in duration-200",
-            // Desktop: floating card
-            "sm:bottom-6 sm:right-6 sm:w-[400px] sm:max-h-[600px] sm:rounded-2xl",
-            // Mobile: fullscreen
-            "max-sm:inset-0 max-sm:w-full max-sm:h-full max-sm:rounded-none"
-          )}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b px-4 py-3">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                <ChatCircleDots className="h-4 w-4 text-primary" weight="fill" />
+          {/* Mobile backdrop */}
+          <div className="fixed inset-0 z-40 bg-background sm:hidden" />
+          <div
+            className={cn(
+              "fixed z-50 flex flex-col border bg-background shadow-2xl",
+              "animate-in slide-in-from-bottom-5 fade-in duration-200",
+              "sm:bottom-6 sm:right-6 sm:w-[400px] sm:max-h-[600px] sm:rounded-2xl",
+              "max-sm:inset-0 max-sm:w-full max-sm:h-full max-sm:rounded-none"
+            )}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                  <ChatCircleDots
+                    className="h-4 w-4 text-primary"
+                    weight="fill"
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">
+                    Horecagrond Assistent
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {isLoading ? "Aan het typen..." : "Online"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-semibold">Horecagrond Assistent</p>
-                <p className="text-xs text-muted-foreground">
-                  {isLoading ? "Aan het typen..." : "Online"}
-                </p>
-              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOpen(false)}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
 
-          {/* Messages */}
-          <ScrollArea className="flex-1 p-4 min-h-0" ref={scrollRef}>
-            <div className="space-y-3">
-              {messages.map((message) => (
-                <div key={message.id}>
-                  <div
-                    className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}
-                  >
+            {/* Messages */}
+            <ScrollArea className="flex-1 p-4 min-h-0" ref={scrollRef}>
+              <div className="space-y-3">
+                {allMessages.map((message) => (
+                  <div key={message.id}>
                     <div
                       className={cn(
-                        "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed relative group",
+                        "flex",
                         message.role === "user"
-                          ? "bg-primary text-primary-foreground rounded-br-md"
-                          : "bg-muted rounded-bl-md"
+                          ? "justify-end"
+                          : "justify-start"
                       )}
                     >
-                      {message.role === "assistant" ? (
-                        <ChatMarkdown content={message.content} />
-                      ) : (
-                        <p className="whitespace-pre-wrap">{message.content}</p>
-                      )}
-                      {/* Copy button for long assistant messages */}
-                      {message.role === "assistant" && message.content.length > 100 && (
-                        <CopyButton text={message.content} />
+                      {message.content && (
+                        <div
+                          className={cn(
+                            "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed relative group",
+                            message.role === "user"
+                              ? "bg-primary text-primary-foreground rounded-br-md"
+                              : "bg-muted rounded-bl-md"
+                          )}
+                        >
+                          {message.role === "assistant" ? (
+                            <ChatMarkdown content={message.content} />
+                          ) : (
+                            <p className="whitespace-pre-wrap">
+                              {message.content}
+                            </p>
+                          )}
+                          {message.role === "assistant" &&
+                            message.content.length > 100 && (
+                              <CopyButton text={message.content} />
+                            )}
+                        </div>
                       )}
                     </div>
+
+                    {/* Property cards */}
+                    {message.role === "assistant" &&
+                      message.properties &&
+                      message.properties.length > 0 && (
+                        <PropertyCards properties={message.properties} />
+                      )}
+
+                    {/* Quick replies */}
+                    {message.role === "assistant" &&
+                      message.quickReplies &&
+                      message.quickReplies.length > 0 && (
+                        <QuickReplies
+                          replies={message.quickReplies}
+                          onSelect={handleQuickReply}
+                          disabled={isLoading}
+                        />
+                      )}
                   </div>
+                ))}
 
-                  {/* Property cards */}
-                  {message.role === "assistant" && message.properties && message.properties.length > 0 && (
-                    <PropertyCards properties={message.properties} />
-                  )}
+                {/* Compare table */}
+                {showCompare && compareItems.length >= 2 && (
+                  <ChatCompareTable
+                    properties={compareItems}
+                    onClose={() => setShowCompare(false)}
+                  />
+                )}
 
-                  {/* Quick replies under this message */}
-                  {message.role === "assistant" && message.quickReplies && message.quickReplies.length > 0 && (
-                    <QuickReplies
-                      replies={message.quickReplies}
-                      onSelect={handleQuickReply}
-                      disabled={isLoading}
-                    />
-                  )}
-                </div>
-              ))}
+                {/* Typing indicator */}
+                {isLoading && <TypingIndicator />}
+              </div>
+            </ScrollArea>
 
-              {/* Compare table */}
-              {showCompare && compareItems.length >= 2 && (
-                <ChatCompareTable properties={compareItems} onClose={() => setShowCompare(false)} />
-              )}
-
-              {/* Typing indicator */}
-              {isLoading && messages[messages.length - 1]?.role === "user" && (
-                <TypingIndicator />
-              )}
-            </div>
-          </ScrollArea>
-
-          {/* Input */}
-          <form onSubmit={handleSubmit} className="flex items-center gap-2 border-t p-3">
-            <Input
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Typ je vraag..."
-              className="flex-1 rounded-xl border-0 bg-muted text-sm focus-visible:ring-0"
-              disabled={isLoading}
-            />
-            <Button
-              type="submit"
-              size="icon"
-              className="h-9 w-9 shrink-0 rounded-xl"
-              disabled={isLoading || !input.trim()}
+            {/* Input */}
+            <form
+              onSubmit={handleSubmit}
+              className="flex items-center gap-2 border-t p-3"
             >
-              <PaperPlaneTilt className="h-4 w-4" weight="fill" />
-            </Button>
-          </form>
-        </div>
+              <Input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Typ je vraag..."
+                className="flex-1 rounded-xl border-0 bg-muted text-sm focus-visible:ring-0"
+                disabled={isLoading}
+              />
+              <Button
+                type="submit"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-xl"
+                disabled={isLoading || !inputValue.trim()}
+              >
+                <PaperPlaneTilt className="h-4 w-4" weight="fill" />
+              </Button>
+            </form>
+          </div>
         </>
       )}
     </>

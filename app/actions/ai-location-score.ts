@@ -1,12 +1,9 @@
 "use server";
 
-// AI Location Score — rates a location for a specific horeca concept
-
-interface LocationInput {
-  type: string;
-  city: string;
-  buurt: string; // neighborhood description
-}
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { locationInputSchema, type LocationInput } from "@/lib/validations/ai-actions";
 
 interface ScoreCategory {
   label: string;
@@ -46,7 +43,19 @@ const typeFactors: Record<string, { footfall: number; competition: number; margi
   SUSHI: { footfall: 0.75, competition: 0.65, margin: 0.8 },
 };
 
-export async function scoreLocation(input: LocationInput): Promise<LocationScore> {
+export async function scoreLocation(rawInput: LocationInput): Promise<LocationScore> {
+  // Validate input
+  const input = locationInputSchema.parse(rawInput);
+
+  // Auth + rate limit
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (session?.user?.id) {
+    const rateLimitResult = await checkRateLimit(session.user.id, "ai");
+    if (!rateLimitResult.success) {
+      throw new Error("Rate limit exceeded. Try again later.");
+    }
+  }
+
   const baseScore = cityScores[input.city] || 75;
   const factors = typeFactors[input.type] || typeFactors.RESTAURANT;
   

@@ -1,13 +1,9 @@
 "use server";
 
-// AI Name Generator — generates creative names for horeca concepts
-// Uses pattern-based generation (no LLM needed)
-
-interface NameInput {
-  type: string;
-  city: string;
-  vibe: "klassiek" | "modern" | "gezellig" | "chic" | "stoer";
-}
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { nameInputSchema, type NameInput } from "@/lib/validations/ai-actions";
 
 interface GeneratedName {
   name: string;
@@ -60,7 +56,19 @@ function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5);
 }
 
-export async function generateNames(input: NameInput): Promise<GeneratedName[]> {
+export async function generateNames(rawInput: NameInput): Promise<GeneratedName[]> {
+  // Validate input
+  const input = nameInputSchema.parse(rawInput);
+
+  // Auth + rate limit
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (session?.user?.id) {
+    const rateLimitResult = await checkRateLimit(session.user.id, "ai");
+    if (!rateLimitResult.success) {
+      throw new Error("Rate limit exceeded. Try again later.");
+    }
+  }
+
   const pref = shuffle(prefixes[input.vibe] || prefixes.modern);
   const words = shuffle(typeWords[input.type] || typeWords.RESTAURANT);
   const cityWords = shuffle(cityRef[input.city] || ["Stad"]);

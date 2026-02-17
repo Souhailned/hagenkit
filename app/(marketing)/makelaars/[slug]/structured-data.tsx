@@ -93,14 +93,13 @@ export function generateAgencyStructuredData(agency: AgencyWithDetails) {
 export function generateAgentStructuredData(agent: AgentProfile) {
   const structuredData: Record<string, unknown> = {
     "@type": "Person",
-    name: `${agent.firstName} ${agent.lastName}`,
-    email: agent.email,
-    telephone: agent.phone,
+    name: agent.user.name ?? "Onbekend",
+    email: agent.user.email,
+    telephone: agent.phonePublic ? agent.phone : undefined,
     image: agent.avatar ? `${baseUrl}${agent.avatar}` : undefined,
-    jobTitle: "Horeca Makelaar",
+    jobTitle: agent.title ?? "Horeca Makelaar",
     description: agent.bio,
     knowsLanguage: agent.languages,
-    sameAs: [agent.linkedIn, agent.twitter].filter(Boolean),
   };
 
   // Clean undefined values

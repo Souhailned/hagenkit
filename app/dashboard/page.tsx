@@ -3,8 +3,12 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  ContentCard,
+  ContentCardHeader,
+  ContentCardBody,
+} from "@/components/dashboard/content-card";
 import {
   Building2,
   Eye,
@@ -56,20 +60,22 @@ export default async function DashboardPage() {
   const firstName = user?.name?.split(" ")[0] || "daar";
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Hallo, {firstName}! 👋
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          {isAgent
-            ? "Hier is een overzicht van je panden en leads."
-            : "Ontdek de beste horecapanden voor jouw concept."}
-        </p>
-      </div>
+    <ContentCard>
+      <ContentCardHeader title="Dashboard" />
+      <ContentCardBody className="p-4">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold tracking-tight">
+            Hallo, {firstName}!
+          </h2>
+          <p className="mt-1 text-muted-foreground">
+            {isAgent
+              ? "Hier is een overzicht van je panden en leads."
+              : "Ontdek de beste horecapanden voor jouw concept."}
+          </p>
+        </div>
 
-      {/* Stats cards */}
-      {isAgent ? (
+        {/* Stats cards */}
+        {isAgent ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 mb-8">
           <Card>
             <CardContent className="p-4">
@@ -237,6 +243,7 @@ export default async function DashboardPage() {
           </>
         )}
       </div>
-    </div>
+      </ContentCardBody>
+    </ContentCard>
   );
 }

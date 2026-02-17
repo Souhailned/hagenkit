@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Sparkles, Lock, Image as ImageIcon, Video, Wand2, Loader2 } from "lucide-react";
+import { Sparkles, Lock, Image as ImageIcon, Video, Wand2, Loader2, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { triggerVirtualStaging, getVirtualStagingStatus } from "@/app/actions/ai-visualize";
 
 interface AiVisualizeProps {
+  propertyId: string;
   propertyTitle: string;
   propertyType: string;
   imageUrl?: string;
@@ -24,27 +26,78 @@ interface AiVisualizeProps {
 const visualStyles = [
   { value: "restaurant_modern", label: "Modern restaurant" },
   { value: "restaurant_klassiek", label: "Klassiek restaurant" },
-  { value: "cafe_gezellig", label: "Gezellig café" },
+  { value: "cafe_gezellig", label: "Gezellig cafe" },
   { value: "bar_lounge", label: "Lounge bar" },
   { value: "hotel_boutique", label: "Boutique hotel" },
   { value: "lunchroom_hip", label: "Hippe lunchroom" },
   { value: "leeg", label: "Lege ruimte (origineel)" },
 ];
 
-export function AiVisualize({ propertyTitle, propertyType, imageUrl, isLoggedIn }: AiVisualizeProps) {
+export function AiVisualize({ propertyId, propertyTitle, propertyType, imageUrl, isLoggedIn }: AiVisualizeProps) {
   const [style, setStyle] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
+
+  const pollForResult = useCallback((newImageId: string) => {
+    // Poll every 3 seconds for up to 5 minutes
+    let attempts = 0;
+    const maxAttempts = 100;
+
+    pollRef.current = setInterval(async () => {
+      attempts++;
+      if (attempts > maxAttempts) {
+        if (pollRef.current) clearInterval(pollRef.current);
+        setIsGenerating(false);
+        setError("Verwerking duurt te lang. Probeer het later opnieuw.");
+        return;
+      }
+
+      const result = await getVirtualStagingStatus(newImageId);
+      if (!result.success) {
+        if (pollRef.current) clearInterval(pollRef.current);
+        setIsGenerating(false);
+        setError(result.error || "Er ging iets mis");
+        return;
+      }
+
+      if (result.data?.status === "COMPLETED" && result.data.resultUrl) {
+        if (pollRef.current) clearInterval(pollRef.current);
+        setIsGenerating(false);
+        setGeneratedImage(result.data.resultUrl);
+      }
+    }, 3000);
+  }, []);
 
   async function handleGenerate() {
-    if (!style || !isLoggedIn) return;
-    
+    if (!style || !isLoggedIn || !imageUrl) return;
+
     setIsGenerating(true);
-    // TODO: Connect to Fal.ai inpainting API
-    // For now, simulate
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    setIsGenerating(false);
-    // setGeneratedImage(result.url);
+    setError(null);
+    setGeneratedImage(null);
+
+    const result = await triggerVirtualStaging({
+      propertyId,
+      imageUrl,
+      style,
+    });
+
+    if (!result.success) {
+      setIsGenerating(false);
+      setError(result.error || "Kon de visualisatie niet starten");
+      return;
+    }
+
+    // Start polling for the result
+    pollForResult(result.data!.newImageId);
   }
 
   if (!isLoggedIn) {
@@ -112,7 +165,12 @@ export function AiVisualize({ propertyTitle, propertyType, imageUrl, isLoggedIn 
               {isGenerating ? (
                 <div className="flex h-full flex-col items-center justify-center gap-2">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <span className="text-xs text-muted-foreground">Genereren...</span>
+                  <span className="text-xs text-muted-foreground">Genereren... dit kan 30-60 sec duren</span>
+                </div>
+              ) : error ? (
+                <div className="flex h-full flex-col items-center justify-center gap-2 p-4">
+                  <AlertCircle className="h-8 w-8 text-destructive" />
+                  <span className="text-xs text-center text-destructive">{error}</span>
                 </div>
               ) : generatedImage ? (
                 <img src={generatedImage} alt="AI Visualisatie" className="h-full w-full object-cover" />
@@ -137,7 +195,7 @@ export function AiVisualize({ propertyTitle, propertyType, imageUrl, isLoggedIn 
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={handleGenerate} disabled={!style || isGenerating}>
+          <Button onClick={handleGenerate} disabled={!style || !imageUrl || isGenerating}>
             <Sparkles className="mr-1.5 h-4 w-4" />
             {isGenerating ? "Bezig..." : "Genereer"}
           </Button>

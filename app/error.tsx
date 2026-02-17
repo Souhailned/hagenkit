@@ -32,13 +32,13 @@ export default function Error({
           <EmptyMedia variant="icon">
             <AlertTriangle className="text-destructive" />
           </EmptyMedia>
-          <EmptyTitle>Something went wrong</EmptyTitle>
+          <EmptyTitle>Er is iets misgegaan</EmptyTitle>
           <EmptyDescription>
-            An unexpected error occurred. Please try again or contact support if
-            the problem persists.
+            Er is een onverwachte fout opgetreden. Probeer het opnieuw of neem
+            contact op met support als het probleem aanhoudt.
             {error.digest && (
               <span className="block mt-2 text-xs text-muted-foreground/60">
-                Error ID: {error.digest}
+                Fout-ID: {error.digest}
               </span>
             )}
           </EmptyDescription>
@@ -46,7 +46,7 @@ export default function Error({
         <EmptyContent>
           <Button onClick={reset} variant="outline">
             <RefreshCw className="mr-2 h-4 w-4" />
-            Try again
+            Opnieuw proberen
           </Button>
         </EmptyContent>
       </Empty>

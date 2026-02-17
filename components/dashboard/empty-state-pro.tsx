@@ -20,10 +20,10 @@ export function DashboardProEmptyState() {
         <EmptyMedia variant="icon">
           <Rocket />
         </EmptyMedia>
-        <EmptyTitle>Horecagrond Pro Unlocks More</EmptyTitle>
+        <EmptyTitle>Ontgrendel meer met Horecagrond Pro</EmptyTitle>
         <EmptyDescription>
-          Activate Horecagrond Pro to access advanced analytics, automation, and
-          collaboration workflows across your team.
+          Activeer Horecagrond Pro voor geavanceerde analyses, automatisering en
+          samenwerkingstools voor je hele team.
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>

@@ -6,7 +6,7 @@
 /**
  * User role type matching Prisma enum
  */
-export type UserRole = "user" | "admin";
+export type UserRole = "seeker" | "agent" | "admin";
 
 /**
  * User status type matching Prisma enum

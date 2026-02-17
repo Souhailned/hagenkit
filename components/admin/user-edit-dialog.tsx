@@ -178,7 +178,8 @@ export function UserEditDialog({ user, open, onOpenChange }: UserEditDialogProps
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="seeker">Ondernemer</SelectItem>
+                      <SelectItem value="agent">Makelaar</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>

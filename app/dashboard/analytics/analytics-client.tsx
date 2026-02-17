@@ -19,11 +19,9 @@ export function AnalyticsClient({ analytics }: AnalyticsClientProps) {
   } = analytics;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold tracking-tight mb-8">Analytics</h1>
-
+    <div className="space-y-6">
       {/* Overview stats */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 mb-6">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard
           icon={<Eye className="h-5 w-5 text-blue-500" />}
           value={totalViews}
@@ -50,7 +48,7 @@ export function AnalyticsClient({ analytics }: AnalyticsClientProps) {
       </div>
 
       {/* Charts */}
-      <div className="grid gap-6 lg:grid-cols-3 mb-6">
+      <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ViewsChart data={dailyData} />
         </div>
@@ -59,7 +57,7 @@ export function AnalyticsClient({ analytics }: AnalyticsClientProps) {
 
       {/* Source breakdown */}
       {sourceBreakdown.length > 0 && (
-        <Card className="mb-6">
+        <Card>
           <CardHeader>
             <CardTitle className="text-base">Verkeersbronnen (30 dagen)</CardTitle>
           </CardHeader>

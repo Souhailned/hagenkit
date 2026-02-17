@@ -2,6 +2,7 @@ import { z } from "zod";
 
 // Import the shared propertyTypeEnum from property validations
 import { propertyTypeEnum } from "@/lib/validations/property";
+export { propertyTypeEnum };
 export type PropertyType = z.infer<typeof propertyTypeEnum>;
 
 /**

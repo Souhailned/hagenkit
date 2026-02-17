@@ -1,14 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Bell, Shield, Trash2, LogOut } from "lucide-react";
+import { ContentCard, ContentCardHeader, ContentCardBody } from "@/components/dashboard/content-card";
 
 export default function InstellingenPage() {
   return (
-    <div className="container max-w-2xl py-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Instellingen</h1>
-        <p className="text-muted-foreground mt-1">Beheer je voorkeuren en account</p>
-      </div>
+    <ContentCard>
+      <ContentCardHeader title="Instellingen" />
+      <ContentCardBody className="p-4">
+        <div className="mx-auto max-w-2xl space-y-6">
 
       <Card>
         <CardHeader>
@@ -82,6 +82,9 @@ export default function InstellingenPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+
+        </div>
+      </ContentCardBody>
+    </ContentCard>
   );
 }

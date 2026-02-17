@@ -1,5 +1,10 @@
 import { getFavorites } from "@/app/actions/favorites";
 import { PropertyCard } from "@/components/aanbod/property-card";
+import {
+  ContentCard,
+  ContentCardHeader,
+  ContentCardBody,
+} from "@/components/dashboard/content-card";
 import { Heart } from "lucide-react";
 import { Property } from "@/types/property";
 
@@ -12,15 +17,14 @@ export default async function FavorietenPage() {
   const favorites = await getFavorites();
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Favorieten</h1>
-        <p className="mt-2 text-muted-foreground">
+    <ContentCard>
+      <ContentCardHeader title="Favorieten" />
+      <ContentCardBody className="p-4">
+        <p className="mb-4 text-sm text-muted-foreground">
           Je opgeslagen horeca panden ({favorites.length})
         </p>
-      </div>
 
-      {favorites.length === 0 ? (
+        {favorites.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
             <Heart className="h-8 w-8 text-muted-foreground" />
@@ -47,7 +51,8 @@ export default async function FavorietenPage() {
             />
           ))}
         </div>
-      )}
-    </div>
+        )}
+      </ContentCardBody>
+    </ContentCard>
   );
 }

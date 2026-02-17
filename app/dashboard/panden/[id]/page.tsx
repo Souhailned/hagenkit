@@ -6,9 +6,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/property/status-badge";
-import { PropertyStatsRow } from "@/components/property/property-stats-row";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Pencil, ExternalLink, Eye, Heart, MessageCircle, Copy, Trash2 } from "lucide-react";
+import { ContentCard, ContentCardHeader, ContentCardBody } from "@/components/dashboard/content-card";
 
 export default async function PandDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -32,35 +31,32 @@ export default async function PandDetailPage({ params }: { params: Promise<{ id:
     : "Prijs n.t.b.";
 
   return (
-    <div className="container max-w-4xl py-8">
-      <Breadcrumbs items={[
-        { label: "Dashboard", href: "/dashboard" },
-        { label: "Panden", href: "/dashboard/panden" },
-        { label: property.title },
-      ]} />
-
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">{property.title}</h1>
-            <StatusBadge status={property.status} />
+    <ContentCard>
+      <ContentCardHeader
+        title={property.title}
+        actions={
+          <div className="flex gap-2">
+            <Link href={`/aanbod/${property.slug}`} target="_blank">
+              <Button variant="outline" size="sm">
+                <ExternalLink className="mr-1.5 h-4 w-4" />
+                Bekijken
+              </Button>
+            </Link>
+            <Link href={`/dashboard/panden/${property.id}/bewerken`}>
+              <Button size="sm">
+                <Pencil className="mr-1.5 h-4 w-4" />
+                Bewerken
+              </Button>
+            </Link>
           </div>
-          <p className="text-muted-foreground mt-1">{property.address}, {property.postalCode} {property.city}</p>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <Link href={`/aanbod/${property.slug}`} target="_blank">
-            <Button variant="outline" size="sm">
-              <ExternalLink className="mr-1.5 h-4 w-4" />
-              Bekijken
-            </Button>
-          </Link>
-          <Link href={`/dashboard/panden/${property.id}/bewerken`}>
-            <Button size="sm">
-              <Pencil className="mr-1.5 h-4 w-4" />
-              Bewerken
-            </Button>
-          </Link>
-        </div>
+        }
+      />
+      <ContentCardBody className="p-4">
+        <div className="mx-auto max-w-4xl">
+
+      <div className="flex items-center gap-3 mb-6">
+        <StatusBadge status={property.status} />
+        <span className="text-muted-foreground">{property.address}, {property.postalCode} {property.city}</span>
       </div>
 
       {/* Stats */}
@@ -159,6 +155,9 @@ export default async function PandDetailPage({ params }: { params: Promise<{ id:
           </CardContent>
         </Card>
       )}
-    </div>
+
+        </div>
+      </ContentCardBody>
+    </ContentCard>
   );
 }

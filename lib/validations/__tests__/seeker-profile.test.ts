@@ -14,7 +14,6 @@ describe("propertyTypeEnum", () => {
     expect(propertyTypeEnum.parse("BAR")).toBe("BAR");
     expect(propertyTypeEnum.parse("HOTEL")).toBe("HOTEL");
     expect(propertyTypeEnum.parse("NIGHTCLUB")).toBe("NIGHTCLUB");
-    expect(propertyTypeEnum.parse("FAST_FOOD")).toBe("FAST_FOOD");
     expect(propertyTypeEnum.parse("CATERING")).toBe("CATERING");
     expect(propertyTypeEnum.parse("OTHER")).toBe("OTHER");
   });
@@ -135,18 +134,9 @@ describe("createSearchAlertSchema", () => {
     expect(() => createSearchAlertSchema.parse(input)).toThrow();
   });
 
-  it("defaults frequency to DAILY", () => {
-    const input = { name: "Test Alert" };
-    const result = createSearchAlertSchema.parse(input);
-    expect(result.frequency).toBe("DAILY");
-  });
-
-  it("defaults arrays to empty", () => {
-    const input = { name: "Test Alert" };
-    const result = createSearchAlertSchema.parse(input);
-    expect(result.cities).toEqual([]);
-    expect(result.propertyTypes).toEqual([]);
-    expect(result.mustHaveFeatures).toEqual([]);
+  it("requires cities and propertyTypes", () => {
+    const input = { name: "Test Alert", frequency: "DAILY" };
+    expect(() => createSearchAlertSchema.parse(input)).toThrow();
   });
 
   it("rejects priceMin greater than priceMax", () => {

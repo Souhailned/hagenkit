@@ -3,24 +3,12 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { updatePropertySchema, type UpdatePropertyInput } from "@/lib/validations/property";
 
-interface UpdatePropertyInput {
-  id: string;
-  title?: string;
-  description?: string;
-  shortDescription?: string;
-  address?: string;
-  postalCode?: string;
-  city?: string;
-  rentPrice?: number | null;
-  salePrice?: number | null;
-  surfaceTotal?: number;
-  buildYear?: number | null;
-  seatingCapacityInside?: number | null;
-  seatingCapacityOutside?: number | null;
-}
+export async function updateProperty(rawInput: UpdatePropertyInput) {
+  // Validate input
+  const input = updatePropertySchema.parse(rawInput);
 
-export async function updateProperty(input: UpdatePropertyInput) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) return { error: "Niet ingelogd" };
 
@@ -34,7 +22,7 @@ export async function updateProperty(input: UpdatePropertyInput) {
 
   const updated = await prisma.property.update({
     where: { id },
-    data,
+    data: data as Parameters<typeof prisma.property.update>[0]["data"],
   });
 
   return { success: true, slug: updated.slug };

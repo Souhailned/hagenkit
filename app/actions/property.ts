@@ -11,306 +11,188 @@ import type {
 } from "@/lib/validations/property";
 import { updatePropertySchema, propertyInquirySchema, propertyViewSchema } from "@/lib/validations/property";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 
 // Property with relations type
 export type PropertyWithRelations = Awaited<ReturnType<typeof getPropertyBySlug>>["data"];
 
-// Mock data for development until database schema is ready
-const mockImages: PropertyImage[] = [
-  {
-    id: "img-1",
-    propertyId: "prop-1",
-    originalUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800",
-    thumbnailUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200",
-    type: "INTERIOR",
-    caption: "Restaurant interieur",
-    order: 0,
-    isPrimary: true,
-    aiProcessed: false,
-  },
-  {
-    id: "img-2",
-    propertyId: "prop-1",
-    originalUrl: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800",
-    thumbnailUrl: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=200",
-    type: "KITCHEN",
-    caption: "Professionele keuken",
-    order: 1,
-    isPrimary: false,
-    aiProcessed: false,
-  },
-  {
-    id: "img-3",
-    propertyId: "prop-1",
-    originalUrl: "https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?w=800",
-    thumbnailUrl: "https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?w=200",
-    type: "TERRACE",
-    caption: "Terras",
-    order: 2,
-    isPrimary: false,
-    aiProcessed: false,
-  },
-  {
-    id: "img-4",
-    propertyId: "prop-1",
-    originalUrl: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800",
-    thumbnailUrl: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=200",
-    type: "EXTERIOR",
-    caption: "Gevel",
-    order: 3,
-    isPrimary: false,
-    aiProcessed: false,
-  },
-];
-
-// Detailed feature objects (for future DB relations)
-const mockDetailedFeatures: PropertyFeatureDetail[] = [
-  {
-    id: "feat-1",
-    propertyId: "prop-1",
-    category: "LICENSE",
-    key: "alcohol_license",
-    booleanValue: true,
-    verified: true,
-    displayOrder: 0,
-    highlighted: true,
-  },
-  {
-    id: "feat-2",
-    propertyId: "prop-1",
-    category: "LICENSE",
-    key: "terrace_license",
-    booleanValue: true,
-    verified: true,
-    displayOrder: 1,
-    highlighted: true,
-  },
-  {
-    id: "feat-3",
-    propertyId: "prop-1",
-    category: "FACILITY",
-    key: "professional_kitchen",
-    booleanValue: true,
-    verified: false,
-    displayOrder: 0,
-    highlighted: true,
-  },
-  {
-    id: "feat-4",
-    propertyId: "prop-1",
-    category: "FACILITY",
-    key: "extraction_system",
-    booleanValue: true,
-    verified: false,
-    displayOrder: 1,
-    highlighted: false,
-  },
-  {
-    id: "feat-5",
-    propertyId: "prop-1",
-    category: "UTILITY",
-    key: "air_conditioning",
-    booleanValue: true,
-    verified: false,
-    displayOrder: 0,
-    highlighted: false,
-  },
-  {
-    id: "feat-6",
-    propertyId: "prop-1",
-    category: "ACCESSIBILITY",
-    key: "wheelchair_accessible",
-    booleanValue: true,
-    verified: true,
-    displayOrder: 0,
-    highlighted: true,
-  },
-];
-
-// Simple feature enum array for Property.features field
-const mockFeatures: PropertyFeatureEnum[] = [
-  "TERRACE",
-  "PARKING", 
-  "KITCHEN",
-  "ALCOHOL_LICENSE",
-  "WHEELCHAIR_ACCESSIBLE",
-];
-
-// Using 'as Property' because mock data includes extra Prisma fields not in frontend Property type
-const mockProperty = {
-  id: "prop-1",
-  agencyId: "agency-1",
-  createdById: "user-1",
-
-  // Basic info
-  title: "Karakteristiek Grand Café in Hartje Amsterdam",
-  slug: "karakteristiek-grand-cafe-amsterdam",
-  description: `Een unieke kans om een gevestigd grand café over te nemen in het historische centrum van Amsterdam. Dit karakteristieke pand combineert authentieke elementen met moderne faciliteiten.
-
-De locatie aan een van de drukste pleinen van de stad garandeert een constante stroom van zowel toeristen als lokale bezoekers. Het terras met 40 zitplaatsen is een van de meest gewilde in de buurt.
-
-De volledig uitgeruste professionele keuken biedt alle mogelijkheden voor een uitgebreid menu. De bestaande vergunningen, inclusief alcoholvergunning tot 01:00 en terrasvergunning, maken een vlotte overname mogelijk.`,
-  shortDescription: "Gevestigd grand café met terras op toplocatie in Amsterdam centrum",
-
-  // Location
-  address: "Dam 1",
-  city: "Amsterdam",
-  postalCode: "1012 JS",
-  province: "Noord-Holland",
-  country: "NL",
-  latitude: 52.373,
-  longitude: 4.893,
-  neighborhood: "Centrum",
-
-  // Pricing (in cents)
-  priceType: "RENT",
-  rentPrice: 850000, // €8.500
-  priceNegotiable: true,
-  servicesCosts: 45000, // €450
-  depositMonths: 3,
-
-  // Dimensions
-  surfaceTotal: 285,
-  surfaceCommercial: 180,
-  surfaceKitchen: 45,
-  surfaceStorage: 30,
-  surfaceTerrace: 60,
-  floors: 2,
-  ceilingHeight: 3.5,
-
-  // Classification
-  propertyType: "CAFE",
-  status: "ACTIVE",
-
-  // Horeca specifics
-  seatingCapacityInside: 85,
-  seatingCapacityOutside: 40,
-  standingCapacity: 120,
-  kitchenType: "Professioneel, gas",
-  hasBasement: true,
-  hasStorage: true,
-  hasTerrace: true,
-  hasParking: false,
-
-  // Previous use
-  wasHoreca: true,
-  previousHorecaType: "CAFE",
-  yearsHoreca: 15,
-
-  // Building
-  buildYear: 1890,
-  lastRenovation: 2019,
-  monumentStatus: true,
-  energyLabel: "C",
-
-  // Scores
-  horecaScore: "A",
-  locationScore: 95,
-  footfallEstimate: 15000,
-
-  // SEO
-  featured: true,
-  featuredUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-
-  // Availability
-  availableFrom: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-  minimumLeaseTerm: 60,
-
-  // Publishing
-  publishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-  viewCount: 1247,
-  inquiryCount: 23,
-  savedCount: 89,
-
-  // Timestamps
-  createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-  updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-
-  // Relations
-  images: mockImages,
-  features: mockFeatures,
-  agency: {
-    id: "agency-1",
-    name: "Horeca Makelaardij Amsterdam",
-    slug: "horeca-makelaardij-amsterdam",
-    logo: "https://ui-avatars.com/api/?name=HMA&background=0D8ABC&color=fff",
-  },
-  createdBy: {
-    id: "user-1",
-    name: "Jan de Vries",
-    email: "jan@horecamakelaardij.nl",
-  },
-} as Property;
-
-// Second mock property (draft)
-const mockPropertyDraft = {
-  id: "prop-2",
-  agencyId: "agency-1",
-  createdById: "user-1",
-
-  title: "Restaurant aan het Water",
-  slug: "restaurant-aan-het-water",
-  description: "Een prachtig restaurant met uitzicht over de haven.",
-
-  address: "Havenstraat 12",
-  city: "Rotterdam",
-  postalCode: "3011 AB",
-  province: "Zuid-Holland",
-  country: "NL",
-
-  priceType: "SALE",
-  salePrice: 45000000, // €450.000
-  priceNegotiable: true,
-
-  surfaceTotal: 150,
-  surfaceCommercial: 100,
-  surfaceKitchen: 30,
-  floors: 1,
-
-  propertyType: "RESTAURANT",
-  status: "DRAFT",
-
-  seatingCapacityInside: 50,
-  hasTerrace: true,
-  hasStorage: true,
-  hasBasement: false,
-  hasParking: true,
-  parkingSpaces: 5,
-
-  featured: false,
-  viewCount: 0,
-  inquiryCount: 0,
-  savedCount: 0,
-
-  createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-  updatedAt: new Date(),
-
-  images: [],
-  features: [],
-  agency: {
-    id: "agency-1",
-    name: "Horeca Makelaardij Amsterdam",
-    slug: "horeca-makelaardij-amsterdam",
-  },
-} as Property;
-
-// In-memory store for updates during development
-const propertyStore = new Map<string, Property>([
-  ["prop-1", mockProperty],
-  ["prop-2", mockPropertyDraft],
-]);
+/**
+ * Build the shared include for property queries returning full Property data.
+ * Using a function avoids `as const` readonly tuple issues with Prisma types.
+ */
+function getPropertyFullInclude() {
+  return {
+    images: {
+      orderBy: [
+        { isPrimary: "desc" as const },
+        { order: "asc" as const },
+      ],
+      select: {
+        id: true,
+        propertyId: true,
+        originalUrl: true,
+        thumbnailUrl: true,
+        mediumUrl: true,
+        largeUrl: true,
+        enhancedUrl: true,
+        type: true,
+        caption: true,
+        altText: true,
+        order: true,
+        isPrimary: true,
+        aiProcessed: true,
+        width: true,
+        height: true,
+      },
+    },
+    features: {
+      orderBy: [
+        { highlighted: "desc" as const },
+        { displayOrder: "asc" as const },
+      ],
+      select: {
+        id: true,
+        propertyId: true,
+        category: true,
+        key: true,
+        value: true,
+        numericValue: true,
+        booleanValue: true,
+        verified: true,
+        highlighted: true,
+        displayOrder: true,
+      },
+    },
+    agency: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        logo: true,
+      },
+    },
+    createdBy: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    },
+  };
+}
 
 /**
- * Get a property by ID with all relations (mock data)
+ * Map a Prisma property result (with includes) to the Property type
+ */
+function mapPrismaToProperty(p: Record<string, unknown>): Property {
+  const raw = p as Record<string, unknown>;
+  return {
+    id: raw.id as string,
+    agencyId: raw.agencyId as string,
+    createdById: raw.createdById as string,
+
+    title: raw.title as string,
+    slug: raw.slug as string,
+    description: raw.description as string | undefined,
+    shortDescription: raw.shortDescription as string | undefined,
+
+    address: raw.address as string,
+    addressLine2: raw.addressLine2 as string | undefined,
+    city: raw.city as string,
+    postalCode: raw.postalCode as string,
+    province: raw.province as string | undefined,
+    country: raw.country as string,
+    latitude: raw.latitude as number | undefined,
+    longitude: raw.longitude as number | undefined,
+    neighborhood: raw.neighborhood as string | undefined,
+
+    priceType: raw.priceType as Property["priceType"],
+    rentPrice: raw.rentPrice as number | undefined,
+    rentPriceMin: raw.rentPriceMin as number | undefined,
+    salePrice: raw.salePrice as number | undefined,
+    salePriceMin: raw.salePriceMin as number | undefined,
+    priceNegotiable: raw.priceNegotiable as boolean,
+    servicesCosts: raw.servicesCosts as number | undefined,
+    depositMonths: raw.depositMonths as number | undefined,
+
+    surfaceTotal: raw.surfaceTotal as number,
+    surfaceCommercial: raw.surfaceCommercial as number | undefined,
+    surfaceKitchen: raw.surfaceKitchen as number | undefined,
+    surfaceStorage: raw.surfaceStorage as number | undefined,
+    surfaceTerrace: raw.surfaceTerrace as number | undefined,
+    surfaceBasement: raw.surfaceBasement as number | undefined,
+    floors: raw.floors as number,
+    ceilingHeight: raw.ceilingHeight as number | undefined,
+
+    propertyType: raw.propertyType as Property["propertyType"],
+    type: raw.propertyType as Property["propertyType"],
+    status: raw.status as Property["status"],
+
+    seatingCapacityInside: raw.seatingCapacityInside as number | undefined,
+    seatingCapacityOutside: raw.seatingCapacityOutside as number | undefined,
+    standingCapacity: raw.standingCapacity as number | undefined,
+    kitchenType: raw.kitchenType as string | undefined,
+    hasBasement: raw.hasBasement as boolean,
+    hasStorage: raw.hasStorage as boolean,
+    hasTerrace: raw.hasTerrace as boolean,
+    hasParking: raw.hasParking as boolean,
+    parkingSpaces: raw.parkingSpaces as number | undefined,
+
+    previousUse: raw.previousUse as string | undefined,
+    wasHoreca: raw.wasHoreca as boolean | undefined,
+    previousHorecaType: raw.previousHorecaType as Property["propertyType"] | undefined,
+    yearsHoreca: raw.yearsHoreca as number | undefined,
+
+    buildYear: raw.buildYear as number | undefined,
+    lastRenovation: raw.lastRenovation as number | undefined,
+    monumentStatus: raw.monumentStatus as boolean | undefined,
+    energyLabel: raw.energyLabel as string | undefined,
+
+    horecaScore: raw.horecaScore as string | undefined,
+    horecaScoreDetails: raw.horecaScoreDetails as Record<string, unknown> | undefined,
+    locationScore: raw.locationScore as number | undefined,
+    footfallEstimate: raw.footfallEstimate as number | undefined,
+
+    metaTitle: raw.metaTitle as string | undefined,
+    metaDescription: raw.metaDescription as string | undefined,
+    featured: raw.featured as boolean,
+    featuredUntil: raw.featuredUntil as Date | undefined,
+    boostUntil: raw.boostUntil as Date | undefined,
+
+    availableFrom: raw.availableFrom as Date | undefined,
+    availableUntil: raw.availableUntil as Date | undefined,
+    minimumLeaseTerm: raw.minimumLeaseTerm as number | undefined,
+
+    publishedAt: raw.publishedAt as Date | undefined,
+    expiresAt: raw.expiresAt as Date | undefined,
+    viewCount: raw.viewCount as number,
+    inquiryCount: raw.inquiryCount as number,
+    savedCount: raw.savedCount as number,
+
+    createdAt: raw.createdAt as Date,
+    updatedAt: raw.updatedAt as Date,
+
+    images: (raw.images as PropertyImage[]) ?? [],
+    features: ((raw.features as Array<{ key: string }>) ?? []).map(
+      (f) => f.key as PropertyFeatureEnum
+    ),
+    agency: raw.agency as Property["agency"],
+    creator: raw.createdBy as Property["creator"],
+  } as Property;
+}
+
+/**
+ * Get a property by ID with all relations
  */
 export async function getProperty(id: string): Promise<ActionResult<Property>> {
   try {
-    // Simulate async delay
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    const property = propertyStore.get(id);
+    const property = await prisma.property.findUnique({
+      where: { id },
+      include: getPropertyFullInclude(),
+    });
 
     if (!property) {
       return {
@@ -321,7 +203,7 @@ export async function getProperty(id: string): Promise<ActionResult<Property>> {
 
     return {
       success: true,
-      data: property,
+      data: mapPrismaToProperty(property as unknown as Record<string, unknown>),
     };
   } catch (error) {
     console.error("Error fetching property:", error);
@@ -528,6 +410,12 @@ export async function updateProperty(
   input: UpdatePropertyInput
 ): Promise<ActionResult<Property>> {
   try {
+    // Auth check
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: "Niet ingelogd" };
+    }
+
     // Validate input
     const validated = updatePropertySchema.safeParse(input);
     if (!validated.success) {
@@ -539,28 +427,34 @@ export async function updateProperty(
 
     const { id, ...updates } = validated.data;
 
-    // Get existing property
-    const existing = propertyStore.get(id);
+    // Check the property exists and the user owns it
+    const existing = await prisma.property.findUnique({
+      where: { id },
+      select: { id: true, createdById: true },
+    });
+
     if (!existing) {
-      return {
-        success: false,
-        error: "Pand niet gevonden",
-      };
+      return { success: false, error: "Pand niet gevonden" };
     }
 
-    // Merge updates
-    const updated: Property = {
-      ...existing,
-      ...updates,
-      updatedAt: new Date(),
-    };
+    if (existing.createdById !== session.user.id && session.user.role !== "admin") {
+      return { success: false, error: "Geen toegang tot dit pand" };
+    }
 
-    // Store updated property
-    propertyStore.set(id, updated);
+    // Update the property
+    // Cast to satisfy Prisma's Json input type for horecaScoreDetails
+    const updated = await prisma.property.update({
+      where: { id },
+      data: updates as Parameters<typeof prisma.property.update>[0]["data"],
+      include: getPropertyFullInclude(),
+    });
+
+    revalidatePath("/dashboard/panden");
+    revalidatePath(`/dashboard/panden/${id}`);
 
     return {
       success: true,
-      data: updated,
+      data: mapPrismaToProperty(updated as unknown as Record<string, unknown>),
     };
   } catch (error) {
     console.error("Error updating property:", error);
@@ -576,12 +470,30 @@ export async function updateProperty(
  */
 export async function publishProperty(id: string): Promise<ActionResult<Property>> {
   try {
-    const existing = propertyStore.get(id);
+    // Auth check
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: "Niet ingelogd" };
+    }
+
+    const existing = await prisma.property.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        createdById: true,
+        title: true,
+        address: true,
+        city: true,
+        surfaceTotal: true,
+      },
+    });
+
     if (!existing) {
-      return {
-        success: false,
-        error: "Pand niet gevonden",
-      };
+      return { success: false, error: "Pand niet gevonden" };
+    }
+
+    if (existing.createdById !== session.user.id && session.user.role !== "admin") {
+      return { success: false, error: "Geen toegang tot dit pand" };
     }
 
     // Check required fields for publishing
@@ -592,18 +504,21 @@ export async function publishProperty(id: string): Promise<ActionResult<Property
       };
     }
 
-    const updated: Property = {
-      ...existing,
-      status: "ACTIVE",
-      publishedAt: new Date(),
-      updatedAt: new Date(),
-    };
+    const updated = await prisma.property.update({
+      where: { id },
+      data: {
+        status: "ACTIVE",
+        publishedAt: new Date(),
+      },
+      include: getPropertyFullInclude(),
+    });
 
-    propertyStore.set(id, updated);
+    revalidatePath("/dashboard/panden");
+    revalidatePath(`/dashboard/panden/${id}`);
 
     return {
       success: true,
-      data: updated,
+      data: mapPrismaToProperty(updated as unknown as Record<string, unknown>),
     };
   } catch (error) {
     console.error("Error publishing property:", error);
@@ -619,26 +534,40 @@ export async function publishProperty(id: string): Promise<ActionResult<Property
  */
 export async function unpublishProperty(id: string): Promise<ActionResult<Property>> {
   try {
-    const existing = propertyStore.get(id);
-    if (!existing) {
-      return {
-        success: false,
-        error: "Pand niet gevonden",
-      };
+    // Auth check
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: "Niet ingelogd" };
     }
 
-    const updated: Property = {
-      ...existing,
-      status: "DRAFT",
-      publishedAt: undefined,
-      updatedAt: new Date(),
-    };
+    const existing = await prisma.property.findUnique({
+      where: { id },
+      select: { id: true, createdById: true },
+    });
 
-    propertyStore.set(id, updated);
+    if (!existing) {
+      return { success: false, error: "Pand niet gevonden" };
+    }
+
+    if (existing.createdById !== session.user.id && session.user.role !== "admin") {
+      return { success: false, error: "Geen toegang tot dit pand" };
+    }
+
+    const updated = await prisma.property.update({
+      where: { id },
+      data: {
+        status: "DRAFT",
+        publishedAt: null,
+      },
+      include: getPropertyFullInclude(),
+    });
+
+    revalidatePath("/dashboard/panden");
+    revalidatePath(`/dashboard/panden/${id}`);
 
     return {
       success: true,
-      data: updated,
+      data: mapPrismaToProperty(updated as unknown as Record<string, unknown>),
     };
   } catch (error) {
     console.error("Error unpublishing property:", error);
@@ -654,25 +583,33 @@ export async function unpublishProperty(id: string): Promise<ActionResult<Proper
  */
 export async function deleteProperty(id: string): Promise<ActionResult<void>> {
   try {
-    const existing = propertyStore.get(id);
-    if (!existing) {
-      return {
-        success: false,
-        error: "Pand niet gevonden",
-      };
+    // Auth check
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: "Niet ingelogd" };
     }
 
-    const updated: Property = {
-      ...existing,
-      status: "ARCHIVED",
-      updatedAt: new Date(),
-    };
+    const existing = await prisma.property.findUnique({
+      where: { id },
+      select: { id: true, createdById: true },
+    });
 
-    propertyStore.set(id, updated);
+    if (!existing) {
+      return { success: false, error: "Pand niet gevonden" };
+    }
 
-    return {
-      success: true,
-    };
+    if (existing.createdById !== session.user.id && session.user.role !== "admin") {
+      return { success: false, error: "Geen toegang tot dit pand" };
+    }
+
+    await prisma.property.update({
+      where: { id },
+      data: { status: "ARCHIVED" },
+    });
+
+    revalidatePath("/dashboard/panden");
+
+    return { success: true };
   } catch (error) {
     console.error("Error deleting property:", error);
     return {
@@ -695,24 +632,87 @@ export async function getPropertyStats(
   conversionRate: number;
 }>> {
   try {
-    const property = propertyStore.get(id);
-    if (!property) {
-      return {
-        success: false,
-        error: "Pand niet gevonden",
-      };
+    // Auth check
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: "Niet ingelogd" };
     }
 
-    // Generate mock stats for last 30 days
-    const viewsByDay = Array.from({ length: 30 }, (_, i) => {
+    const property = await prisma.property.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        createdById: true,
+        viewCount: true,
+        inquiryCount: true,
+        savedCount: true,
+      },
+    });
+
+    if (!property) {
+      return { success: false, error: "Pand niet gevonden" };
+    }
+
+    if (property.createdById !== session.user.id && session.user.role !== "admin") {
+      return { success: false, error: "Geen toegang tot dit pand" };
+    }
+
+    // Get views and inquiries per day for the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+    const [views, inquiries] = await Promise.all([
+      prisma.propertyView.findMany({
+        where: {
+          propertyId: id,
+          viewedAt: { gte: thirtyDaysAgo },
+        },
+        select: { viewedAt: true },
+      }),
+      prisma.propertyInquiry.findMany({
+        where: {
+          propertyId: id,
+          createdAt: { gte: thirtyDaysAgo },
+        },
+        select: { createdAt: true },
+      }),
+    ]);
+
+    // Aggregate by day
+    const viewsByDayMap = new Map<string, { views: number; inquiries: number }>();
+
+    // Initialize all 30 days
+    for (let i = 0; i < 30; i++) {
       const date = new Date();
       date.setDate(date.getDate() - (29 - i));
-      return {
-        date: date.toISOString().split("T")[0],
-        views: Math.floor(Math.random() * 80) + 20,
-        inquiries: Math.floor(Math.random() * 3),
-      };
-    });
+      const key = date.toISOString().split("T")[0];
+      viewsByDayMap.set(key, { views: 0, inquiries: 0 });
+    }
+
+    // Count views per day
+    for (const view of views) {
+      const key = view.viewedAt.toISOString().split("T")[0];
+      const entry = viewsByDayMap.get(key);
+      if (entry) entry.views++;
+    }
+
+    // Count inquiries per day
+    for (const inquiry of inquiries) {
+      const key = inquiry.createdAt.toISOString().split("T")[0];
+      const entry = viewsByDayMap.get(key);
+      if (entry) entry.inquiries++;
+    }
+
+    const viewsByDay = Array.from(viewsByDayMap.entries()).map(([date, data]) => ({
+      date,
+      views: data.views,
+      inquiries: data.inquiries,
+    }));
+
+    const conversionRate = property.viewCount > 0
+      ? Math.round((property.inquiryCount / property.viewCount) * 10000) / 100
+      : 0;
 
     return {
       success: true,
@@ -721,9 +721,7 @@ export async function getPropertyStats(
         totalViews: property.viewCount,
         totalInquiries: property.inquiryCount,
         totalSaves: property.savedCount,
-        conversionRate: property.viewCount > 0
-          ? Math.round((property.inquiryCount / property.viewCount) * 10000) / 100
-          : 0,
+        conversionRate,
       },
     };
   } catch (error) {
@@ -816,25 +814,72 @@ export async function updatePropertyImages(
   images: PropertyImage[]
 ): Promise<ActionResult<PropertyImage[]>> {
   try {
-    const existing = propertyStore.get(propertyId);
-    if (!existing) {
-      return {
-        success: false,
-        error: "Pand niet gevonden",
-      };
+    // Auth check
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: "Niet ingelogd" };
     }
 
-    const updated: Property = {
-      ...existing,
-      images,
-      updatedAt: new Date(),
-    };
+    const existing = await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { id: true, createdById: true },
+    });
 
-    propertyStore.set(propertyId, updated);
+    if (!existing) {
+      return { success: false, error: "Pand niet gevonden" };
+    }
+
+    if (existing.createdById !== session.user.id && session.user.role !== "admin") {
+      return { success: false, error: "Geen toegang tot dit pand" };
+    }
+
+    // Transaction: delete existing images, create new ones
+    await prisma.$transaction([
+      prisma.propertyImage.deleteMany({
+        where: { propertyId },
+      }),
+      ...images.map((img, index) =>
+        prisma.propertyImage.create({
+          data: {
+            propertyId,
+            originalUrl: img.originalUrl,
+            thumbnailUrl: img.thumbnailUrl ?? null,
+            mediumUrl: img.mediumUrl ?? null,
+            largeUrl: img.largeUrl ?? null,
+            enhancedUrl: img.enhancedUrl ?? null,
+            type: img.type as any,
+            caption: img.caption ?? null,
+            altText: img.altText ?? null,
+            order: img.order ?? index,
+            isPrimary: img.isPrimary ?? (index === 0),
+            aiProcessed: img.aiProcessed ?? false,
+          },
+        })
+      ),
+    ]);
+
+    // Fetch the created images to return
+    const createdImages = await prisma.propertyImage.findMany({
+      where: { propertyId },
+      orderBy: { order: "asc" },
+    });
+
+    revalidatePath(`/dashboard/panden/${propertyId}`);
 
     return {
       success: true,
-      data: images,
+      data: createdImages.map((img) => ({
+        id: img.id,
+        propertyId: img.propertyId,
+        originalUrl: img.originalUrl,
+        thumbnailUrl: img.thumbnailUrl ?? undefined,
+        type: img.type as PropertyImage["type"],
+        caption: img.caption ?? undefined,
+        altText: img.altText ?? undefined,
+        order: img.order,
+        isPrimary: img.isPrimary,
+        aiProcessed: img.aiProcessed,
+      })),
     };
   } catch (error) {
     console.error("Error updating property images:", error);
@@ -853,25 +898,69 @@ export async function updatePropertyFeatures(
   features: PropertyFeatureDetail[]
 ): Promise<ActionResult<PropertyFeatureDetail[]>> {
   try {
-    const existing = propertyStore.get(propertyId);
-    if (!existing) {
-      return {
-        success: false,
-        error: "Pand niet gevonden",
-      };
+    // Auth check
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: "Niet ingelogd" };
     }
 
-    const updated = {
-      ...existing,
-      features,
-      updatedAt: new Date(),
-    } as unknown as Property;
+    const existing = await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { id: true, createdById: true },
+    });
 
-    propertyStore.set(propertyId, updated);
+    if (!existing) {
+      return { success: false, error: "Pand niet gevonden" };
+    }
+
+    if (existing.createdById !== session.user.id && session.user.role !== "admin") {
+      return { success: false, error: "Geen toegang tot dit pand" };
+    }
+
+    // Transaction: delete existing features, create new ones
+    await prisma.$transaction([
+      prisma.propertyFeature.deleteMany({
+        where: { propertyId },
+      }),
+      ...features.map((feat, index) =>
+        prisma.propertyFeature.create({
+          data: {
+            propertyId,
+            category: feat.category as any,
+            key: feat.key,
+            value: feat.value ?? null,
+            numericValue: feat.numericValue ?? null,
+            booleanValue: feat.booleanValue ?? null,
+            verified: feat.verified ?? false,
+            displayOrder: feat.displayOrder ?? index,
+            highlighted: feat.highlighted ?? false,
+          },
+        })
+      ),
+    ]);
+
+    // Fetch the created features to return
+    const createdFeatures = await prisma.propertyFeature.findMany({
+      where: { propertyId },
+      orderBy: { displayOrder: "asc" },
+    });
+
+    revalidatePath(`/dashboard/panden/${propertyId}`);
 
     return {
       success: true,
-      data: features,
+      data: createdFeatures.map((feat): PropertyFeatureDetail => ({
+        id: feat.id,
+        propertyId: feat.propertyId,
+        category: feat.category as PropertyFeatureDetail["category"],
+        key: feat.key,
+        value: feat.value ?? undefined,
+        numericValue: feat.numericValue ?? undefined,
+        booleanValue: feat.booleanValue ?? undefined,
+        verified: feat.verified,
+        displayOrder: feat.displayOrder,
+        highlighted: feat.highlighted,
+      })),
     };
   } catch (error) {
     console.error("Error updating property features:", error);

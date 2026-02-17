@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User, Mail, Calendar, Shield } from "lucide-react";
+import { ContentCard, ContentCardHeader, ContentCardBody } from "@/components/dashboard/content-card";
 
 export default async function ProfielPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -14,11 +15,10 @@ export default async function ProfielPage() {
   const roleLabel = role === "agent" ? "Makelaar" : "Ondernemer";
 
   return (
-    <div className="container max-w-2xl py-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Mijn profiel</h1>
-        <p className="text-muted-foreground mt-1">Beheer je accountgegevens</p>
-      </div>
+    <ContentCard>
+      <ContentCardHeader title="Profiel" />
+      <ContentCardBody className="p-4">
+        <div className="mx-auto max-w-2xl space-y-6">
 
       <Card>
         <CardHeader>
@@ -69,6 +69,9 @@ export default async function ProfielPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+
+        </div>
+      </ContentCardBody>
+    </ContentCard>
   );
 }

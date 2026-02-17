@@ -24,7 +24,7 @@ export async function updateInquiryStatus(inquiryId: string, status: InquiryStat
     where: { id: inquiryId },
     data: {
       status,
-      ...(status === "CONTACTED" ? { respondedAt: new Date() } : {}),
+      ...(status === "CONTACTED" ? { lastContactAt: new Date() } : {}),
     },
   });
 

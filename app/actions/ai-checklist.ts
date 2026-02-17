@@ -1,14 +1,9 @@
 "use server";
 
-// AI Checklist Generator — personalized checklist for opening a horeca business
-
-interface ChecklistInput {
-  type: string;
-  city: string;
-  hasExperience: boolean;
-  hasLocation: boolean;
-  hasFunding: boolean;
-}
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { checklistInputSchema, type ChecklistInput } from "@/lib/validations/ai-actions";
 
 interface ChecklistItem {
   id: string;
@@ -21,7 +16,19 @@ interface ChecklistItem {
   done: boolean;
 }
 
-export async function generateChecklist(input: ChecklistInput): Promise<ChecklistItem[]> {
+export async function generateChecklist(rawInput: ChecklistInput): Promise<ChecklistItem[]> {
+  // Validate input
+  const input = checklistInputSchema.parse(rawInput);
+
+  // Auth + rate limit
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (session?.user?.id) {
+    const rateLimitResult = await checkRateLimit(session.user.id, "ai");
+    if (!rateLimitResult.success) {
+      throw new Error("Rate limit exceeded. Try again later.");
+    }
+  }
+
   const items: ChecklistItem[] = [];
   let id = 0;
 

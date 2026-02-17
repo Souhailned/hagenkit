@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const ids = request.nextUrl.searchParams.get("ids")?.split(",").filter(Boolean) || [];
 
   if (ids.length === 0 || ids.length > 4) {
@@ -9,7 +16,10 @@ export async function GET(request: NextRequest) {
   }
 
   const properties = await prisma.property.findMany({
-    where: { id: { in: ids } },
+    where: {
+      id: { in: ids },
+      status: "ACTIVE",
+    },
     select: {
       id: true,
       title: true,

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { type ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/data-table/data-table";
+import { EditableDataTable } from "@/components/data-table/editable";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { useDataTable } from "@/hooks/use-data-table";
@@ -23,6 +23,8 @@ import { UserEditDialog } from "@/components/admin/user-edit-dialog";
 import { UserDeleteAlert } from "@/components/admin/user-delete-alert";
 import { format } from "date-fns";
 import type { AdminUser } from "@/types/admin";
+import { useRouter } from "next/navigation";
+import { updateUser } from "@/app/actions/admin/users";
 
 interface UsersDataTableProps {
   data: AdminUser[];
@@ -31,9 +33,24 @@ interface UsersDataTableProps {
 }
 
 export function UsersDataTable({ data, pageCount, total }: UsersDataTableProps) {
+  const router = useRouter();
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [deleteAlertOpen, setDeleteAlertOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<AdminUser | null>(null);
+
+  const handleCellSave = React.useCallback(
+    async ({ row, columnId, value }: { row: any; columnId: string; value: unknown }) => {
+      const result = await updateUser({
+        id: row.original.id,
+        [columnId]: value,
+      });
+      if (!result.success) {
+        throw new Error(result.error || "Failed to update user");
+      }
+      router.refresh();
+    },
+    [router]
+  );
 
   const columns = React.useMemo<ColumnDef<AdminUser>[]>(
     () => [
@@ -85,11 +102,12 @@ export function UsersDataTable({ data, pageCount, total }: UsersDataTableProps) 
             <Badge
               variant={
                 role === "admin" ? "destructive" :
+                role === "agent" ? "default" :
                 "secondary"
               }
             >
               {role === "admin" && <Shield className="h-3 w-3 mr-1" />}
-              {role === "user" && <UserCheck className="h-3 w-3 mr-1" />}
+              {role === "agent" && <UserCheck className="h-3 w-3 mr-1" />}
               {role}
             </Badge>
           );
@@ -100,9 +118,18 @@ export function UsersDataTable({ data, pageCount, total }: UsersDataTableProps) 
           label: "Role",
           variant: "select",
           options: [
-            { label: "User", value: "user" },
+            { label: "Ondernemer", value: "seeker" },
+            { label: "Makelaar", value: "agent" },
             { label: "Admin", value: "admin" },
           ],
+          editable: {
+            type: "select",
+            options: [
+              { label: "Ondernemer", value: "seeker" },
+              { label: "Makelaar", value: "agent" },
+              { label: "Admin", value: "admin" },
+            ],
+          },
         },
       },
       {
@@ -135,6 +162,14 @@ export function UsersDataTable({ data, pageCount, total }: UsersDataTableProps) 
             { label: "Suspended", value: "SUSPENDED" },
             { label: "Deleted", value: "DELETED" },
           ],
+          editable: {
+            type: "select",
+            options: [
+              { label: "Active", value: "ACTIVE" },
+              { label: "Suspended", value: "SUSPENDED" },
+              { label: "Deleted", value: "DELETED" },
+            ],
+          },
         },
       },
       {
@@ -155,6 +190,10 @@ export function UsersDataTable({ data, pageCount, total }: UsersDataTableProps) 
           );
         },
         enableSorting: true,
+        meta: {
+          label: "Phone",
+          editable: { type: "text" },
+        },
       },
       {
         id: "workspaces",
@@ -269,9 +308,9 @@ export function UsersDataTable({ data, pageCount, total }: UsersDataTableProps) 
 
   return (
     <>
-      <DataTable table={table}>
+      <EditableDataTable table={table} onCellSave={handleCellSave}>
         <DataTableToolbar table={table} />
-      </DataTable>
+      </EditableDataTable>
 
       {selectedUser && (
         <>

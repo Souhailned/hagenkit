@@ -3,8 +3,12 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Building2, Users, Eye, MessageCircle, Heart, TrendingUp } from "lucide-react";
+import {
+  ContentCard,
+  ContentCardHeader,
+  ContentCardBody,
+} from "@/components/dashboard/content-card";
 
 export default async function AdminAnalyticsPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -43,36 +47,31 @@ export default async function AdminAnalyticsPage() {
     { label: "Totaal views", value: totalViews._sum.viewCount || 0, icon: Eye, color: "text-purple-500", sub: `+${newPropertiesThisWeek} nieuwe panden` },
     { label: "Aanvragen", value: totalInquiries, icon: MessageCircle, color: "text-orange-500", sub: "totaal" },
     { label: "Favorieten", value: totalFavorites, icon: Heart, color: "text-red-500", sub: "totaal" },
-    { label: "Conversie", value: totalViews._sum.viewCount ? `${((totalInquiries / (totalViews._sum.viewCount || 1)) * 100).toFixed(1)}%` : "0%", icon: TrendingUp, color: "text-emerald-500", sub: "views → aanvragen" },
+    { label: "Conversie", value: totalViews._sum.viewCount ? `${((totalInquiries / (totalViews._sum.viewCount || 1)) * 100).toFixed(1)}%` : "0%", icon: TrendingUp, color: "text-emerald-500", sub: "views \u2192 aanvragen" },
   ];
 
   return (
-    <div className="container py-8">
-      <Breadcrumbs items={[
-        { label: "Dashboard", href: "/dashboard" },
-        { label: "Admin", href: "/dashboard/admin" },
-        { label: "Platform Analytics" },
-      ]} />
-
-      <h1 className="text-2xl font-bold tracking-tight mb-6">Platform Analytics</h1>
-
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.label}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-muted-foreground">{stat.label}</span>
-                  <Icon className={`h-4 w-4 ${stat.color}`} />
-                </div>
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-xs text-muted-foreground mt-1">{stat.sub}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-    </div>
+    <ContentCard>
+      <ContentCardHeader title="Platform Analytics" />
+      <ContentCardBody className="p-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          {stats.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={stat.label}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-muted-foreground">{stat.label}</span>
+                    <Icon className={`h-4 w-4 ${stat.color}`} />
+                  </div>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{stat.sub}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </ContentCardBody>
+    </ContentCard>
   );
 }

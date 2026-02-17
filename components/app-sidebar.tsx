@@ -34,6 +34,7 @@ import {
   Buildings,
   ChatCircle,
   ChartBar,
+  Image,
   VideoCamera,
   MagnifyingGlass,
   Heart,
@@ -49,6 +50,10 @@ import {
   SignOut,
   CaretRight,
   CaretUpDown,
+  Building,
+  ChartLine,
+  Kanban,
+  CheckSquare,
 } from "@phosphor-icons/react/dist/ssr"
 import { signOut } from "@/lib/auth-client"
 import { toast } from "sonner"
@@ -60,7 +65,10 @@ const navItemIcons: Record<NavItemId, React.ComponentType<{ className?: string }
   dashboard: House,
   panden: Buildings,
   leads: ChatCircle,
+  projects: Kanban,
+  tasks: CheckSquare,
   analytics: ChartBar,
+  images: Image,
   videos: VideoCamera,
   zoeken: MagnifyingGlass,
   favorieten: Heart,
@@ -72,16 +80,18 @@ const navItemIcons: Record<NavItemId, React.ComponentType<{ className?: string }
 const footerItemIcons: Record<SidebarFooterItemId, React.ComponentType<{ className?: string }>> = {
   settings: Gear,
   help: Question,
-  admin: ShieldCheck,
 }
 
 // Admin navigation items
 const adminNavItems = [
   { id: "users", label: "Gebruikers", href: "/dashboard/admin/users", icon: Users },
   { id: "workspaces", label: "Workspaces", href: "/dashboard/admin/workspaces", icon: Buildings },
+  { id: "properties", label: "Panden Beheer", href: "/dashboard/admin/properties", icon: Building },
+  { id: "agencies", label: "Kantoren", href: "/dashboard/admin/agencies", icon: Buildings },
+  { id: "analytics", label: "Platform Analytics", href: "/dashboard/admin/analytics", icon: ChartLine },
   { id: "impersonate", label: "Impersoneren", href: "/dashboard/admin/impersonate", icon: UserCircle },
   { id: "audit-logs", label: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: FileText },
-  { id: "settings", label: "Instellingen", href: "/dashboard/admin/settings", icon: GearSix },
+  { id: "settings", label: "Systeem Instellingen", href: "/dashboard/admin/settings", icon: GearSix },
 ] as const
 
 export function AppSidebar({

@@ -1,13 +1,9 @@
 "use server";
 
-interface PitchInput {
-  conceptName: string;
-  type: string;
-  city: string;
-  uniqueSellingPoint: string;
-  targetAudience: string;
-  investmentNeeded: number;
-}
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { pitchInputSchema, type PitchInput } from "@/lib/validations/ai-actions";
 
 interface PitchResult {
   elevator: string;
@@ -31,7 +27,19 @@ const cityPop: Record<string, string> = {
   Maastricht: "120.000+", Haarlem: "160.000+", Leiden: "125.000+",
 };
 
-export async function generatePitch(input: PitchInput): Promise<PitchResult> {
+export async function generatePitch(rawInput: PitchInput): Promise<PitchResult> {
+  // Validate input
+  const input = pitchInputSchema.parse(rawInput);
+
+  // Auth + rate limit
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (session?.user?.id) {
+    const rateLimitResult = await checkRateLimit(session.user.id, "ai");
+    if (!rateLimitResult.success) {
+      throw new Error("Rate limit exceeded. Try again later.");
+    }
+  }
+
   const type = typeLabels[input.type] || "horecazaak";
   const pop = cityPop[input.city] || "100.000+";
   const roi = Math.round(18 + Math.random() * 12); // 18-30 months

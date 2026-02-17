@@ -1,15 +1,9 @@
 "use server";
 
-// AI Revenue Predictor — estimates monthly revenue for a horeca concept
-// Based on location data, concept type, surface area, and Dutch market benchmarks
-
-interface RevenueInput {
-  type: string;
-  city: string;
-  surface: number; // m²
-  seating: number;
-  priceRange: "budget" | "midden" | "premium";
-}
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { revenueInputSchema, type RevenueInput } from "@/lib/validations/ai-actions";
 
 interface RevenueResult {
   estimatedMonthly: { low: number; mid: number; high: number };
@@ -56,7 +50,19 @@ const costPercentages = [
   { label: "Overig (verzekering, admin)", pct: 8 },
 ];
 
-export async function predictRevenue(input: RevenueInput): Promise<RevenueResult> {
+export async function predictRevenue(rawInput: RevenueInput): Promise<RevenueResult> {
+  // Validate input
+  const input = revenueInputSchema.parse(rawInput);
+
+  // Auth + rate limit
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (session?.user?.id) {
+    const rateLimitResult = await checkRateLimit(session.user.id, "ai");
+    if (!rateLimitResult.success) {
+      throw new Error("Rate limit exceeded. Try again later.");
+    }
+  }
+
   const base = revenuePerm2[input.type] || revenuePerm2.RESTAURANT;
   const cityMult = cityMultiplier[input.city] || 1.0;
   const priceMult = priceMultiplier[input.priceRange];

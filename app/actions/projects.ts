@@ -228,8 +228,8 @@ export async function createProject(
     const result = {
       ...project,
       tags: project.tags.map((t) => t.tag),
-      workstreams: [],
-      notes: [],
+      workstreams: project.workstreams ?? [],
+      notes: project.notes ?? [],
     } as ProjectDetail;
 
     revalidatePath("/dashboard/projects");
@@ -332,14 +332,35 @@ export async function updateProject(
         tags: {
           include: { tag: true },
         },
+        workstreams: {
+          include: {
+            tasks: {
+              include: {
+                assignee: {
+                  select: { id: true, name: true, email: true, image: true },
+                },
+              },
+              orderBy: { order: "asc" },
+            },
+          },
+          orderBy: { order: "asc" },
+        },
+        notes: {
+          include: {
+            createdBy: {
+              select: { id: true, name: true, email: true, image: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
 
     const result = {
       ...project,
       tags: project.tags.map((t) => t.tag),
-      workstreams: [],
-      notes: [],
+      workstreams: project.workstreams ?? [],
+      notes: project.notes ?? [],
     } as ProjectDetail;
 
     revalidatePath("/dashboard/projects");
@@ -498,8 +519,8 @@ export async function getProject(
     const result = {
       ...project,
       tags: project.tags.map((t) => t.tag),
-      workstreams: [],
-      notes: [],
+      workstreams: project.workstreams ?? [],
+      notes: project.notes ?? [],
     } as ProjectDetail;
 
     return { success: true, data: result };

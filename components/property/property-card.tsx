@@ -128,10 +128,10 @@ export function PropertyCard({
               <span>{property.surfaceTotal} m²</span>
             </div>
           )}
-          {property.seatingCapacity && property.seatingCapacity > 0 && (
+          {((property.seatingCapacityInside ?? 0) + (property.seatingCapacityOutside ?? 0)) > 0 && (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Users className="h-3.5 w-3.5" />
-              <span>{property.seatingCapacity} zitplaatsen</span>
+              <span>{(property.seatingCapacityInside ?? 0) + (property.seatingCapacityOutside ?? 0)} zitplaatsen</span>
             </div>
           )}
           {property.hasTerrace && (

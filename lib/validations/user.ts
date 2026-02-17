@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-// User role enum values
-export const userRoleEnum = z.enum(["user", "admin"]);
+// User role enum values - must match Prisma UserRole: seeker | agent | admin
+export const userRoleEnum = z.enum(["seeker", "agent", "admin"]);
 
 // User status enum values
 export const userStatusEnum = z.enum(["ACTIVE", "SUSPENDED", "DELETED"]);
@@ -10,7 +10,7 @@ export const userStatusEnum = z.enum(["ACTIVE", "SUSPENDED", "DELETED"]);
 export const createUserSchema = z.object({
   email: z.string().email("Invalid email address"),
   name: z.string().min(1, "Name is required").max(100, "Name is too long"),
-  role: userRoleEnum.optional().default("admin"),  // WARNING: Change to "user" after creating first admin
+  role: userRoleEnum.optional().default("seeker"),
   status: userStatusEnum.optional().default("ACTIVE"),
   phone: z.string().min(10, "Phone number must be at least 10 digits").max(15, "Phone number is too long").optional().or(z.literal("")),
   image: z.string().url("Invalid image URL").optional().or(z.literal("")),

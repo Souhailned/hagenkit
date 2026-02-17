@@ -2,11 +2,21 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { checkRateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
 
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Niet ingelogd" }, { status: 401 });
+  }
+
+  // Rate limit
+  const rateLimitResult = await checkRateLimit(session.user.id, "export");
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Try again later." },
+      { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+    );
   }
 
   const inquiries = await prisma.propertyInquiry.findMany({

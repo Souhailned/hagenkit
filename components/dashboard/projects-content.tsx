@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { ProjectHeader } from "@/components/dashboard/project-header"
 import { ProjectCardsView } from "@/components/dashboard/project-cards-view"
+import { ProjectBoardView } from "@/components/dashboard/project-board-view"
+import { ProjectTimelineView } from "@/components/dashboard/project-timeline-view"
 import { ProjectWizard } from "@/components/project-wizard/ProjectWizard"
 import { listProjects, createProject } from "@/app/actions/projects"
 import type { ProjectListItem } from "@/types/project"
@@ -218,11 +220,26 @@ export function ProjectsContent() {
           onViewOptionsChange={setViewOptions}
           onAddProject={openWizard}
         />
-        <ProjectCardsView
-          projects={filteredProjects}
-          loading={loading || isPending}
-          onCreateProject={openWizard}
-        />
+        {viewOptions.viewType === "list" && (
+          <ProjectCardsView
+            projects={filteredProjects}
+            loading={loading || isPending}
+            onCreateProject={openWizard}
+          />
+        )}
+        {viewOptions.viewType === "board" && (
+          <ProjectBoardView
+            projects={filteredProjects}
+            loading={loading || isPending}
+            onAddProject={openWizard}
+          />
+        )}
+        {viewOptions.viewType === "timeline" && (
+          <ProjectTimelineView
+            projects={filteredProjects}
+            loading={loading || isPending}
+          />
+        )}
       </div>
 
       {isWizardOpen && (

@@ -13,7 +13,7 @@ export interface Agency {
   slug: string;
   description: string | null;
   logo: string | null;
-  email: string;
+  email: string | null;
   phone: string | null;
   website: string | null;
   address: string | null;
@@ -32,27 +32,34 @@ export interface Agency {
   updatedAt: Date;
 }
 
+/**
+ * AgentProfile aligned with Prisma AgentProfile model.
+ * Name/email come from the nested `user` relation.
+ */
 export interface AgentProfile {
   id: string;
   userId: string;
   agencyId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
+  title: string | null;
   phone: string | null;
-  avatar: string | null;
+  phonePublic: boolean;
   bio: string | null;
-  specializations: string[];
+  avatar: string | null;
+  specializations: PropertyType[];
+  regions: string[];
   languages: string[];
-  yearsExperience: number | null;
-  linkedIn: string | null;
-  twitter: string | null;
   verified: boolean;
-  isActive: boolean;
-  dealsCompleted: number;
+  dealsClosedCount: number;
+  activeListings: number;
   rating: number | null;
-  reviewCount: number;
   createdAt: Date;
+  // Nested user data for display
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    image: string | null;
+  };
 }
 
 // Re-export from central source (Prisma-derived)
@@ -86,7 +93,8 @@ export interface Property {
   longitude: number | null;
   surfaceTotal: number | null;
   surfaceCommercial: number | null;
-  seatingCapacity: number | null;
+  seatingCapacityInside: number | null;
+  seatingCapacityOutside: number | null;
   hasKitchen: boolean;
   hasTerrace: boolean;
   hasParking: boolean;

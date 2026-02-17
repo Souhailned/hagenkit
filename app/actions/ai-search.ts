@@ -1,6 +1,9 @@
 "use server";
 
 import { parseSearchQuery, parseSearchQueryLocal, type SemanticSearchFilters } from "@/lib/ai/semantic-search";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function aiParseSearch(query: string): Promise<{
   success: boolean;
@@ -9,6 +12,15 @@ export async function aiParseSearch(query: string): Promise<{
 }> {
   if (!query?.trim()) {
     return { success: false, error: "Lege zoekopdracht" };
+  }
+
+  // Auth + rate limit
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (session?.user?.id) {
+    const rateLimitResult = await checkRateLimit(session.user.id, "ai");
+    if (!rateLimitResult.success) {
+      return { success: false, error: "Rate limit exceeded. Try again later." };
+    }
   }
 
   try {

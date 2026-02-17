@@ -2,6 +2,10 @@
 
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+import { updateSeekerProfileSchema } from "@/lib/validations/seeker-profile";
+import type { AlertFrequency as PrismaAlertFrequency } from "@/generated/prisma/client";
 import type { ActionResult } from "@/types/actions";
 import type {
   PropertyListItem,
@@ -21,219 +25,114 @@ async function getCurrentUser() {
 }
 
 /**
- * Mock property data for development
- * Will be replaced with real Prisma queries when models are available
+ * Map a Prisma Property (with primary image + agency) to PropertyListItem
  */
-const mockProperties: PropertyListItem[] = [
-  {
-    id: "prop_1",
-    title: "Karakteristiek Café in Jordaan",
-    slug: "karakteristiek-cafe-jordaan",
-    shortDescription:
-      "Authentiek bruin café met originele details en trouwe klantenkring",
-    propertyType: "CAFE",
-    status: "ACTIVE",
-    priceType: "RENT",
-    rentPrice: 350000, // €3,500/month in cents
-    salePrice: null,
-    city: "Amsterdam",
-    province: "Noord-Holland",
-    neighborhood: "Jordaan",
-    surfaceTotal: 85,
-    seatingCapacityInside: 45,
-    seatingCapacityOutside: 20,
-    hasTerrace: true,
-    hasKitchen: false,
-    horecaScore: "A",
-    featured: true,
-    publishedAt: new Date("2025-01-15"),
-    viewCount: 234,
-    savedCount: 18,
-    primaryImage: {
-      thumbnailUrl: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=300&fit=crop",
-      altText: "Karakteristiek café interieur",
-    },
-    agency: {
-      id: "agency_1",
-      name: "Horeca Makelaars Amsterdam",
-      slug: "horeca-makelaars-amsterdam",
-    },
-  },
-  {
-    id: "prop_2",
-    title: "Modern Restaurant met Terras",
-    slug: "modern-restaurant-terras-rotterdam",
-    shortDescription:
-      "Volledig uitgeruste restaurantruimte in opkomende wijk met groot terras",
-    propertyType: "RESTAURANT",
-    status: "ACTIVE",
-    priceType: "RENT",
-    rentPrice: 525000, // €5,250/month
-    salePrice: null,
-    city: "Rotterdam",
-    province: "Zuid-Holland",
-    neighborhood: "Katendrecht",
-    surfaceTotal: 180,
-    seatingCapacityInside: 80,
-    seatingCapacityOutside: 40,
-    hasTerrace: true,
-    hasKitchen: true,
-    horecaScore: "A+",
-    featured: true,
-    publishedAt: new Date("2025-01-10"),
-    viewCount: 456,
-    savedCount: 32,
-    primaryImage: {
-      thumbnailUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=300&fit=crop",
-      altText: "Modern restaurant interieur",
-    },
-    agency: {
-      id: "agency_2",
-      name: "Horeca Partners Zuid",
-      slug: "horeca-partners-zuid",
-    },
-  },
-  {
-    id: "prop_3",
-    title: "Dark Kitchen Hub",
-    slug: "dark-kitchen-hub-utrecht",
-    shortDescription:
-      "Professionele dark kitchen met meerdere werkstations en uitstekende logistiek",
-    propertyType: "DARK_KITCHEN",
-    status: "ACTIVE",
-    priceType: "RENT",
-    rentPrice: 280000, // €2,800/month
-    salePrice: null,
-    city: "Utrecht",
-    province: "Utrecht",
-    neighborhood: "Leidsche Rijn",
-    surfaceTotal: 120,
-    seatingCapacityInside: null,
-    seatingCapacityOutside: null,
-    hasTerrace: false,
-    hasKitchen: true,
-    horecaScore: "B",
-    featured: false,
-    publishedAt: new Date("2025-01-18"),
-    viewCount: 89,
-    savedCount: 7,
-    primaryImage: {
-      thumbnailUrl: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop",
-      altText: "Professionele keuken setup",
-    },
-    agency: {
-      id: "agency_3",
-      name: "Horeca Vastgoed Midden",
-      slug: "horeca-vastgoed-midden",
-    },
-  },
-  {
-    id: "prop_4",
-    title: "Trendy Cocktailbar",
-    slug: "trendy-cocktailbar-den-haag",
-    shortDescription:
-      "Stijlvolle bar met complete inventaris en uitstekende drankvergunning",
-    propertyType: "BAR",
-    status: "ACTIVE",
-    priceType: "RENT",
-    rentPrice: 420000, // €4,200/month
-    salePrice: null,
-    city: "Den Haag",
-    province: "Zuid-Holland",
-    neighborhood: "Centrum",
-    surfaceTotal: 95,
-    seatingCapacityInside: 50,
-    seatingCapacityOutside: 15,
-    hasTerrace: true,
-    hasKitchen: false,
-    horecaScore: "A",
-    featured: false,
-    publishedAt: new Date("2025-01-20"),
-    viewCount: 156,
-    savedCount: 12,
-    primaryImage: {
-      thumbnailUrl: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=400&h=300&fit=crop",
-      altText: "Stijlvolle cocktailbar",
-    },
-    agency: {
-      id: "agency_2",
-      name: "Horeca Partners Zuid",
-      slug: "horeca-partners-zuid",
-    },
-  },
-  {
-    id: "prop_5",
-    title: "Bakkerij met Winkelruimte",
-    slug: "bakkerij-winkelruimte-haarlem",
-    shortDescription:
-      "Complete bakkerij met moderne apparatuur en drukbezochte winkel aan straat",
-    propertyType: "BAKERY",
-    status: "ACTIVE",
-    priceType: "SALE",
-    rentPrice: null,
-    salePrice: 45000000, // €450,000
-    city: "Haarlem",
-    province: "Noord-Holland",
-    neighborhood: "Centrum",
-    surfaceTotal: 140,
-    seatingCapacityInside: 20,
-    seatingCapacityOutside: 8,
-    hasTerrace: true,
-    hasKitchen: true,
-    horecaScore: "B+",
-    featured: true,
-    publishedAt: new Date("2025-01-12"),
-    viewCount: 312,
-    savedCount: 24,
-    primaryImage: {
-      thumbnailUrl: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=300&fit=crop",
-      altText: "Bakkerij met vers brood",
-    },
-    agency: {
-      id: "agency_1",
-      name: "Horeca Makelaars Amsterdam",
-      slug: "horeca-makelaars-amsterdam",
-    },
-  },
-  {
-    id: "prop_6",
-    title: "Bistro aan het Water",
-    slug: "bistro-aan-water-leiden",
-    shortDescription:
-      "Sfeervolle bistro met uitzicht op de gracht en eigen aanlegsteiger",
-    propertyType: "RESTAURANT",
-    status: "ACTIVE",
-    priceType: "RENT",
-    rentPrice: 480000, // €4,800/month
-    salePrice: null,
-    city: "Leiden",
-    province: "Zuid-Holland",
-    neighborhood: "Centrum",
-    surfaceTotal: 110,
-    seatingCapacityInside: 55,
-    seatingCapacityOutside: 30,
-    hasTerrace: true,
-    hasKitchen: true,
-    horecaScore: "A",
-    featured: false,
-    publishedAt: new Date("2025-01-08"),
-    viewCount: 278,
-    savedCount: 19,
-    primaryImage: {
-      thumbnailUrl: "https://images.unsplash.com/photo-1559329007-40df8a9345d8?w=400&h=300&fit=crop",
-      altText: "Bistro aan het water",
-    },
-    agency: {
-      id: "agency_2",
-      name: "Horeca Partners Zuid",
-      slug: "horeca-partners-zuid",
-    },
-  },
-];
+function mapPropertyToListItem(
+  property: {
+    id: string;
+    title: string;
+    slug: string;
+    shortDescription: string | null;
+    propertyType: string;
+    status: string;
+    priceType: string;
+    rentPrice: number | null;
+    salePrice: number | null;
+    city: string;
+    province: string | null;
+    neighborhood: string | null;
+    surfaceTotal: number;
+    seatingCapacityInside: number | null;
+    seatingCapacityOutside: number | null;
+    hasTerrace: boolean;
+    hasBasement: boolean;
+    hasStorage: boolean;
+    hasParking: boolean;
+    kitchenType: string | null;
+    horecaScore: string | null;
+    featured: boolean;
+    publishedAt: Date | null;
+    viewCount: number;
+    savedCount: number;
+    images: { thumbnailUrl: string | null; altText: string | null }[];
+    agency: { id: string; name: string; slug: string } | null;
+  }
+): PropertyListItem {
+  const primaryImage = property.images[0];
+  return {
+    id: property.id,
+    title: property.title,
+    slug: property.slug,
+    shortDescription: property.shortDescription,
+    propertyType: property.propertyType as PropertyListItem["propertyType"],
+    status: property.status as PropertyListItem["status"],
+    priceType: property.priceType as PropertyListItem["priceType"],
+    rentPrice: property.rentPrice,
+    salePrice: property.salePrice,
+    city: property.city,
+    province: property.province,
+    neighborhood: property.neighborhood,
+    surfaceTotal: property.surfaceTotal,
+    seatingCapacityInside: property.seatingCapacityInside,
+    seatingCapacityOutside: property.seatingCapacityOutside,
+    hasTerrace: property.hasTerrace,
+    hasKitchen: property.kitchenType != null && property.kitchenType !== "none",
+    horecaScore: property.horecaScore,
+    featured: property.featured,
+    publishedAt: property.publishedAt,
+    viewCount: property.viewCount,
+    savedCount: property.savedCount,
+    primaryImage: primaryImage?.thumbnailUrl
+      ? { thumbnailUrl: primaryImage.thumbnailUrl, altText: primaryImage.altText ?? null }
+      : null,
+    agency: property.agency
+      ? { id: property.agency.id, name: property.agency.name, slug: property.agency.slug }
+      : null,
+  };
+}
 
 /**
- * Get the current user's seeker profile
- * Creates a default profile if one doesn't exist
+ * Shared include/select for property queries returning PropertyListItem data
+ */
+const propertyListSelect = {
+  id: true,
+  title: true,
+  slug: true,
+  shortDescription: true,
+  propertyType: true,
+  status: true,
+  priceType: true,
+  rentPrice: true,
+  salePrice: true,
+  city: true,
+  province: true,
+  neighborhood: true,
+  surfaceTotal: true,
+  seatingCapacityInside: true,
+  seatingCapacityOutside: true,
+  hasTerrace: true,
+  hasBasement: true,
+  hasStorage: true,
+  hasParking: true,
+  kitchenType: true,
+  horecaScore: true,
+  featured: true,
+  publishedAt: true,
+  viewCount: true,
+  savedCount: true,
+  images: {
+    where: { isPrimary: true },
+    take: 1,
+    select: { thumbnailUrl: true, altText: true },
+  },
+  agency: {
+    select: { id: true, name: true, slug: true },
+  },
+} as const;
+
+/**
+ * Get the current user's seeker profile.
+ * Returns null if no profile exists (does NOT auto-create).
  */
 export async function getSeekerProfile(
   userId?: string
@@ -252,37 +151,39 @@ export async function getSeekerProfile(
       return { success: false, error: "Unauthorized" };
     }
 
-    // TODO: Once Prisma schema is updated with SeekerProfile model,
-    // uncomment and use the following:
-    /*
     const profile = await prisma.seekerProfile.findUnique({
       where: { userId: targetUserId },
     });
 
     if (!profile) {
-      // Create default profile
-      const newProfile = await prisma.seekerProfile.create({
-        data: {
-          userId: targetUserId,
-          preferredCities: [],
-          preferredProvinces: [],
-          preferredTypes: [],
-          mustHaveFeatures: [],
-          niceToHaveFeatures: [],
-          emailAlerts: true,
-          pushAlerts: false,
-          alertFrequency: "DAILY",
-          hasBusinessPlan: false,
-        },
-      });
-      return { success: true, data: newProfile };
+      return { success: true, data: null };
     }
 
-    return { success: true, data: profile };
-    */
-
-    // Temporary: Return null until database models are created
-    return { success: true, data: null };
+    return {
+      success: true,
+      data: {
+        id: profile.id,
+        userId: profile.userId,
+        businessType: profile.businessType ?? undefined,
+        conceptDescription: profile.conceptDescription ?? undefined,
+        experienceYears: profile.experienceYears ?? undefined,
+        hasBusinessPlan: profile.hasBusinessPlan,
+        budgetMin: profile.budgetMin ?? undefined,
+        budgetMax: profile.budgetMax ?? undefined,
+        preferredCities: profile.preferredCities,
+        preferredProvinces: profile.preferredProvinces,
+        preferredTypes: profile.preferredTypes,
+        minSurface: profile.minSurface ?? undefined,
+        maxSurface: profile.maxSurface ?? undefined,
+        mustHaveFeatures: profile.mustHaveFeatures,
+        niceToHaveFeatures: profile.niceToHaveFeatures,
+        emailAlerts: profile.emailAlerts,
+        pushAlerts: profile.pushAlerts,
+        alertFrequency: profile.alertFrequency,
+        createdAt: profile.createdAt,
+        updatedAt: profile.updatedAt,
+      },
+    };
   } catch (error) {
     console.error("Error getting seeker profile:", error);
     return {
@@ -293,10 +194,11 @@ export async function getSeekerProfile(
 }
 
 /**
- * Update the seeker profile
+ * Update the seeker profile with Zod validation.
+ * Upserts: creates if not exists, updates if exists.
  */
 export async function updateSeekerProfile(
-  _data: Partial<SeekerProfile>
+  data: Partial<SeekerProfile>
 ): Promise<ActionResult<SeekerProfile>> {
   try {
     const user = await getCurrentUser();
@@ -305,34 +207,81 @@ export async function updateSeekerProfile(
       return { success: false, error: "Not authenticated" };
     }
 
-    // TODO: Once Prisma schema is updated with SeekerProfile model,
-    // implement the update logic using _data
-    /*
+    // Validate input with Zod
+    const validated = updateSeekerProfileSchema.safeParse(data);
+    if (!validated.success) {
+      return {
+        success: false,
+        error: validated.error.issues[0]?.message ?? "Invalid input",
+      };
+    }
+
+    const input = validated.data;
+
     const profile = await prisma.seekerProfile.upsert({
       where: { userId: user.id },
       update: {
-        ..._data,
-        updatedAt: new Date(),
+        businessType: input.businessType,
+        conceptDescription: input.conceptDescription,
+        experienceYears: input.experienceYears,
+        budgetMin: input.budgetMin,
+        budgetMax: input.budgetMax,
+        preferredCities: input.preferredCities,
+        preferredTypes: input.preferredTypes,
+        minSurface: input.minSurface,
+        maxSurface: input.maxSurface,
+        mustHaveFeatures: input.mustHaveFeatures,
+        emailAlerts: input.emailAlerts,
+        alertFrequency: input.alertFrequency as PrismaAlertFrequency | undefined,
       },
       create: {
         userId: user.id,
-        ..._data,
-        preferredCities: _data.preferredCities || [],
-        preferredProvinces: _data.preferredProvinces || [],
-        preferredTypes: _data.preferredTypes || [],
-        mustHaveFeatures: _data.mustHaveFeatures || [],
-        niceToHaveFeatures: _data.niceToHaveFeatures || [],
-        emailAlerts: _data.emailAlerts ?? true,
-        pushAlerts: _data.pushAlerts ?? false,
-        alertFrequency: _data.alertFrequency || "DAILY",
-        hasBusinessPlan: _data.hasBusinessPlan ?? false,
+        businessType: input.businessType,
+        conceptDescription: input.conceptDescription,
+        experienceYears: input.experienceYears,
+        budgetMin: input.budgetMin,
+        budgetMax: input.budgetMax,
+        preferredCities: input.preferredCities ?? [],
+        preferredProvinces: [],
+        preferredTypes: input.preferredTypes ?? [],
+        minSurface: input.minSurface,
+        maxSurface: input.maxSurface,
+        mustHaveFeatures: input.mustHaveFeatures ?? [],
+        niceToHaveFeatures: [],
+        emailAlerts: input.emailAlerts ?? true,
+        pushAlerts: false,
+        alertFrequency: (input.alertFrequency ?? "DAILY") as PrismaAlertFrequency,
+        hasBusinessPlan: false,
       },
     });
 
-    return { success: true, data: profile };
-    */
+    revalidatePath("/dashboard");
 
-    return { success: false, error: "Profile update not yet implemented" };
+    return {
+      success: true,
+      data: {
+        id: profile.id,
+        userId: profile.userId,
+        businessType: profile.businessType ?? undefined,
+        conceptDescription: profile.conceptDescription ?? undefined,
+        experienceYears: profile.experienceYears ?? undefined,
+        hasBusinessPlan: profile.hasBusinessPlan,
+        budgetMin: profile.budgetMin ?? undefined,
+        budgetMax: profile.budgetMax ?? undefined,
+        preferredCities: profile.preferredCities,
+        preferredProvinces: profile.preferredProvinces,
+        preferredTypes: profile.preferredTypes,
+        minSurface: profile.minSurface ?? undefined,
+        maxSurface: profile.maxSurface ?? undefined,
+        mustHaveFeatures: profile.mustHaveFeatures,
+        niceToHaveFeatures: profile.niceToHaveFeatures,
+        emailAlerts: profile.emailAlerts,
+        pushAlerts: profile.pushAlerts,
+        alertFrequency: profile.alertFrequency,
+        createdAt: profile.createdAt,
+        updatedAt: profile.updatedAt,
+      },
+    };
   } catch (error) {
     console.error("Error updating seeker profile:", error);
     return {
@@ -344,10 +293,11 @@ export async function updateSeekerProfile(
 }
 
 /**
- * Complete seeker onboarding with initial profile data
+ * Complete seeker onboarding with initial profile data.
+ * Uses a transaction to update User and create/update SeekerProfile atomically.
  */
 export async function completeSeekerOnboarding(
-  _data: Partial<SeekerProfile>
+  data: Partial<SeekerProfile>
 ): Promise<ActionResult<void>> {
   try {
     const user = await getCurrentUser();
@@ -356,27 +306,56 @@ export async function completeSeekerOnboarding(
       return { success: false, error: "Not authenticated" };
     }
 
-    // TODO: Once Prisma schema is updated, implement using _data:
-    // 1. Update user role to 'seeker'
-    // 2. Create SeekerProfile with provided _data
-    // 3. Set onboardingCompleted to true
-    /*
     await prisma.$transaction([
       prisma.user.update({
         where: { id: user.id },
         data: {
-          role: "seeker",
           onboardingCompleted: true,
         },
       }),
-      prisma.seekerProfile.create({
-        data: {
+      prisma.seekerProfile.upsert({
+        where: { userId: user.id },
+        update: {
+          businessType: data.businessType,
+          conceptDescription: data.conceptDescription,
+          experienceYears: data.experienceYears,
+          hasBusinessPlan: data.hasBusinessPlan ?? false,
+          budgetMin: data.budgetMin,
+          budgetMax: data.budgetMax,
+          preferredCities: data.preferredCities ?? [],
+          preferredProvinces: data.preferredProvinces ?? [],
+          preferredTypes: data.preferredTypes ?? [],
+          minSurface: data.minSurface,
+          maxSurface: data.maxSurface,
+          mustHaveFeatures: data.mustHaveFeatures ?? [],
+          niceToHaveFeatures: data.niceToHaveFeatures ?? [],
+          emailAlerts: data.emailAlerts ?? true,
+          pushAlerts: data.pushAlerts ?? false,
+          alertFrequency: data.alertFrequency ?? "DAILY",
+        },
+        create: {
           userId: user.id,
-          ..._data,
+          businessType: data.businessType,
+          conceptDescription: data.conceptDescription,
+          experienceYears: data.experienceYears,
+          hasBusinessPlan: data.hasBusinessPlan ?? false,
+          budgetMin: data.budgetMin,
+          budgetMax: data.budgetMax,
+          preferredCities: data.preferredCities ?? [],
+          preferredProvinces: data.preferredProvinces ?? [],
+          preferredTypes: data.preferredTypes ?? [],
+          minSurface: data.minSurface,
+          maxSurface: data.maxSurface,
+          mustHaveFeatures: data.mustHaveFeatures ?? [],
+          niceToHaveFeatures: data.niceToHaveFeatures ?? [],
+          emailAlerts: data.emailAlerts ?? true,
+          pushAlerts: data.pushAlerts ?? false,
+          alertFrequency: data.alertFrequency ?? "DAILY",
         },
       }),
     ]);
-    */
+
+    revalidatePath("/dashboard");
 
     return { success: true };
   } catch (error) {
@@ -392,8 +371,8 @@ export async function completeSeekerOnboarding(
 }
 
 /**
- * Get seeker recommendations based on user preferences
- * Returns recommended properties, recently viewed, and new matches
+ * Get seeker recommendations based on user preferences.
+ * Returns recommended properties, recently viewed, and new matches.
  */
 export async function getSeekerRecommendations(): Promise<
   ActionResult<SeekerRecommendations>
@@ -408,16 +387,12 @@ export async function getSeekerRecommendations(): Promise<
       };
     }
 
-    // TODO: When SeekerProfile model is available, fetch real preferences:
-    // const seekerProfile = await prisma.seekerProfile.findUnique({
-    //   where: { userId: user.id },
-    // });
+    // Fetch the seeker profile for preference-based filtering
+    const seekerProfile = await prisma.seekerProfile.findUnique({
+      where: { userId: user.id },
+    });
 
-    // For now, simulate a user with preferences
-    // In production, this would come from the database
-    const hasPreferences = true; // Set to false to test empty state
-
-    if (!hasPreferences) {
+    if (!seekerProfile) {
       return {
         success: true,
         data: {
@@ -429,43 +404,79 @@ export async function getSeekerRecommendations(): Promise<
       };
     }
 
-    // Mock preferences (would come from SeekerProfile)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _preferences: SeekerPreferences = {
-      budgetMin: 200000, // €2,000
-      budgetMax: 600000, // €6,000
-      preferredCities: ["Amsterdam", "Rotterdam", "Utrecht"],
-      preferredProvinces: ["Noord-Holland", "Zuid-Holland"],
-      preferredTypes: ["RESTAURANT", "CAFE", "BAR"],
-      minSurface: 50,
-      maxSurface: 200,
-      mustHaveFeatures: ["terrace", "kitchen"],
-      niceToHaveFeatures: ["parking"],
+    // Build preference-based where clause for recommended properties
+    const preferenceFilters: Record<string, unknown> = {
+      status: "ACTIVE",
     };
 
-    // TODO: When models are available, filter properties based on preferences:
-    // const recommended = await prisma.property.findMany({
-    //   where: {
-    //     status: 'ACTIVE',
-    //     city: { in: preferences.preferredCities },
-    //     propertyType: { in: preferences.preferredTypes },
-    //     OR: [
-    //       { rentPrice: { gte: preferences.budgetMin, lte: preferences.budgetMax } },
-    //       { salePrice: { gte: preferences.budgetMin, lte: preferences.budgetMax } },
-    //     ],
-    //   },
-    //   include: {
-    //     images: { where: { isPrimary: true }, take: 1 },
-    //     agency: { select: { id: true, name: true, slug: true } },
-    //   },
-    //   orderBy: { publishedAt: 'desc' },
-    //   take: 6,
-    // });
+    if (seekerProfile.preferredCities.length > 0) {
+      preferenceFilters.city = { in: seekerProfile.preferredCities };
+    }
 
-    // For now, return mock data
-    const recommended = mockProperties.slice(0, 4);
-    const recentlyViewed = mockProperties.slice(2, 5);
-    const newMatches = mockProperties.slice(1, 4);
+    if (seekerProfile.preferredTypes.length > 0) {
+      preferenceFilters.propertyType = { in: seekerProfile.preferredTypes };
+    }
+
+    // Budget filter: match rent or sale price within budget range
+    if (seekerProfile.budgetMin != null || seekerProfile.budgetMax != null) {
+      const priceConditions: Record<string, unknown>[] = [];
+
+      // Rent price range
+      const rentCondition: Record<string, unknown> = {};
+      if (seekerProfile.budgetMin != null) rentCondition.gte = seekerProfile.budgetMin;
+      if (seekerProfile.budgetMax != null) rentCondition.lte = seekerProfile.budgetMax;
+      priceConditions.push({ rentPrice: rentCondition });
+
+      // Sale price range
+      const saleCondition: Record<string, unknown> = {};
+      if (seekerProfile.budgetMin != null) saleCondition.gte = seekerProfile.budgetMin;
+      if (seekerProfile.budgetMax != null) saleCondition.lte = seekerProfile.budgetMax;
+      priceConditions.push({ salePrice: saleCondition });
+
+      preferenceFilters.OR = priceConditions;
+    }
+
+    // Fetch recommended properties based on preferences
+    const recommendedRaw = await prisma.property.findMany({
+      where: preferenceFilters,
+      select: propertyListSelect,
+      orderBy: { publishedAt: "desc" },
+      take: 6,
+    });
+
+    const recommended = recommendedRaw.map(mapPropertyToListItem);
+
+    // Fetch recently viewed properties
+    const recentViews = await prisma.propertyView.findMany({
+      where: { userId: user.id },
+      orderBy: { viewedAt: "desc" },
+      take: 6,
+      select: {
+        property: {
+          select: propertyListSelect,
+        },
+      },
+    });
+
+    const recentlyViewed = recentViews.map((view) =>
+      mapPropertyToListItem(view.property)
+    );
+
+    // New matches: active properties matching preferences, published in last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const newMatchesRaw = await prisma.property.findMany({
+      where: {
+        ...preferenceFilters,
+        publishedAt: { gte: sevenDaysAgo },
+      },
+      select: propertyListSelect,
+      orderBy: { publishedAt: "desc" },
+      take: 6,
+    });
+
+    const newMatches = newMatchesRaw.map(mapPropertyToListItem);
 
     return {
       success: true,
@@ -486,8 +497,8 @@ export async function getSeekerRecommendations(): Promise<
 }
 
 /**
- * Get seeker profile preferences
- * Returns the user's search preferences
+ * Get seeker profile preferences.
+ * Returns null if no profile exists.
  */
 export async function getSeekerPreferences(): Promise<
   ActionResult<SeekerPreferences | null>
@@ -502,15 +513,27 @@ export async function getSeekerPreferences(): Promise<
       };
     }
 
-    // TODO: Fetch from database when model is available
-    // const profile = await prisma.seekerProfile.findUnique({
-    //   where: { userId: user.id },
-    // });
+    const profile = await prisma.seekerProfile.findUnique({
+      where: { userId: user.id },
+    });
 
-    // Mock response - return null to simulate no preferences
+    if (!profile) {
+      return { success: true, data: null };
+    }
+
     return {
       success: true,
-      data: null,
+      data: {
+        budgetMin: profile.budgetMin,
+        budgetMax: profile.budgetMax,
+        preferredCities: profile.preferredCities,
+        preferredProvinces: profile.preferredProvinces,
+        preferredTypes: profile.preferredTypes,
+        minSurface: profile.minSurface,
+        maxSurface: profile.maxSurface,
+        mustHaveFeatures: profile.mustHaveFeatures,
+        niceToHaveFeatures: profile.niceToHaveFeatures,
+      },
     };
   } catch (error) {
     console.error("Error fetching seeker preferences:", error);
@@ -522,10 +545,10 @@ export async function getSeekerPreferences(): Promise<
 }
 
 /**
- * Check if a property is saved by the current user
+ * Check if a property is saved by the current user.
  */
 export async function isPropertySaved(
-  _propertyId: string
+  propertyId: string
 ): Promise<ActionResult<boolean>> {
   try {
     const user = await getCurrentUser();
@@ -534,21 +557,16 @@ export async function isPropertySaved(
       return { success: true, data: false };
     }
 
-    // TODO: Once Prisma schema is updated, use _propertyId:
-    /*
     const saved = await prisma.savedProperty.findUnique({
       where: {
         userId_propertyId: {
           userId: user.id,
-          propertyId: _propertyId,
+          propertyId,
         },
       },
     });
 
     return { success: true, data: !!saved };
-    */
-
-    return { success: true, data: false };
   } catch (error) {
     console.error("Error checking saved property:", error);
     return { success: true, data: false };

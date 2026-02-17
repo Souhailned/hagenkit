@@ -1,4 +1,5 @@
 import { PropertyWizard } from "@/components/property-wizard/property-wizard";
+import { ContentCard, ContentCardHeader, ContentCardBody } from "@/components/dashboard/content-card";
 
 export const metadata = {
   title: "Nieuw Pand Toevoegen - Horecagrond",
@@ -6,8 +7,13 @@ export const metadata = {
 
 export default function NieuwPandPage() {
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-8">
-      <PropertyWizard />
-    </div>
+    <ContentCard>
+      <ContentCardHeader title="Nieuw Pand" />
+      <ContentCardBody className="p-4">
+        <div className="mx-auto max-w-3xl">
+          <PropertyWizard />
+        </div>
+      </ContentCardBody>
+    </ContentCard>
   );
 }

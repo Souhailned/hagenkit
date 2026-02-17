@@ -1,32 +1,37 @@
 "use server";
 
-import prisma from "@/lib/prisma";
+import { contactFormSchema } from "@/lib/validations/contact";
+import type { ActionResult } from "@/types/actions";
 
-export async function submitContactForm(formData: FormData) {
-  const name = formData.get("name") as string;
-  const email = formData.get("email") as string;
-  const subject = formData.get("subject") as string;
-  const message = formData.get("message") as string;
-
-  if (!name || !email || !subject || !message) {
-    return { error: "Alle velden zijn verplicht" };
-  }
-
-  if (!email.includes("@")) {
-    return { error: "Ongeldig e-mailadres" };
-  }
-
+export async function submitContactForm(formData: FormData): Promise<ActionResult> {
   try {
-    // Store in database (using PropertyInquiry as a generic contact form)
-    // In production, you'd want a dedicated ContactMessage model
-    console.log("[Contact Form]", { name, email, subject, message });
-    
-    // For now, just log it. In production, send email via Resend
-    // await sendEmail({ to: "info@horecagrond.nl", subject: `Contact: ${subject}`, ... })
+    // 1. Extract and validate with Zod
+    const raw = {
+      name: formData.get("name"),
+      email: formData.get("email"),
+      subject: formData.get("subject"),
+      message: formData.get("message"),
+    };
+
+    const validated = contactFormSchema.safeParse(raw);
+    if (!validated.success) {
+      return { success: false, error: validated.error.issues[0].message };
+    }
+    const data = validated.data;
+
+    // 2. Business logic — log for now, send email via Resend in production
+    console.log("[Contact Form]", {
+      name: data.name,
+      email: data.email,
+      subject: data.subject,
+      message: data.message,
+    });
+
+    // For production: await sendEmail({ to: "info@horecagrond.nl", subject: `Contact: ${data.subject}`, ... })
 
     return { success: true };
   } catch (error) {
     console.error("Contact form error:", error);
-    return { error: "Er ging iets mis. Probeer het later opnieuw." };
+    return { success: false, error: "Er ging iets mis. Probeer het later opnieuw." };
   }
 }

@@ -2,6 +2,8 @@
 
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { generateText } from "ai";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 interface GenerateDescriptionInput {
   propertyType: string;
@@ -31,6 +33,24 @@ const typeLabels: Record<string, string> = {
   BED_AND_BREAKFAST: "bed & breakfast",
   NIGHTCLUB: "nachtclub",
 };
+
+/**
+ * Get the appropriate AI model based on available API keys.
+ * Priority: Groq (fast/cheap) > OpenAI > null (fallback to template).
+ */
+async function getModel() {
+  if (process.env.GROQ_API_KEY) {
+    const { createGroq } = await import("@ai-sdk/groq");
+    const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
+    return groq("llama-3.3-70b-versatile");
+  }
+  if (process.env.OPENAI_API_KEY) {
+    const { createOpenAI } = await import("@ai-sdk/openai");
+    const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    return openai("gpt-4o-mini");
+  }
+  return null;
+}
 
 function buildPrompt(input: GenerateDescriptionInput): string {
   const type = typeLabels[input.propertyType] || input.propertyType.toLowerCase();
@@ -64,60 +84,29 @@ export async function generatePropertyDescription(input: GenerateDescriptionInpu
     return { error: "Je moet ingelogd zijn" };
   }
 
+  // Rate limit
+  const rateLimitResult = await checkRateLimit(session.user.id, "ai");
+  if (!rateLimitResult.success) {
+    return { error: "Rate limit exceeded. Try again later." };
+  }
+
   const prompt = buildPrompt(input);
 
-  // Try to call AI API - for now use a template-based approach
-  // Later: integrate with AI SDK 6 + Groq/OpenAI
   try {
-    // Check if we have an API key for any LLM provider
-    const groqKey = process.env.GROQ_API_KEY;
-    const openaiKey = process.env.OPENAI_API_KEY;
-
-    if (groqKey) {
-      // Use Groq (fast, cheap, Llama)
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${groqKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.7,
-          max_tokens: 500,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return { description: data.choices[0].message.content };
-      }
+    const model = await getModel();
+    if (!model) {
+      // No AI provider available, use template fallback
+      return { description: generateTemplate(input) };
     }
 
-    if (openaiKey) {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${openaiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.7,
-          max_tokens: 500,
-        }),
-      });
+    const { text } = await generateText({
+      model,
+      prompt,
+      temperature: 0.7,
+      maxOutputTokens: 500,
+    });
 
-      if (response.ok) {
-        const data = await response.json();
-        return { description: data.choices[0].message.content };
-      }
-    }
-
-    // Fallback: template-based description
-    return { description: generateTemplate(input) };
+    return { description: text };
   } catch (error) {
     console.error("AI description error:", error);
     return { description: generateTemplate(input) };

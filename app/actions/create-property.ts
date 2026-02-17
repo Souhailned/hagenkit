@@ -3,34 +3,9 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-
-interface CreatePropertyInput {
-  // Step 1: Basis
-  title: string;
-  propertyType: string;
-  priceType: string;
-  rentPrice?: number;
-  salePrice?: number;
-
-  // Step 2: Locatie
-  address: string;
-  city: string;
-  postalCode: string;
-  province?: string;
-
-  // Step 3: Details
-  surfaceTotal: number;
-  surfaceCommercial?: number;
-  surfaceKitchen?: number;
-  surfaceTerrace?: number;
-  floors?: number;
-  seatingCapacityInside?: number;
-  seatingCapacityOutside?: number;
-
-  // Step 4: Beschrijving
-  description?: string;
-  shortDescription?: string;
-}
+import { createPropertySchema } from "@/lib/validations/property";
+import type { ActionResult } from "@/types/actions";
+import type { z } from "zod";
 
 function generateSlug(title: string, city: string): string {
   const base = `${title}-${city}`
@@ -40,64 +15,107 @@ function generateSlug(title: string, city: string): string {
   return `${base}-${Date.now().toString(36)}`;
 }
 
-export async function createProperty(input: CreatePropertyInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user?.id) {
-    return { error: "Je moet ingelogd zijn" };
-  }
+/**
+ * Subset schema for the wizard — only the fields the wizard sends.
+ * The full createPropertySchema has many optional fields the wizard doesn't use.
+ */
+const wizardInputSchema = createPropertySchema.pick({
+  title: true,
+  propertyType: true,
+  priceType: true,
+  rentPrice: true,
+  salePrice: true,
+  address: true,
+  city: true,
+  postalCode: true,
+  province: true,
+  surfaceTotal: true,
+  surfaceCommercial: true,
+  surfaceKitchen: true,
+  surfaceTerrace: true,
+  floors: true,
+  seatingCapacityInside: true,
+  seatingCapacityOutside: true,
+  description: true,
+  shortDescription: true,
+});
 
-  // Get user's agency (or create one)
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: { agencyMemberships: { include: { agency: true } } },
-  });
+type WizardInput = z.infer<typeof wizardInputSchema>;
 
-  let agencyId: string;
+export async function createProperty(
+  input: WizardInput
+): Promise<ActionResult<{ propertyId: string; slug: string }>> {
+  try {
+    // 1. Auth check
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user?.id) {
+      return { success: false, error: "Je moet ingelogd zijn" };
+    }
 
-  if (user?.agencyMemberships?.[0]?.agencyId) {
-    agencyId = user.agencyMemberships[0].agencyId;
-  } else {
-    // Auto-create agency for first-time agents
-    const agency = await prisma.agency.create({
-      data: {
-        name: `${user?.name || "Mijn"} Makelaardij`,
-        slug: `agency-${Date.now().toString(36)}`,
-        members: {
-          create: { userId: session.user.id, role: "OWNER" },
+    // 2. Validate input with Zod
+    const validated = wizardInputSchema.safeParse(input);
+    if (!validated.success) {
+      return { success: false, error: validated.error.issues[0].message };
+    }
+    const data = validated.data;
+
+    // 3. Get user's agency (or create one)
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: { agencyMemberships: { include: { agency: true } } },
+    });
+
+    let agencyId: string;
+
+    if (user?.agencyMemberships?.[0]?.agencyId) {
+      agencyId = user.agencyMemberships[0].agencyId;
+    } else {
+      // Auto-create agency for first-time agents
+      const agency = await prisma.agency.create({
+        data: {
+          name: `${user?.name || "Mijn"} Makelaardij`,
+          slug: `agency-${Date.now().toString(36)}`,
+          members: {
+            create: { userId: session.user.id, role: "OWNER" },
+          },
         },
+      });
+      agencyId = agency.id;
+    }
+
+    // 4. Create property
+    const slug = generateSlug(data.title, data.city);
+
+    const property = await prisma.property.create({
+      data: {
+        title: data.title,
+        slug,
+        propertyType: data.propertyType,
+        priceType: data.priceType,
+        rentPrice: data.rentPrice ? data.rentPrice * 100 : null, // Convert to cents
+        salePrice: data.salePrice ? data.salePrice * 100 : null,
+        address: data.address,
+        city: data.city,
+        postalCode: data.postalCode,
+        province: data.province,
+        surfaceTotal: data.surfaceTotal,
+        surfaceCommercial: data.surfaceCommercial,
+        surfaceKitchen: data.surfaceKitchen,
+        surfaceTerrace: data.surfaceTerrace,
+        floors: data.floors ?? 1,
+        seatingCapacityInside: data.seatingCapacityInside,
+        seatingCapacityOutside: data.seatingCapacityOutside,
+        description: data.description,
+        shortDescription: data.shortDescription,
+        status: "DRAFT",
+        agencyId,
+        createdById: session.user.id,
       },
     });
-    agencyId = agency.id;
+
+    return { success: true, data: { propertyId: property.id, slug: property.slug } };
+  } catch (error) {
+    console.error("Error creating property:", error);
+    return { success: false, error: "Er ging iets mis bij het aanmaken van het pand" };
   }
-
-  const slug = generateSlug(input.title, input.city);
-
-  const property = await prisma.property.create({
-    data: {
-      title: input.title,
-      slug,
-      propertyType: input.propertyType as any,
-      priceType: input.priceType as any,
-      rentPrice: input.rentPrice ? input.rentPrice * 100 : null, // Convert to cents
-      salePrice: input.salePrice ? input.salePrice * 100 : null,
-      address: input.address,
-      city: input.city,
-      postalCode: input.postalCode,
-      province: input.province,
-      surfaceTotal: input.surfaceTotal,
-      surfaceCommercial: input.surfaceCommercial,
-      surfaceKitchen: input.surfaceKitchen,
-      surfaceTerrace: input.surfaceTerrace,
-      floors: input.floors || 1,
-      seatingCapacityInside: input.seatingCapacityInside,
-      seatingCapacityOutside: input.seatingCapacityOutside,
-      description: input.description,
-      shortDescription: input.shortDescription,
-      status: "DRAFT",
-      agencyId,
-      createdById: session.user.id,
-    },
-  });
-
-  return { success: true, propertyId: property.id, slug: property.slug };
 }

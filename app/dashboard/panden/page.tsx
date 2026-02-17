@@ -5,6 +5,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  ContentCard,
+  ContentCardHeader,
+  ContentCardBody,
+} from "@/components/dashboard/content-card";
 import { Plus, Building2, Eye, MessageSquare, MapPin } from "lucide-react";
 import { redirect } from "next/navigation";
 
@@ -44,23 +49,24 @@ export default async function PandenPage() {
   });
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Mijn Panden</h1>
-          <p className="mt-2 text-muted-foreground">
-            {properties.length} {properties.length === 1 ? "pand" : "panden"}
-          </p>
-        </div>
-        <Link href="/dashboard/panden/nieuw">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Nieuw pand
-          </Button>
-        </Link>
-      </div>
+    <ContentCard>
+      <ContentCardHeader
+        title="Mijn Panden"
+        actions={
+          <Link href="/dashboard/panden/nieuw">
+            <Button size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              Nieuw pand
+            </Button>
+          </Link>
+        }
+      />
+      <ContentCardBody className="p-4">
+        <p className="mb-4 text-sm text-muted-foreground">
+          {properties.length} {properties.length === 1 ? "pand" : "panden"}
+        </p>
 
-      {properties.length === 0 ? (
+        {properties.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
             <Building2 className="h-8 w-8 text-muted-foreground" />
@@ -121,7 +127,8 @@ export default async function PandenPage() {
             );
           })}
         </div>
-      )}
-    </div>
+        )}
+      </ContentCardBody>
+    </ContentCard>
   );
 }

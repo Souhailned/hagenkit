@@ -2,6 +2,8 @@
 
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { generateObject } from "ai";
+import { z } from "zod";
 
 export type ListingTurboInput = {
   propertyType: string;
@@ -30,6 +32,20 @@ export type ListingTurboOutput = {
   seoDescription: string;
 };
 
+/** Zod schema for structured AI output */
+const listingTurboSchema = z.object({
+  description: z.string().describe("Professionele beschrijving, 150-200 woorden, wervend maar eerlijk. Nederlands."),
+  shortDescription: z.string().describe("Korte hook, max 50 woorden, pakt direct de aandacht."),
+  highlights: z.array(z.string()).describe("4-6 korte bullet points met de belangrijkste USPs"),
+  socialMedia: z.object({
+    instagram: z.string().describe("Instagram caption met emoji's, max 2200 chars, met relevante hashtags"),
+    linkedin: z.string().describe("Professionele LinkedIn post, zakelijk maar enthousiast, max 1300 chars"),
+    facebook: z.string().describe("Casual Facebook post, uitnodigend en direct, max 500 chars"),
+  }),
+  seoTitle: z.string().describe("SEO-geoptimaliseerde titel, max 60 chars"),
+  seoDescription: z.string().describe("Meta description, max 155 chars, met call-to-action"),
+});
+
 const typeLabels: Record<string, string> = {
   RESTAURANT: "restaurant", CAFE: "café", BAR: "bar", HOTEL: "hotel",
   EETCAFE: "eetcafé", LUNCHROOM: "lunchroom", KOFFIEBAR: "koffiebar",
@@ -41,6 +57,24 @@ const typeLabels: Record<string, string> = {
 function formatPrice(cents: number, type: "RENT" | "SALE" | "BOTH"): string {
   const amount = `€${(cents / 100).toLocaleString("nl-NL")}`;
   return type === "RENT" ? `${amount}/mnd` : amount;
+}
+
+/**
+ * Get the appropriate AI model based on available API keys.
+ * Priority: Groq (fast/cheap) > OpenAI > null (fallback to template).
+ */
+async function getModel() {
+  if (process.env.GROQ_API_KEY) {
+    const { createGroq } = await import("@ai-sdk/groq");
+    const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
+    return groq("llama-3.3-70b-versatile");
+  }
+  if (process.env.OPENAI_API_KEY) {
+    const { createOpenAI } = await import("@ai-sdk/openai");
+    const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    return openai("gpt-4o-mini");
+  }
+  return null;
 }
 
 function buildTurboPrompt(input: ListingTurboInput): string {
@@ -63,26 +97,13 @@ ${input.buildYear ? `- Bouwjaar: ${input.buildYear}` : ""}
 ${input.seatingCapacity ? `- Zitplaatsen: ${input.seatingCapacity}` : ""}
 ${input.features.length > 0 ? `- Kenmerken: ${input.features.join(", ")}` : ""}
 
-GENEREER in JSON format (alleen valid JSON, geen markdown):
-{
-  "description": "Professionele beschrijving, 150-200 woorden, wervend maar eerlijk. Nederlands.",
-  "shortDescription": "Korte hook, max 50 woorden, pakt direct de aandacht.",
-  "highlights": ["4-6 korte bullet points met de belangrijkste USPs"],
-  "socialMedia": {
-    "instagram": "Instagram caption met emoji's, max 2200 chars, met relevante hashtags (#horecagrond #horeca #${input.city.toLowerCase()} etc.)",
-    "linkedin": "Professionele LinkedIn post, zakelijk maar enthousiast, max 1300 chars",
-    "facebook": "Casual Facebook post, uitnodigend en direct, max 500 chars"
-  },
-  "seoTitle": "SEO-geoptimaliseerde titel, max 60 chars",
-  "seoDescription": "Meta description, max 155 chars, met call-to-action"
-}
-
 REGELS:
 - Schrijf ALLES in het Nederlands
 - Verzin GEEN informatie die niet gegeven is
 - Noem NOOIT "AI" of "automatisch gegenereerd"
 - Wees professioneel maar niet saai
-- Focus op wat het pand uniek maakt`;
+- Focus op wat het pand uniek maakt
+- Gebruik relevante hashtags voor social media (#horecagrond #horeca #${input.city.toLowerCase()} etc.)`;
 }
 
 export async function generateListingTurbo(
@@ -93,65 +114,22 @@ export async function generateListingTurbo(
     return { success: false, error: "Je moet ingelogd zijn" };
   }
 
-  const prompt = buildTurboPrompt(input);
-
   try {
-    const groqKey = process.env.GROQ_API_KEY;
-    const openaiKey = process.env.OPENAI_API_KEY;
-
-    let content: string | null = null;
-
-    if (groqKey) {
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${groqKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.7,
-          max_tokens: 2000,
-          response_format: { type: "json_object" },
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        content = data.choices[0].message.content;
-      }
+    const model = await getModel();
+    if (!model) {
+      // No AI provider available, use template fallback
+      return { success: true, data: generateTemplate(input) };
     }
 
-    if (!content && openaiKey) {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${openaiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.7,
-          max_tokens: 2000,
-          response_format: { type: "json_object" },
-        }),
-      });
+    const { object } = await generateObject({
+      model,
+      schema: listingTurboSchema,
+      prompt: buildTurboPrompt(input),
+      temperature: 0.7,
+      maxOutputTokens: 2000,
+    });
 
-      if (response.ok) {
-        const data = await response.json();
-        content = data.choices[0].message.content;
-      }
-    }
-
-    if (content) {
-      const parsed = JSON.parse(content) as ListingTurboOutput;
-      return { success: true, data: parsed };
-    }
-
-    // Fallback: template-based
-    return { success: true, data: generateTemplate(input) };
+    return { success: true, data: object };
   } catch (error) {
     console.error("Listing Turbo error:", error);
     return { success: true, data: generateTemplate(input) };

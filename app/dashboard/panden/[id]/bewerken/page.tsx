@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { EditPropertyForm } from "./edit-form";
+import { ContentCard, ContentCardHeader, ContentCardBody } from "@/components/dashboard/content-card";
 
 export default async function BewerkenPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,9 +17,13 @@ export default async function BewerkenPage({ params }: { params: Promise<{ id: s
   if (!property) notFound();
 
   return (
-    <div className="container max-w-3xl py-8">
-      <h1 className="text-2xl font-bold tracking-tight mb-6">Pand bewerken</h1>
-      <EditPropertyForm property={property} />
-    </div>
+    <ContentCard>
+      <ContentCardHeader title="Pand Bewerken" />
+      <ContentCardBody className="p-4">
+        <div className="mx-auto max-w-3xl">
+          <EditPropertyForm property={property} />
+        </div>
+      </ContentCardBody>
+    </ContentCard>
   );
 }

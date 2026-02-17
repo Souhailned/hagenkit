@@ -63,10 +63,10 @@ export function EditPropertyForm({ property }: EditPropertyFormProps) {
         address: form.address,
         postalCode: form.postalCode,
         city: form.city,
-        rentPrice: form.rentPrice ? Math.round(parseFloat(form.rentPrice) * 100) : null,
-        salePrice: form.salePrice ? Math.round(parseFloat(form.salePrice) * 100) : null,
+        rentPrice: form.rentPrice ? Math.round(parseFloat(form.rentPrice) * 100) : undefined,
+        salePrice: form.salePrice ? Math.round(parseFloat(form.salePrice) * 100) : undefined,
         surfaceTotal: parseInt(form.surfaceTotal) || 0,
-        buildYear: form.buildYear ? parseInt(form.buildYear) : null,
+        buildYear: form.buildYear ? parseInt(form.buildYear) : undefined,
       });
 
       if (result.error) {

@@ -4,14 +4,17 @@ export type NavItemId =
   | "dashboard"
   | "panden"
   | "leads"
+  | "projects"
+  | "tasks"
   | "analytics"
+  | "images"
   | "videos"
   | "favorieten"
   | "alerts"
   | "zoeken"
   | "vergelijk";
 
-export type SidebarFooterItemId = "settings" | "help" | "admin";
+export type SidebarFooterItemId = "settings" | "help";
 
 export type NavItem = {
   id: NavItemId;
@@ -39,7 +42,10 @@ export const navItems: NavItem[] = [
   // Agent items
   { id: "panden", label: "Mijn Panden", href: "/dashboard/panden", roles: ["agent", "admin"] },
   { id: "leads", label: "Leads", href: "/dashboard/leads", roles: ["agent", "admin"] },
+  { id: "projects", label: "Projects", href: "/dashboard/projects", roles: ["agent", "admin"] },
+  { id: "tasks", label: "My Tasks", href: "/dashboard/tasks", roles: ["agent", "admin"] },
   { id: "analytics", label: "Analytics", href: "/dashboard/analytics", roles: ["agent", "admin"] },
+  { id: "images", label: "Images", href: "/dashboard/images", roles: ["agent", "admin"] },
   { id: "videos", label: "Video's", href: "/dashboard/videos", roles: ["agent", "admin"] },
 
   // Seeker items
@@ -52,7 +58,7 @@ export const navItems: NavItem[] = [
 export const footerItems: SidebarFooterItem[] = [
   { id: "settings", label: "Instellingen", href: "/dashboard/instellingen" },
   { id: "help", label: "Help & FAQ", href: "/faq" },
-  { id: "admin", label: "Admin", href: "/dashboard/admin", roles: ["admin"] },
+  // Removed standalone "Admin" link — admin dropdown handles this
 ];
 
 /**

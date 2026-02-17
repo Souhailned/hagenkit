@@ -1,4 +1,9 @@
 import type { Metadata } from "next";
+import {
+  ContentCard,
+  ContentCardHeader,
+  ContentCardBody,
+} from "@/components/dashboard/content-card";
 import { AdminDashboard } from "./admin-dashboard";
 
 export const metadata: Metadata = {
@@ -6,5 +11,12 @@ export const metadata: Metadata = {
 };
 
 export default function AdminPage() {
-  return <AdminDashboard />;
+  return (
+    <ContentCard>
+      <ContentCardHeader title="Admin Dashboard" />
+      <ContentCardBody className="p-4">
+        <AdminDashboard />
+      </ContentCardBody>
+    </ContentCard>
+  );
 }

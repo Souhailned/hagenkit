@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Star, Award, Linkedin, Twitter, Mail, Phone } from "lucide-react";
+import { Star, Award, Linkedin, Mail, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import type { AgentProfile } from "@/types/agency";
@@ -10,7 +10,13 @@ interface AgentCardProps {
 }
 
 export function AgentCard({ agent, className }: AgentCardProps) {
-  const fullName = `${agent.firstName} ${agent.lastName}`;
+  const fullName = agent.user.name ?? "Onbekend";
+  const initials = fullName
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <div
@@ -33,8 +39,7 @@ export function AgentCard({ agent, className }: AgentCardProps) {
         ) : (
           <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
             <span className="text-5xl font-bold text-primary/40">
-              {agent.firstName[0]}
-              {agent.lastName[0]}
+              {initials}
             </span>
           </div>
         )}
@@ -63,16 +68,12 @@ export function AgentCard({ agent, className }: AgentCardProps) {
           )}
         </div>
 
-        {/* Experience & Reviews */}
-        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          {agent.yearsExperience && (
-            <span>{agent.yearsExperience} jaar ervaring</span>
-          )}
-          {agent.yearsExperience && agent.reviewCount > 0 && (
-            <span className="text-border">•</span>
-          )}
-          {agent.reviewCount > 0 && <span>{agent.reviewCount} reviews</span>}
-        </div>
+        {/* Title */}
+        {agent.title && (
+          <div className="mb-3 text-xs text-muted-foreground">
+            {agent.title}
+          </div>
+        )}
 
         {/* Bio */}
         {agent.bio && (
@@ -107,16 +108,16 @@ export function AgentCard({ agent, className }: AgentCardProps) {
 
         {/* Contact & Social Links */}
         <div className="mt-auto flex items-center gap-2 border-t border-border/50 pt-4">
-          {agent.email && (
+          {agent.user.email && (
             <a
-              href={`mailto:${agent.email}`}
+              href={`mailto:${agent.user.email}`}
               className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label={`Email ${fullName}`}
             >
               <Mail className="h-4 w-4" />
             </a>
           )}
-          {agent.phone && (
+          {agent.phone && agent.phonePublic && (
             <a
               href={`tel:${agent.phone}`}
               className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -125,33 +126,11 @@ export function AgentCard({ agent, className }: AgentCardProps) {
               <Phone className="h-4 w-4" />
             </a>
           )}
-          {agent.linkedIn && (
-            <a
-              href={agent.linkedIn}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-[#0A66C2]"
-              aria-label={`${fullName} op LinkedIn`}
-            >
-              <Linkedin className="h-4 w-4" />
-            </a>
-          )}
-          {agent.twitter && (
-            <a
-              href={agent.twitter}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              aria-label={`${fullName} op Twitter`}
-            >
-              <Twitter className="h-4 w-4" />
-            </a>
-          )}
 
           {/* Stats */}
           <div className="ml-auto text-right text-xs text-muted-foreground">
             <span className="font-semibold text-foreground">
-              {agent.dealsCompleted}
+              {agent.dealsClosedCount}
             </span>{" "}
             deals
           </div>
