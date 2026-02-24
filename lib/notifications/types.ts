@@ -14,6 +14,10 @@ export enum EmailTemplateId {
 
   // Authentication
   PASSWORD_RESET = "password-reset",
+
+  // AI Conversion Machine
+  NEW_PROPERTY_MATCH = "new-property-match",
+  NEW_INQUIRY_AGENT = "new-inquiry-agent",
 }
 
 /**
@@ -42,6 +46,32 @@ export type EmailTemplateData = {
     firstName: string;
     resetUrl: string;
     expiresInMinutes: number;
+  };
+
+  [EmailTemplateId.NEW_PROPERTY_MATCH]: {
+    alertName: string;
+    userName: string;
+    property: {
+      title: string;
+      city: string;
+      propertyType: string;
+      price: string;
+      slug: string;
+      imageUrl?: string;
+    };
+    matchedCriteria: string[];
+    propertyUrl: string;
+    editAlertsUrl: string;
+  };
+
+  [EmailTemplateId.NEW_INQUIRY_AGENT]: {
+    agentName: string;
+    propertyTitle: string;
+    inquiryName: string;
+    inquiryEmail: string;
+    inquiryPhone: string | null;
+    source: string;
+    dashboardUrl: string;
   };
 };
 

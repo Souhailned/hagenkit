@@ -32,9 +32,14 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     "analytics:own",
     // AI
     "ai:unlimited",
+    "ai:listing-package",
+    "ai:inpaint",
     // Export
     "export:all",
     "export:own",
+    // Projects
+    "projects:create",
+    "projects:manage",
   ],
   agent: [
     // Properties
@@ -51,11 +56,15 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     // AI
     "ai:description",
     "ai:visualize",
+    "ai:listing-package",
+    "ai:inpaint",
     // Export
     "export:own",
     // Agency
     "agency:manage",
     "agency:invite-members",
+    // Projects
+    "projects:create",
   ],
   seeker: [
     // Search
@@ -80,35 +89,32 @@ export function getUserPermissions(role: UserRole): string[] {
 }
 
 /**
- * Dashboard sidebar items per role
+ * Column-level edit permissions for EditableDataTable.
+ * Key = "resource:columnId", value = required permission.
  */
-export const ROLE_SIDEBAR_ITEMS: Record<UserRole, { id: string; label: string; href: string }[]> = {
-  admin: [
-    { id: "dashboard", label: "Dashboard", href: "/dashboard" },
-    { id: "users", label: "Gebruikers", href: "/dashboard/admin/users" },
-    { id: "all-properties", label: "Alle panden", href: "/dashboard/admin/properties" },
-    { id: "moderation", label: "Moderatie", href: "/dashboard/admin/moderation" },
-    { id: "analytics", label: "Platform Analytics", href: "/dashboard/admin/analytics" },
-    { id: "panden", label: "Mijn panden", href: "/dashboard/panden" },
-    { id: "leads", label: "Leads", href: "/dashboard/leads" },
-    { id: "settings", label: "Instellingen", href: "/dashboard/instellingen" },
-  ],
-  agent: [
-    { id: "dashboard", label: "Dashboard", href: "/dashboard" },
-    { id: "panden", label: "Mijn panden", href: "/dashboard/panden" },
-    { id: "panden-nieuw", label: "Pand toevoegen", href: "/dashboard/panden/nieuw" },
-    { id: "leads", label: "Leads", href: "/dashboard/leads" },
-    { id: "analytics", label: "Analytics", href: "/dashboard/analytics" },
-    { id: "favorieten", label: "Favorieten", href: "/dashboard/favorieten" },
-    { id: "alerts", label: "Zoek alerts", href: "/dashboard/alerts" },
-    { id: "profiel", label: "Profiel", href: "/dashboard/profiel" },
-    { id: "instellingen", label: "Instellingen", href: "/dashboard/instellingen" },
-  ],
-  seeker: [
-    { id: "dashboard", label: "Dashboard", href: "/dashboard" },
-    { id: "favorieten", label: "Favorieten", href: "/dashboard/favorieten" },
-    { id: "alerts", label: "Zoek alerts", href: "/dashboard/alerts" },
-    { id: "profiel", label: "Profiel", href: "/dashboard/profiel" },
-    { id: "instellingen", label: "Instellingen", href: "/dashboard/instellingen" },
-  ],
+export const TABLE_COLUMN_PERMISSIONS: Record<string, string> = {
+  // Admin Users table
+  "admin-users:role": "users:change-role",
+  "admin-users:status": "users:manage",
+  "admin-users:phone": "users:manage",
+  // Admin Workspaces table
+  "admin-workspaces:name": "platform:manage",
+  "admin-workspaces:slug": "platform:manage",
+  // Admin Agencies table
+  "admin-agencies:plan": "platform:manage",
+  "admin-agencies:verified": "platform:manage",
 };
+
+/**
+ * Check if a role can edit a specific column in a resource table.
+ */
+export function canEditColumn(
+  role: UserRole,
+  resource: string,
+  columnId: string
+): boolean {
+  const key = `${resource}:${columnId}`;
+  const requiredPermission = TABLE_COLUMN_PERMISSIONS[key];
+  if (!requiredPermission) return false;
+  return hasPermission(role, requiredPermission);
+}

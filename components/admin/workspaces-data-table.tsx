@@ -2,7 +2,12 @@
 
 import * as React from "react";
 import { type ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/data-table/data-table";
+import { EditableDataTable } from "@/components/data-table/editable";
+import { updateWorkspace } from "@/app/actions/admin/workspaces";
+import { useRouter } from "next/navigation";
+import { usePermissions } from "@/hooks/use-permissions";
+import type { Row } from "@tanstack/react-table";
+import { toast } from "sonner";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { useDataTable } from "@/hooks/use-data-table";
@@ -30,6 +35,8 @@ interface WorkspacesDataTableProps {
 }
 
 export function WorkspacesDataTable({ data, pageCount, total }: WorkspacesDataTableProps) {
+  const router = useRouter();
+  const { canEdit: canEditCol } = usePermissions();
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [deleteAlertOpen, setDeleteAlertOpen] = React.useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = React.useState<AdminWorkspace | null>(null);
@@ -70,6 +77,9 @@ export function WorkspacesDataTable({ data, pageCount, total }: WorkspacesDataTa
           label: "Workspace",
           placeholder: "Search workspaces...",
           variant: "text",
+          editable: {
+            type: "text",
+          },
         },
       },
       {
@@ -92,6 +102,15 @@ export function WorkspacesDataTable({ data, pageCount, total }: WorkspacesDataTa
           label: "Slug",
           placeholder: "Search by slug...",
           variant: "text",
+          editable: {
+            type: "text",
+            validate: (v: unknown) => {
+              if (!/^[a-z0-9-]+$/.test(String(v ?? ""))) {
+                return "Slug must be lowercase with dashes only";
+              }
+              return null;
+            },
+          },
         },
       },
       {
@@ -183,6 +202,26 @@ export function WorkspacesDataTable({ data, pageCount, total }: WorkspacesDataTa
     []
   );
 
+  const canEdit = React.useCallback(
+    (_row: Row<AdminWorkspace>, columnId: string) =>
+      canEditCol("admin-workspaces", columnId),
+    [canEditCol]
+  );
+
+  const handleCellSave = React.useCallback(
+    async ({ row, columnId, value }: { row: any; columnId: string; value: unknown }) => {
+      const result = await updateWorkspace({
+        id: row.original.id,
+        [columnId]: value,
+      });
+      if (!result.success) {
+        throw new Error(result.error || "Failed to update workspace");
+      }
+      router.refresh();
+    },
+    [router]
+  );
+
   const { table } = useDataTable({
     data,
     columns,
@@ -196,9 +235,9 @@ export function WorkspacesDataTable({ data, pageCount, total }: WorkspacesDataTa
 
   return (
     <>
-      <DataTable table={table}>
+      <EditableDataTable table={table} onCellSave={handleCellSave} canEdit={canEdit}>
         <DataTableToolbar table={table} />
-      </DataTable>
+      </EditableDataTable>
 
       {selectedWorkspace && (
         <>

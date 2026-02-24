@@ -1,12 +1,11 @@
 "use server";
 
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types/actions";
 import type { AdminAgency, AdminAgencyDetail, AgencyPlan } from "@/types/admin";
 import { z } from "zod";
+import { requirePermission } from "@/lib/session";
 
 // Validation schemas for agency admin operations
 const updateAgencyPlanSchema = z.object({
@@ -22,33 +21,6 @@ const updateAgencyVerifiedSchema = z.object({
 export type UpdateAgencyPlanInput = z.infer<typeof updateAgencyPlanSchema>;
 export type UpdateAgencyVerifiedInput = z.infer<typeof updateAgencyVerifiedSchema>;
 
-// Helper to check if user is admin
-async function checkAdmin(): Promise<ActionResult<boolean>> {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return { success: false, error: "Unauthorized - Not authenticated" };
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    });
-
-    if (user?.role !== "admin") {
-      return { success: false, error: "Unauthorized - Admin access required" };
-    }
-
-    return { success: true, data: true };
-  } catch (error) {
-    console.error("Error checking admin status:", error);
-    return { success: false, error: "Failed to verify permissions" };
-  }
-}
-
 /**
  * Get paginated agencies with search, sort, and filters
  * Currently uses Workspace model - will be updated when Agency model is added
@@ -62,7 +34,7 @@ export async function getAgencies(params?: {
   verified?: string;
   plan?: string;
 }): Promise<ActionResult<{ agencies: AdminAgency[]; total: number; pageCount: number }>> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("platform:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {
@@ -169,7 +141,7 @@ export async function getAgencies(params?: {
  * Get single agency by ID with detailed information
  */
 export async function getAgencyById(id: string): Promise<ActionResult<AdminAgencyDetail>> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("platform:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {
@@ -257,7 +229,7 @@ export async function getAgencyById(id: string): Promise<ActionResult<AdminAgenc
 export async function updateAgencyVerified(
   input: UpdateAgencyVerifiedInput
 ): Promise<ActionResult<AdminAgency>> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("platform:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {
@@ -335,7 +307,7 @@ export async function updateAgencyVerified(
 export async function updateAgencyPlan(
   input: UpdateAgencyPlanInput
 ): Promise<ActionResult<AdminAgency>> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("platform:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {
@@ -410,7 +382,7 @@ export async function updateAgencyPlan(
  * Get owner user ID for impersonation
  */
 export async function getAgencyOwnerId(agencyId: string): Promise<ActionResult<string>> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("platform:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {

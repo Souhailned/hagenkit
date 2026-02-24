@@ -1,31 +1,18 @@
-import { streamText, tool } from "ai";
+import {
+  streamText,
+  tool,
+  convertToModelMessages,
+  stepCountIs,
+  type UIMessage,
+} from "ai";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { checkRateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
+import { getModel } from "@/lib/ai/model";
 import { NextResponse } from "next/server";
 
-async function getModel(): Promise<{ model: any; supportsTools: boolean }> {
-  // 1. Groq (cloud, fast)
-  if (process.env.GROQ_API_KEY) {
-    const { createGroq } = await import("@ai-sdk/groq");
-    const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
-    return { model: groq("llama-3.3-70b-versatile"), supportsTools: true };
-  }
-  // 2. OpenAI
-  if (process.env.OPENAI_API_KEY) {
-    const { createOpenAI } = await import("@ai-sdk/openai");
-    const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    return { model: openai("gpt-4o-mini"), supportsTools: true };
-  }
-  // 3. Ollama (local, free) via OpenAI-compatible API
-  const { createOpenAI } = await import("@ai-sdk/openai");
-  const ollama = createOpenAI({
-    baseURL: "http://localhost:11434/v1",
-    apiKey: "ollama",
-  });
-  return { model: ollama("llama3.2:3b"), supportsTools: false };
-}
+export const maxDuration = 30;
 
 const systemPrompt = `Je bent de Horecagrond Assistent, een vriendelijke AI die horeca-ondernemers helpt bij het vinden van het perfecte horecapand in Nederland.
 
@@ -129,27 +116,55 @@ const chatTools = {
 };
 
 export async function POST(req: Request) {
-  // Auth + rate limit
-  const session = await auth.api.getSession({ headers: req.headers });
-  const identifier = session?.user?.id || req.headers.get("x-forwarded-for") || "anonymous";
-  const rateLimitResult = await checkRateLimit(identifier, "ai");
-  if (!rateLimitResult.success) {
+  try {
+    // Auth + rate limit
+    const session = await auth.api.getSession({ headers: req.headers });
+    const identifier =
+      session?.user?.id || req.headers.get("x-forwarded-for") || "anonymous";
+    const rateLimitResult = await checkRateLimit(identifier, "ai");
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Try again later." },
+        { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      );
+    }
+
+    const { messages }: { messages?: UIMessage[] } = await req.json();
+    if (!Array.isArray(messages)) {
+      return NextResponse.json(
+        { error: "Invalid messages payload" },
+        { status: 400 }
+      );
+    }
+
+    const modelMessages = await convertToModelMessages(messages);
+    const { model, supportsTools } = await getModel();
+
+    const result = streamText({
+      model,
+      system: systemPrompt,
+      messages: modelMessages,
+      ...(supportsTools
+        ? {
+            tools: chatTools,
+            stopWhen: stepCountIs(5),
+          }
+        : {}),
+    });
+
+    // Use UIMessage stream protocol for compatibility with useChat() hook
+    return result.toUIMessageStreamResponse({
+      onError: () =>
+        "Er ging iets mis tijdens het verwerken van je vraag. Probeer het opnieuw.",
+    });
+  } catch (error) {
+    console.error("[api/chat] Failed to handle chat request:", error);
     return NextResponse.json(
-      { error: "Rate limit exceeded. Try again later." },
-      { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      {
+        error:
+          "Er ging iets mis tijdens het verwerken van je vraag. Probeer het opnieuw.",
+      },
+      { status: 500 }
     );
   }
-
-  const { messages } = await req.json();
-  const { model, supportsTools } = await getModel();
-
-  const result = streamText({
-    model,
-    system: systemPrompt,
-    messages,
-    ...(supportsTools ? { tools: chatTools } : {}),
-  });
-
-  // Use UIMessage stream protocol for compatibility with useChat() hook
-  return result.toUIMessageStreamResponse();
 }

@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import type { ActionResult } from "@/types/actions";
+import { logActivity } from "@/app/actions/project-activity";
 import {
   createWorkstreamSchema,
   updateWorkstreamSchema,
@@ -170,6 +171,15 @@ export async function createWorkstream(
       },
     });
 
+    void logActivity({
+      projectId: validatedData.projectId,
+      actorId: ctx.userId,
+      action: "created",
+      entity: "workstream",
+      entityName: validatedData.name,
+      description: `created workstream "${validatedData.name}"`,
+    });
+
     revalidatePath(`/dashboard/projects/${validatedData.projectId}`);
 
     return { success: true, data: { id: workstream.id } };
@@ -275,6 +285,11 @@ export async function deleteWorkstream(
     }
 
     // Set all tasks in this workstream to workstreamId: null, then delete
+    const wsRecord = await prisma.projectWorkstream.findUnique({
+      where: { id: validatedData.id },
+      select: { name: true },
+    });
+
     await prisma.$transaction([
       prisma.projectTask.updateMany({
         where: { workstreamId: validatedData.id },
@@ -284,6 +299,15 @@ export async function deleteWorkstream(
         where: { id: validatedData.id },
       }),
     ]);
+
+    void logActivity({
+      projectId: workstream.projectId,
+      actorId: ctx.userId,
+      action: "deleted",
+      entity: "workstream",
+      entityName: wsRecord?.name ?? null,
+      description: `deleted workstream "${wsRecord?.name ?? "workstream"}"`,
+    });
 
     revalidatePath(`/dashboard/projects/${workstream.projectId}`);
 

@@ -12,6 +12,10 @@ dist/
 # Generated
 generated/prisma/
 
+# Local databases
+prisma/dev.db
+prisma/dev.db-journal
+
 # Env
 .env
 .env.local

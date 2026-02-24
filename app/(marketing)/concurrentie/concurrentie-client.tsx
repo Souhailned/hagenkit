@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getBuurtAnalysis } from "@/app/actions/buurt-analysis";
-import type { BuurtAnalysis, NearbyPlace } from "@/lib/buurt-intelligence";
+import type { EnhancedBuurtAnalysis } from "@/lib/buurt/types";
+import type { NearbyPlace } from "@/lib/buurt-intelligence";
 import { Search, MapPin, UtensilsCrossed, Store, Train, Building2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -51,7 +52,7 @@ const categoryLabels: Record<string, string> = {
 
 export function ConcurrentieClient() {
   const [query, setQuery] = useState("");
-  const [analysis, setAnalysis] = useState<BuurtAnalysis | null>(null);
+  const [analysis, setAnalysis] = useState<EnhancedBuurtAnalysis | null>(null);
   const [location, setLocation] = useState<string>("");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -70,11 +71,11 @@ export function ConcurrentieClient() {
 
       setLocation(geo.display.split(",").slice(0, 3).join(","));
       const result = await getBuurtAnalysis(geo.lat, geo.lng, 500);
-      if (!result) {
-        setError("Kon geen data ophalen voor deze locatie.");
+      if (!result.success) {
+        setError(result.error || "Kon geen data ophalen voor deze locatie.");
         return;
       }
-      setAnalysis(result);
+      setAnalysis(result.data);
     });
   };
 

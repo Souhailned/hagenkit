@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CheckCircle, Clock, CircleNotch, WarningCircle, DotsThreeVertical, Download, Trash, ArrowsClockwise, Eye } from "@phosphor-icons/react/dist/ssr"
+import { Progress } from "@/components/ui/progress";
 import { getRoomTypes } from "@/lib/prompts";
 import type { Image as ImageType, ImageStatus } from "@/generated/prisma/client";
 
@@ -32,6 +33,7 @@ interface ImageCardProps {
   onEdit?: () => void;
   onVersions?: () => void;
   disabled?: boolean;
+  processingProgress?: { step: string; pct: number };
 }
 
 const statusConfig: Record<
@@ -70,6 +72,7 @@ export function ImageCard({
   onEdit,
   onVersions,
   disabled,
+  processingProgress,
 }: ImageCardProps) {
   const roomTypes = getRoomTypes();
   const metadata = image.metadata as { roomType?: string } | null;
@@ -157,6 +160,19 @@ export function ImageCard({
             </Button>
           )}
         </div>
+
+        {/* Processing progress overlay */}
+        {image.status === "PROCESSING" && processingProgress && (
+          <div className="absolute inset-x-0 bottom-0 p-2">
+            <div className="rounded bg-background/80 p-2 backdrop-blur">
+              <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                <span>{processingProgress.step}</span>
+                <span>{processingProgress.pct}%</span>
+              </div>
+              <Progress value={processingProgress.pct} className="h-1" />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer */}

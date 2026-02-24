@@ -7,6 +7,8 @@ import { welcomeEmailTemplate } from "./templates/welcome-email";
 import { workspaceInvitationTemplate } from "./templates/workspace-invitation";
 import { emailVerificationTemplate } from "./templates/email-verification";
 import { passwordResetTemplate } from "./templates/password-reset";
+import { newPropertyMatchTemplate } from "./templates/new-property-match";
+import { newInquiryAgentTemplate } from "./templates/new-inquiry-agent";
 
 /**
  * Type-safe email template registry
@@ -27,6 +29,8 @@ export const emailTemplates: EmailTemplateRegistry = {
   [EmailTemplateId.WORKSPACE_INVITATION]: workspaceInvitationTemplate,
   [EmailTemplateId.EMAIL_VERIFICATION]: emailVerificationTemplate,
   [EmailTemplateId.PASSWORD_RESET]: passwordResetTemplate,
+  [EmailTemplateId.NEW_PROPERTY_MATCH]: newPropertyMatchTemplate,
+  [EmailTemplateId.NEW_INQUIRY_AGENT]: newInquiryAgentTemplate,
 };
 
 /**

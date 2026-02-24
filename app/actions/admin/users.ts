@@ -13,33 +13,7 @@ import {
 } from "@/lib/validations/user";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types/actions";
-
-// Helper to check if user is admin
-async function checkAdmin(): Promise<ActionResult<boolean>> {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return { success: false, error: "Unauthorized - Not authenticated" };
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    });
-
-    if (user?.role !== "admin") {
-      return { success: false, error: "Unauthorized - Admin access required" };
-    }
-
-    return { success: true, data: true };
-  } catch (error) {
-    console.error("Error checking admin status:", error);
-    return { success: false, error: "Failed to verify permissions" };
-  }
-}
+import { requirePermission } from "@/lib/session";
 
 // Get paginated users with search, sort, and filters
 export async function getUsers(params?: {
@@ -51,7 +25,7 @@ export async function getUsers(params?: {
   role?: string;
   status?: string;
 }): Promise<ActionResult<{ users: any[]; total: number; pageCount: number }>> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("users:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {
@@ -122,7 +96,7 @@ export async function getUsers(params?: {
 
 // Get single user by ID
 export async function getUserById(id: string): Promise<ActionResult<any>> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("users:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {
@@ -169,7 +143,7 @@ export async function getUserById(id: string): Promise<ActionResult<any>> {
 
 // Create a new user
 export async function createUser(input: CreateUserInput): Promise<ActionResult<any>> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("users:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {
@@ -225,7 +199,7 @@ export async function createUser(input: CreateUserInput): Promise<ActionResult<a
 
 // Update a user
 export async function updateUser(input: UpdateUserInput): Promise<ActionResult<any>> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("users:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {
@@ -294,7 +268,7 @@ export async function updateUser(input: UpdateUserInput): Promise<ActionResult<a
 
 // Delete a user
 export async function deleteUser(input: DeleteUserInput): Promise<ActionResult> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("users:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {

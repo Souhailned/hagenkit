@@ -1,0 +1,506 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$meta": {
+    "title": "Horecagrond Dashboard Design Specification",
+    "pages": ["/dashboard/projects", "/dashboard/tasks"],
+    "framework": "Next.js 16 App Router + Tailwind CSS v4 + shadcn/ui",
+    "colorSpace": "OKLCH",
+    "iconLibrary": "@phosphor-icons/react (ssr variant)",
+    "generatedFrom": "Source code analysis"
+  },
+
+  "designLanguage": {
+    "name": "Minimal Productivity",
+    "description": "Clean, data-dense SaaS dashboard. Neutral backgrounds met een blauwe primary accent. Lage visuele ruis — content staat centraal. Geen decoratieve elementen, geen gradients. Subtiele depth via borders en zachte shadows.",
+    "keywords": ["minimal", "clean", "data-dense", "neutral", "blue-accent", "productivity", "professional"]
+  },
+
+  "colorTokens": {
+    "source": "app/globals.css",
+    "colorSpace": "OKLCH",
+    "light": {
+      "background":         "oklch(0.995 0 0)",
+      "foreground":         "oklch(0.145 0 0)",
+      "card":               "oklch(1 0 0)",
+      "cardForeground":     "oklch(0.145 0 0)",
+      "muted":              "oklch(0.97 0 0)",
+      "mutedForeground":    "oklch(0.45 0 0)",
+      "border":             "oklch(0.91 0 0)",
+      "primary":            "oklch(0.43 0.215 254.5)",
+      "primaryForeground":  "oklch(0.985 0 0)",
+      "accent":             "oklch(0.96 0 0)",
+      "accentForeground":   "oklch(0.205 0 0)",
+      "destructive":        "oklch(0.577 0.245 27.325)",
+      "ring":               "oklch(0.43 0.215 254.5)",
+      "sidebar":            "oklch(0.99 0 0)",
+      "sidebarBorder":      "oklch(0.93 0 0)"
+    },
+    "dark": {
+      "background":         "oklch(0.145 0 0)",
+      "foreground":         "oklch(0.985 0 0)",
+      "card":               "oklch(0.145 0 0)",
+      "muted":              "oklch(0.269 0 0)",
+      "mutedForeground":    "oklch(0.708 0 0)",
+      "border":             "oklch(0.269 0 0)",
+      "primary":            "oklch(0.56 0.19 254.5)",
+      "sidebar":            "oklch(0.205 0 0)"
+    },
+    "semanticColors": {
+      "status": {
+        "done":       { "text": "text-emerald-500", "bg": "bg-emerald-100", "dark": "dark:bg-emerald-500/15 dark:text-emerald-400" },
+        "inProgress": { "text": "text-amber-500",   "bg": "bg-amber-100",   "dark": "dark:bg-amber-500/15 dark:text-amber-50" },
+        "todo":       { "text": "text-muted-foreground", "bg": "bg-muted" }
+      },
+      "priority": {
+        "urgent": { "text": "text-red-600",    "bg": "bg-red-50" },
+        "high":   { "text": "text-orange-600", "bg": "bg-orange-50" },
+        "medium": { "text": "text-yellow-600", "bg": "bg-yellow-50" },
+        "low":    { "text": "text-blue-600",   "bg": "bg-blue-50" }
+      },
+      "checkboxChecked": {
+        "bg":     "bg-teal-600",
+        "border": "border-teal-600",
+        "class":  "data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600"
+      }
+    }
+  },
+
+  "typography": {
+    "fontFamily": "Geist Sans via font-sans, Geist Mono via font-mono",
+    "rootFontSize": "16px",
+    "scale": {
+      "pageTitle":      { "class": "text-base font-medium text-foreground",      "size": "16px", "weight": 500 },
+      "sectionTitle":   { "class": "text-sm font-semibold text-foreground",      "size": "14px", "weight": 600 },
+      "cardTitle":      { "class": "text-[15px] font-semibold text-foreground",  "size": "15px", "weight": 600 },
+      "body":           { "class": "text-sm text-foreground",                    "size": "14px", "weight": 400 },
+      "meta":           { "class": "text-xs text-muted-foreground",              "size": "12px", "weight": 400 },
+      "metaBold":       { "class": "text-xs font-medium text-muted-foreground",  "size": "12px", "weight": 500 },
+      "label":          { "class": "text-[11px] font-medium",                    "size": "11px", "weight": 500 },
+      "chip":           { "class": "text-[11px] font-medium",                    "size": "11px", "weight": 500 },
+      "badge":          { "class": "text-[10px]",                                "size": "10px", "weight": 400 }
+    }
+  },
+
+  "spacing": {
+    "source": "Tailwind v4 --spacing variable",
+    "pageWrapperMargin": "mx-2 my-2",
+    "headerPaddingY":    "py-3",
+    "headerPaddingX":    "px-4",
+    "contentPadding":    "p-4",
+    "cardPadding":       "p-4",
+    "itemPaddingX":      "px-3",
+    "itemPaddingY":      "py-2",
+    "gapSmall":          "gap-2",
+    "gapMedium":         "gap-3",
+    "gapLarge":          "gap-4",
+    "gridGap":           "gap-4"
+  },
+
+  "borderRadius": {
+    "pageWrapper":  "rounded-lg",
+    "card":         "rounded-2xl",
+    "section":      "rounded-3xl",
+    "button":       "rounded-md",
+    "buttonLg":     "rounded-lg",
+    "pill":         "rounded-full",
+    "chip":         "rounded-full",
+    "avatar":       "rounded-full",
+    "icon":         "rounded-lg",
+    "checkbox":     "rounded-full"
+  },
+
+  "shadows": {
+    "workstream":   "var(--shadow-workstream)",
+    "workstreamValue": "0 0 4px 3px oklch(1 0 0 / 0.69) inset, 0 88px 58.5px 0 oklch(0 0 0 / 0.03)",
+    "cardHover":    "shadow-lg/5",
+    "description":  "Subtle inner glow (white) + very soft outer shadow. Used on group/section cards."
+  },
+
+  "layout": {
+    "dashboardShell": {
+      "structure": "SidebarProvider > AppSidebar + SidebarInset",
+      "inset": "flex flex-1 flex-col overflow-auto"
+    },
+    "pageWrapper": {
+      "class": "flex flex-1 flex-col bg-background mx-2 my-2 border border-border rounded-lg min-w-0 overflow-hidden",
+      "description": "Elke dashboard pagina zit in deze wrapper — border + rounded container, 2-unit margin rondom",
+      "note": "GEEN ContentCard op projects/tasks — die gebruiken eigen wrapper direct"
+    },
+    "header": {
+      "structure": "Two-row sticky header inside the page wrapper",
+      "row1": {
+        "class": "flex items-center justify-between px-4 py-3 border-b border-border",
+        "left":  "SidebarTrigger (h-8 w-8 rounded-lg) + page title (text-base font-medium)",
+        "right": "Action buttons (ghost variant, h-8)"
+      },
+      "row2": {
+        "class": "flex items-center justify-between px-4 pb-3 pt-3",
+        "left":  "FilterPopover + ChipOverflow (active filter chips)",
+        "right": "ViewOptionsPopover + optioneel AskAIDialog"
+      },
+      "wrapperClass": "flex flex-col border-b border-border/40"
+    },
+    "content": {
+      "scrollArea": "flex-1 min-h-0 overflow-y-auto px-4 py-4",
+      "gridProjects": "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+    }
+  },
+
+  "components": {
+
+    "sidebarTrigger": {
+      "class": "h-8 w-8 rounded-lg hover:bg-accent text-muted-foreground",
+      "description": "Hamburger icon om sidebar te togglen. Altijd links in header row 1."
+    },
+
+    "projectCard": {
+      "file": "components/dashboard/project-card.tsx",
+      "variant": "list (default) | board",
+      "class": "rounded-2xl border border-border bg-background hover:shadow-lg/5 transition-shadow cursor-pointer",
+      "innerPadding": "p-4",
+      "structure": {
+        "topRow":    "Status pill (rounded-full border) + optioneel actions",
+        "titleArea": "text-[15px] font-semibold + subtitle text-sm text-muted-foreground truncate",
+        "metaRow":   "CalendarBlank icon + due date + PriorityBadge inline",
+        "divider":   "border-t border-border/60 mt-4",
+        "bottomRow": "ProjectProgress (circular progress) + Avatar size-6"
+      },
+      "statusPill": {
+        "class": "flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
+        "dot": "inline-block size-1.5 rounded-full"
+      },
+      "hover": "shadow-lg/5 transition-shadow",
+      "interaction": "role=button tabIndex=0, keyboard Enter/Space navigates to detail"
+    },
+
+    "taskRow": {
+      "file": "components/dashboard/tasks/task-row.tsx",
+      "class": "flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-muted/60 group",
+      "structure": {
+        "checkbox":  "rounded-full, teal-600 when checked",
+        "title":     "flex-1 truncate, line-through + text-muted-foreground when done",
+        "metaRight": "flex items-center gap-3 text-xs shrink-0 ml-2",
+        "status":    "font-medium colored text (emerald/amber/muted)",
+        "startDate": "text-muted-foreground hidden sm:inline",
+        "dueDate":   "text-muted-foreground hidden sm:inline",
+        "priority":  "rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground",
+        "tag":       "Badge variant=outline text-[11px]",
+        "avatar":    "size-6",
+        "menu":      "size-7 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+      },
+      "hoverReveal": "Three-dot menu (DotsThreeVertical) appears on group hover via opacity-0 group-hover:opacity-100"
+    },
+
+    "taskBoardCard": {
+      "file": "components/dashboard/tasks/task-board-card.tsx",
+      "class": "group relative rounded-2xl border border-border bg-card p-4 hover:shadow-lg/5 transition-shadow cursor-grab active:cursor-grabbing",
+      "dragging": "ring-2 ring-primary shadow-lg scale-[0.98]",
+      "done": "opacity-70",
+      "structure": {
+        "topRow":    "project name (text-xs text-muted-foreground truncate) + avatar size-6",
+        "titleRow":  "checkbox (rounded-full teal) + text-sm font-medium line-clamp-2 mt-3",
+        "chips":     "bg-background border border-border rounded-md px-2 py-1 flex items-center gap-1 text-xs text-muted-foreground"
+      },
+      "chipTypes": ["project (FolderSimple icon)", "dueDate (CalendarBlank icon)", "tag (Tag icon)"]
+    },
+
+    "taskProjectSection": {
+      "file": "components/dashboard/tasks/task-project-section.tsx",
+      "class": "max-w-6xl mx-auto rounded-3xl border border-border bg-muted shadow-[var(--shadow-workstream)] p-3 space-y-2",
+      "description": "Groepeert taken per project. Groter radius (rounded-3xl), muted achtergrond, workstream shadow.",
+      "header": {
+        "class": "flex items-center justify-between gap-4 px-0 py-1",
+        "icon":  "size-10 rounded-xl border border-border bg-background (FolderSimple icon, size-5)",
+        "title": "text-sm font-semibold",
+        "meta":  "text-xs text-muted-foreground — priority + status pill rounded-full bg-muted px-2 py-0.5",
+        "right": "done/total count + ProgressCircle size-18 + Plus button size-7 rounded-full"
+      },
+      "taskList": {
+        "class": "space-y-1 px-2 py-3 bg-background rounded-2xl border border-border",
+        "description": "Witte inner card die de task rijen bevat"
+      }
+    },
+
+    "dayColumn": {
+      "file": "components/dashboard/tasks/task-week-board.tsx",
+      "class": "flex flex-col flex-shrink-0 w-80 rounded-2xl border border-muted bg-muted min-h-[400px] transition-colors",
+      "today": "border-primary",
+      "dragOver": "border-primary/80 bg-primary/5",
+      "header": {
+        "class": "p-3 flex items-center justify-between",
+        "dayLabel": "text-sm font-medium, text-primary als today",
+        "count": "text-sm text-muted-foreground"
+      },
+      "tasksContainer": "flex-1 p-3 pt-0 space-y-3 overflow-auto"
+    },
+
+    "checkbox": {
+      "class": "rounded-full border-border bg-background",
+      "checked": "data-[state=checked]:border-teal-600 data-[state=checked]:bg-teal-600",
+      "cursor": "hover:cursor-pointer",
+      "note": "Altijd rounded-full (cirkel) op task items — dit onderscheidt het van form checkboxes"
+    },
+
+    "avatar": {
+      "sizes": {
+        "xs": "size-6 (24px) — in task rows en project cards",
+        "sm": "size-7 (28px) — in board cards",
+        "md": "size-8 (32px) — in activity feed"
+      },
+      "fallback": "text-[10px] (kleinste tekst)",
+      "border": "border border-border op sommige plaatsen"
+    },
+
+    "filterChip": {
+      "description": "Actieve filters getoond als kleine pills na FilterPopover",
+      "component": "ChipOverflow",
+      "maxVisible": 6,
+      "overflow": "wordt samengevouwen met +N badge"
+    },
+
+    "progressCircle": {
+      "component": "ProgressCircle",
+      "sizes": {
+        "taskSection": "size=18, strokeWidth=default",
+        "workstream":  "size=22, strokeWidth=2.5"
+      },
+      "description": "Circulaire voortgangsring, gebruikt naast done/total count"
+    },
+
+    "viewOptionsPopover": {
+      "allowedViewTypes": {
+        "projects": ["list", "board", "timeline"],
+        "tasks":    ["list", "board"]
+      },
+      "description": "Toggle voor view mode (list/board/timeline), properties zichtbaarheid, sorteer opties"
+    },
+
+    "emptyState": {
+      "projects": {
+        "class": "flex h-60 flex-col items-center justify-center text-center",
+        "icon":  "FolderOpen in p-3 bg-muted rounded-md",
+        "title": "text-lg font-semibold",
+        "description": "text-sm text-muted-foreground",
+        "cta": "rounded-lg border border-border bg-background px-4 py-2 text-sm hover:bg-accent transition-colors"
+      },
+      "tasks": {
+        "class": "flex-1 flex flex-col items-center justify-center py-16 text-center",
+        "description": "text-sm text-muted-foreground mb-4",
+        "cta": "Button size=sm primary"
+      }
+    },
+
+    "loadingSkeleton": {
+      "projects": "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 — Skeleton h-40 rounded-2xl per slot",
+      "tasks":    "space-y-6 p-4 — Skeleton h-5 w-48 als groepheader + h-10 w-full per taak"
+    },
+
+    "button": {
+      "primaryAction": {
+        "variant": "ghost",
+        "size":    "sm",
+        "class":   "flex items-center gap-1.5",
+        "icon":    "Plus h-4 w-4 weight=bold (Phosphor)"
+      },
+      "iconButton": {
+        "variant": "ghost",
+        "size":    "icon",
+        "class":   "h-8 w-8 rounded-lg"
+      },
+      "weekNavigation": {
+        "variant": "outline",
+        "size":    "sm",
+        "class":   "h-8 w-8 p-0 (for arrows) | h-8 (for Today)"
+      }
+    },
+
+    "dropdownMenu": {
+      "trigger": "DotsThreeVertical (Phosphor, weight=regular) of DotsThree (weight=bold) in ghost icon button",
+      "items": {
+        "edit":   "PencilSimple icon + Edit",
+        "delete": "Trash icon + Delete, variant=destructive"
+      },
+      "align": "end"
+    },
+
+    "weekNavigation": {
+      "layout": "flex items-center justify-between px-4 py-3 border-b border-border/40",
+      "controls": "CaretLeft + Today button + CaretRight (outline sm buttons)",
+      "label": "text-sm font-medium — 'MMM d – MMM d, yyyy  Week N'"
+    }
+  },
+
+  "patterns": {
+
+    "pageShell": {
+      "description": "Standaard wrapper voor projects + tasks pagina's",
+      "jsx": "<div className=\"flex flex-1 flex-col bg-background mx-2 my-2 border border-border rounded-lg min-w-0 overflow-hidden\">",
+      "children": ["<header> (twee rijen)", "<main content>"]
+    },
+
+    "twoRowHeader": {
+      "description": "Consistent patroon op beide pagina's",
+      "row1": "SidebarTrigger + Paginatitel | Actie-knoppen",
+      "row2": "FilterPopover + ChipOverflow | ViewOptionsPopover",
+      "divider": "border-b border-border tussen rij 1 en rij 2, border-b border-border/40 onder rij 2"
+    },
+
+    "groupCard": {
+      "description": "Sectie die een groep items bevat (project in Tasks, workstream in Workstream tab)",
+      "outer": "rounded-3xl border border-border bg-muted shadow-[var(--shadow-workstream)] p-3",
+      "inner": "bg-background rounded-2xl border border-border — bevat de eigenlijke rijen",
+      "contrast": "Muted outer → white inner = visuele nesting zonder harde schaduwen"
+    },
+
+    "hoverReveal": {
+      "description": "Acties (menu, delete) worden zichtbaar bij hover",
+      "implementation": "opacity-0 group-hover:opacity-100 transition-opacity",
+      "trigger": "className='group' op de parent rij/kaart"
+    },
+
+    "inlineEditing": {
+      "description": "Tekst bewerken zonder modal — input vervangt de tekst",
+      "inputStyle": "bg-transparent border-none outline-none text-sm",
+      "savePattern": "Enter = opslaan, Escape = annuleren, onBlur = opslaan als niet leeg",
+      "examples": ["Workstream naam rename (double-click)", "Scope items toevoegen (inline bullet input)"]
+    },
+
+    "ghostInlineAdd": {
+      "description": "Item toevoegen aan lijst — ziet eruit als een extra bullet punt",
+      "trigger": "text-xs text-muted-foreground/40 hover:text-muted-foreground + Plus icon",
+      "inputRow": "flex items-start gap-2 — bullet (•) + transparent input + Save link",
+      "saveButton": "text-xs font-medium text-primary, alleen zichtbaar als er content is",
+      "dismiss": "onBlur als leeg, Escape"
+    },
+
+    "dragAndDrop": {
+      "library": "@dnd-kit/core + @dnd-kit/sortable",
+      "cursor": "cursor-grab active:cursor-grabbing",
+      "draggingCard": "ring-2 ring-primary shadow-lg scale-[0.98]",
+      "dropzone": "border-primary/80 bg-primary/5 transition-colors",
+      "overlay": "DragOverlay met dezelfde kaart component"
+    },
+
+    "optimisticUpdates": {
+      "description": "UI update direct, daarna server actie — rollback bij fout",
+      "pattern": "setGroups(prev => prev.map(...)) → startTransition(async () => serverAction())",
+      "errorHandling": "toast.error + fetchTasks() voor refresh"
+    },
+
+    "responsiveHide": {
+      "description": "Meta informatie verbergen op kleine schermen",
+      "class": "hidden sm:inline",
+      "applies": ["startDate", "dueDate", "priority pill", "status badge in task rows"]
+    }
+  },
+
+  "interactions": {
+    "navigation": "router.push() — project kaart is klikbaar als geheel (role=button)",
+    "toast":      "sonner — toast.success / toast.error",
+    "transitions": {
+      "opacity":  "transition-opacity (hover reveal)",
+      "shadow":   "transition-shadow (kaart hover)",
+      "colors":   "transition-colors (drag over, button hover)"
+    },
+    "motionLibrary": "motion/react (AnimatePresence voor meta panel slide-in)"
+  },
+
+  "iconography": {
+    "library": "@phosphor-icons/react/dist/ssr",
+    "sizes": {
+      "ui":      "h-4 w-4 (standaard)",
+      "small":   "h-3 w-3 (meta, chips)",
+      "medium":  "h-5 w-5 (section header icons)",
+      "large":   "h-6 w-6 (empty state, avatar fallback)"
+    },
+    "weights": {
+      "default":  "regular (niet gespecificeerd = default)",
+      "emphasis": "bold (action icons zoals Plus, Folder)",
+      "decoratief": "duotone (SquareHalf meta panel toggle)"
+    },
+    "usedIcons": {
+      "projects": ["Folder", "FolderOpen", "CalendarBlank", "Flag", "User", "Plus", "Link"],
+      "tasks":    ["FolderSimple", "ChartBar", "Plus", "CaretLeft", "CaretRight", "CalendarBlank", "Tag", "DotsThree", "DotsThreeVertical", "PencilSimple", "Trash"],
+      "shared":   ["SidebarTrigger (lucide)"]
+    }
+  },
+
+  "pages": {
+
+    "projects": {
+      "route": "/dashboard/projects",
+      "component": "ProjectsContent",
+      "views": {
+        "list": {
+          "description": "Grid van ProjectCards",
+          "grid": "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4",
+          "addCard": "rounded-2xl border border-dashed border-border/60 — hover: border-solid border-border/80"
+        },
+        "board": {
+          "description": "Kanban per status kolom, ProjectCard variant=board (DnD)"
+        },
+        "timeline": {
+          "description": "Gantt-achtige tijdlijn view"
+        }
+      },
+      "header": {
+        "title": "Projects",
+        "actions": ["LinkIcon (ghost icon)", "Add Project (ghost sm + Plus icon)"],
+        "filters": "FilterPopover met counts per status/priority/tag/member",
+        "viewOptions": "ViewOptionsPopover + AskAIDialog"
+      },
+      "wizard": "ProjectWizard — full-screen overlay, meerdere stappen"
+    },
+
+    "tasks": {
+      "route": "/dashboard/tasks",
+      "component": "MyTasksContent",
+      "views": {
+        "list": {
+          "description": "Taken gegroepeerd per project in TaskProjectSection cards",
+          "scrollArea": "flex-1 min-h-0 space-y-4 overflow-y-auto px-4 py-4",
+          "groupSpacing": "space-y-4"
+        },
+        "board": {
+          "description": "Week-kalender board — een kolom per dag (w-80 per kolom)",
+          "weekNav":    "CaretLeft + Today + CaretRight bovenin",
+          "columns":    "7 kolommen (ma-zo), scroll-x als nodig",
+          "highlight":  "Today kolom heeft border-primary"
+        }
+      },
+      "header": {
+        "title": "Tasks",
+        "actions": ["New Task (ghost sm + Plus icon)"],
+        "filters": "FilterPopover + ChipOverflow",
+        "viewOptions": "ViewOptionsPopover (list + board only)"
+      },
+      "dialog": "TaskCreateDialog — shadcn Dialog, edit + create in één"
+    }
+  },
+
+  "doAndDont": {
+    "do": [
+      "Gebruik mx-2 my-2 border border-border rounded-lg als page wrapper",
+      "Gebruik altijd de twee-rijen header structuur",
+      "SidebarTrigger altijd links in header rij 1",
+      "Checkbox op tasks = rounded-full, teal-600 bij checked",
+      "Phosphor icons via @phosphor-icons/react/dist/ssr",
+      "Hover-reveal acties via opacity-0 group-hover:opacity-100",
+      "Nested cards: rounded-3xl muted outer → rounded-2xl white inner",
+      "shadow-[var(--shadow-workstream)] op section cards",
+      "Ghost inline add — GEEN shadcn Input/Button voor simpele lijst-toevoeging",
+      "CSS variabelen voor kleuren — nooit hardcoded hex/rgb",
+      "text-muted-foreground voor alle secondary/meta tekst"
+    ],
+    "dont": [
+      "GEEN ContentCard op projects/tasks — die gebruiken eigen wrapper",
+      "GEEN extra margin/padding wrapper inside de page wrapper",
+      "GEEN custom fonts op body",
+      "GEEN hardcoded kleuren (bg-white, text-black, #hex)",
+      "GEEN grote achtergrond gradients of decoratieve elementen",
+      "GEEN volledige shadcn Input component voor inline list editing",
+      "GEEN PageContainer (deprecated — vervangen door ContentCard of page wrapper)",
+      "GEEN lucide-react icons waar Phosphor beschikbaar is (behalve SidebarTrigger)"
+    ]
+  }
+}

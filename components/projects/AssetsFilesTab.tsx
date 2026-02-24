@@ -183,7 +183,7 @@ export function AssetsFilesTab({ projectId, files }: AssetsFilesTabProps) {
   const [newSize, setNewSize] = useState("")
   const [newType, setNewType] = useState<FileData["type"]>("OTHER")
 
-  const recentFiles = files.slice(0, 3)
+  const recentFiles = files.slice(0, 6)
 
   const handleCreate = async () => {
     if (!newName.trim() || !newUrl.trim()) return
@@ -308,7 +308,7 @@ export function AssetsFilesTab({ projectId, files }: AssetsFilesTabProps) {
       ) : (
         <>
           {/* Recent Files Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3">
             {recentFiles.map((file) => (
               <RecentFileCard
                 key={file.id}

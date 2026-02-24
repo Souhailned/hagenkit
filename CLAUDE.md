@@ -41,7 +41,55 @@ Actions use Zod schemas from `lib/validations/` for input validation.
 - Client: `lib/auth-client.ts` - React hooks (`useSession`, `signIn`, `signOut`)
 - First user automatically gets `admin` role via database hook
 - Workspace roles: `OWNER | ADMIN | MEMBER | VIEWER`
-- User roles: `user | admin` (app-wide permissions)
+- User roles: `admin | agent | seeker` (app-wide, defined in `lib/rbac.ts`)
+
+### RBAC Permission System
+Single source of truth: **`lib/rbac.ts`**
+
+**Key files:**
+- `lib/rbac.ts` — Permission matrix (`ROLE_PERMISSIONS`), column permissions (`TABLE_COLUMN_PERMISSIONS`), helpers
+- `lib/session.ts` — Server-side guards: `requirePermission()`, `requirePagePermission()`, `getSessionWithRole()`
+- `hooks/use-permissions.ts` — Client-side hook: `usePermissions()` → `{ can, canEdit, isAdmin, role }`
+
+**Server actions** — use `requirePermission("permission:string")`:
+```typescript
+import { requirePermission } from "@/lib/session";
+
+export async function myAction() {
+  const authCheck = await requirePermission("users:manage");
+  if (!authCheck.success) return { success: false, error: authCheck.error };
+  // authCheck.data has { userId, role }
+}
+```
+
+**Server pages** — use `requirePagePermission()` (auto-redirects):
+```typescript
+import { requirePagePermission } from "@/lib/session";
+
+export default async function AdminPage() {
+  const { userId, role } = await requirePagePermission("users:manage");
+}
+```
+
+**Client components** — use `usePermissions()`:
+```typescript
+import { usePermissions } from "@/hooks/use-permissions";
+
+const { can, canEdit, isAdmin, role, userId } = usePermissions();
+if (can("users:manage")) { /* show admin UI */ }
+```
+
+**EditableDataTable** — supports per-cell `canEdit` callback:
+```typescript
+const canEdit = (row, columnId) => canEditCol("admin-users", columnId);
+<EditableDataTable table={table} onCellSave={save} canEdit={canEdit} />
+```
+
+**Adding permissions to a new table:**
+1. Add entries to `TABLE_COLUMN_PERMISSIONS` in `lib/rbac.ts`
+2. Page: `await requirePagePermission("the:permission")`
+3. Table: `usePermissions()` → build `canEdit` callback
+4. Action: `await requirePermission("the:permission")`
 
 ### Database (Prisma + PostgreSQL)
 - Schema: `prisma/schema.prisma`
@@ -206,6 +254,7 @@ New design labels → existing routes:
 | Next.js routing, SSR, app router | `nextjs16-skills` |
 | Project structuur, folders | `nextjs-saas-structure` |
 | Authenticatie, sessies, rollen | `better-auth-best-practices` |
+| Permissions, RBAC, access control | `rbac-permissions` |
 | API endpoints, server actions | `backend-development:api-design-principles` |
 | Architectuur, refactoring | `backend-development:architecture-patterns` |
 | Prisma schema, database changes | `prisma-orm-v7-skills` |

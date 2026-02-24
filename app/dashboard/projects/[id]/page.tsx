@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import { getProject } from "@/app/actions/projects"
+import { getProjectActivity } from "@/app/actions/project-activity"
 import {
   ProjectDetailContent,
   type WorkstreamData,
@@ -35,6 +36,9 @@ function adaptProjectToLegacy(db: DBProject): {
   files: FileData[]
   allTasks: TaskData[]
   members: MemberData[]
+  scopeItems: Array<{ id: string; content: string; type: "IN_SCOPE" | "OUT_OF_SCOPE" | "EXPECTED_OUTCOME" }>
+  dbFeatures: Array<{ id: string; content: string; priority: "P0" | "P1" | "P2" }>
+  deliverables: Array<{ id: string; title: string; completed: boolean; dueDate: Date | null }>
 } {
   const statusMap: Record<string, Project["status"]> = {
     ACTIVE: "active",
@@ -217,7 +221,27 @@ function adaptProjectToLegacy(db: DBProject): {
     image: m.user.image,
   }))
 
-  return { project, workstreams, notes, files, allTasks, members }
+  // Typed scope/features/deliverables with IDs (for CRUD in child components)
+  const scopeItems = db.scopeItems.map((s) => ({
+    id: s.id,
+    content: s.content,
+    type: s.type as "IN_SCOPE" | "OUT_OF_SCOPE" | "EXPECTED_OUTCOME",
+  }))
+
+  const dbFeatures = db.features.map((f) => ({
+    id: f.id,
+    content: f.content,
+    priority: f.priority as "P0" | "P1" | "P2",
+  }))
+
+  const deliverables = db.deliverables.map((d) => ({
+    id: d.id,
+    title: d.title,
+    completed: d.completed,
+    dueDate: d.dueDate,
+  }))
+
+  return { project, workstreams, notes, files, allTasks, members, scopeItems, dbFeatures, deliverables }
 }
 
 // ---------------------------------------------------------------------------
@@ -232,8 +256,11 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
     notFound()
   }
 
-  const { project, workstreams, notes, files, allTasks, members } =
+  const { project, workstreams, notes, files, allTasks, members, scopeItems, dbFeatures, deliverables } =
     adaptProjectToLegacy(result.data)
+
+  const activityResult = await getProjectActivity(id)
+  const activities = activityResult.success ? activityResult.data : []
 
   return (
     <Suspense fallback={<ProjectDetailSkeleton />}>
@@ -245,6 +272,10 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         files={files}
         allTasks={allTasks}
         members={members}
+        scopeItems={scopeItems}
+        dbFeatures={dbFeatures}
+        deliverables={deliverables}
+        activities={activities}
       />
     </Suspense>
   )

@@ -54,6 +54,7 @@ import {
   ChartLine,
   Kanban,
   CheckSquare,
+  Sparkle,
 } from "@phosphor-icons/react/dist/ssr"
 import { signOut } from "@/lib/auth-client"
 import { toast } from "sonner"
@@ -89,6 +90,7 @@ const adminNavItems = [
   { id: "properties", label: "Panden Beheer", href: "/dashboard/admin/properties", icon: Building },
   { id: "agencies", label: "Kantoren", href: "/dashboard/admin/agencies", icon: Buildings },
   { id: "analytics", label: "Platform Analytics", href: "/dashboard/admin/analytics", icon: ChartLine },
+  { id: "ai-costs", label: "AI Kosten", href: "/dashboard/admin/ai-costs", icon: Sparkle },
   { id: "impersonate", label: "Impersoneren", href: "/dashboard/admin/impersonate", icon: UserCircle },
   { id: "audit-logs", label: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: FileText },
   { id: "settings", label: "Systeem Instellingen", href: "/dashboard/admin/settings", icon: GearSix },

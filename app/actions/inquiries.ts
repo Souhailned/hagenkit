@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { createInquirySchema } from "@/lib/validations/inquiry";
 import type { ActionResult } from "@/types/actions";
 import type { z } from "zod";
@@ -13,6 +14,20 @@ export async function createInquiry(
   input: CreateInquiryInput
 ): Promise<ActionResult<{ inquiryId: string }>> {
   try {
+    // 0. Rate limit check (api tier: 60/min)
+    const headersList = await headers();
+    const ip =
+      headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      headersList.get("x-real-ip") ||
+      "anonymous";
+    const rateLimitResult = await checkRateLimit(`inquiry:${ip}`, "api");
+    if (!rateLimitResult.success) {
+      return {
+        success: false,
+        error: "Te veel aanvragen. Probeer het over een minuut opnieuw.",
+      };
+    }
+
     // 1. Validate input with Zod (email format, min lengths, etc.)
     const validated = createInquirySchema.safeParse(input);
     if (!validated.success) {
@@ -31,28 +46,75 @@ export async function createInquiry(
     }
 
     // 3. Get user session (optional - can submit without login)
-    const session = await auth.api.getSession({ headers: await headers() });
+    const session = await auth.api.getSession({ headers: headersList });
 
-    // 4. Create inquiry
-    const inquiry = await prisma.propertyInquiry.create({
-      data: {
-        propertyId: data.propertyId,
-        seekerId: session?.user?.id || null,
-        name: data.name,
-        email: data.email,
-        phone: data.phone || null,
-        message: data.message,
-        intendedUse: data.intendedUse || null,
-        source: "WEBSITE",
-        status: "NEW",
-      },
-    });
+    // 4. Create inquiry + increment count atomically
+    const [inquiry] = await prisma.$transaction([
+      prisma.propertyInquiry.create({
+        data: {
+          propertyId: data.propertyId,
+          seekerId: session?.user?.id || null,
+          name: data.name,
+          email: data.email,
+          phone: data.phone || null,
+          message: data.message,
+          intendedUse: data.intendedUse || null,
+          source:
+            (data.source as import("@/generated/prisma/client").InquirySource) ||
+            "WEBSITE",
+          utmSource: data.utmSource || null,
+          utmMedium: data.utmMedium || null,
+          utmCampaign: data.utmCampaign || null,
+          referrer: data.referrer || null,
+          status: "NEW",
+        },
+      }),
+      prisma.property.update({
+        where: { id: data.propertyId },
+        data: { inquiryCount: { increment: 1 } },
+      }),
+    ]);
 
-    // 5. Update inquiry count on property
-    await prisma.property.update({
-      where: { id: data.propertyId },
-      data: { inquiryCount: { increment: 1 } },
-    });
+    // 5. Notify the agent by email (fire and forget)
+    try {
+      const agency = await prisma.agency.findUnique({
+        where: { id: property.agencyId },
+        include: {
+          members: {
+            where: { role: { in: ["OWNER", "ADMIN"] } },
+            take: 1,
+            include: { user: { select: { name: true, email: true } } },
+          },
+        },
+      });
+
+      if (agency?.members?.[0]?.user?.email) {
+        const { sendTemplateEmail } = await import(
+          "@/lib/notifications/email-service"
+        );
+        const { EmailTemplateId } = await import(
+          "@/lib/notifications/types"
+        );
+        const appUrl =
+          process.env.NEXT_PUBLIC_APP_URL || "https://horecagrond.nl";
+
+        await sendTemplateEmail(
+          EmailTemplateId.NEW_INQUIRY_AGENT,
+          {
+            agentName: agency.members[0].user.name || "Makelaar",
+            propertyTitle: property.title,
+            inquiryName: inquiry.name,
+            inquiryEmail: inquiry.email,
+            inquiryPhone: inquiry.phone,
+            source: data.source || "WEBSITE",
+            dashboardUrl: `${appUrl}/dashboard/leads`,
+          },
+          { to: agency.members[0].user.email }
+        );
+      }
+    } catch (e) {
+      console.error("[createInquiry] Failed to notify agent:", e);
+    }
 
     return { success: true, data: { inquiryId: inquiry.id } };
   } catch (error) {

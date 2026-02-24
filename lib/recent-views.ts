@@ -8,6 +8,7 @@ export interface RecentView {
   city: string;
   image: string;
   price: number | null;
+  priceType?: "RENT" | "SALE" | "RENT_OR_SALE";
   viewedAt: number;
 }
 

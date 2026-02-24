@@ -15,33 +15,63 @@ export const metadata: Metadata = {
 const features = [
   {
     icon: Building2,
+    eyebrow: "Presentatie",
     title: "Professionele listings",
     description: "Presenteer je panden met foto galerij, plattegrond, buurtinformatie en alle details die ondernemers willen zien.",
+    metric: "HD media + plattegrond",
+    points: ["Meer context per listing", "Consistente premium uitstraling"],
+    layout: "lg:col-span-4",
+    surface: "from-primary/15 via-primary/5 to-transparent",
   },
   {
     icon: Sparkles,
+    eyebrow: "AI assistent",
     title: "Slimme beschrijvingen",
     description: "Genereer automatisch professionele pandbeschrijvingen. Kies je schrijfstijl en pas aan naar wens.",
+    metric: "Van idee naar tekst in seconden",
+    points: ["Tone-of-voice per doelgroep", "Altijd bewerkbaar"],
+    layout: "lg:col-span-2",
+    surface: "from-sky-500/15 via-sky-500/5 to-transparent",
   },
   {
     icon: BarChart3,
+    eyebrow: "Inzicht",
     title: "Analytics dashboard",
     description: "Zie precies hoeveel views, aanvragen en favorieten je panden krijgen. Optimaliseer je strategie.",
+    metric: "Realtime performance",
+    points: ["Views, leads en favorieten", "Kansen spotten per stad"],
+    layout: "lg:col-span-2",
+    surface: "from-violet-500/15 via-violet-500/5 to-transparent",
   },
   {
     icon: Users,
+    eyebrow: "Sales",
     title: "Leads management",
     description: "Alle aanvragen overzichtelijk in je inbox. Contactgegevens, berichten en status per lead.",
+    metric: "Eén overzicht voor je team",
+    points: ["Snelle opvolging", "Minder losse tools"],
+    layout: "lg:col-span-2",
+    surface: "from-emerald-500/15 via-emerald-500/5 to-transparent",
   },
   {
     icon: Zap,
+    eyebrow: "Workflow",
     title: "Snelle publicatie",
     description: "In 4 stappen online. Basisgegevens, locatie, details en beschrijving — klaar in 5 minuten.",
+    metric: "4 stappen · 5 minuten",
+    points: ["Duidelijke invoerflow", "Minder handwerk per pand"],
+    layout: "lg:col-span-2",
+    surface: "from-amber-500/15 via-amber-500/5 to-transparent",
   },
   {
     icon: Shield,
+    eyebrow: "Vertrouwen",
     title: "Betrouwbaar platform",
     description: "Veilige data, GDPR-compliant, en een groeiend netwerk van serieuze horeca-ondernemers.",
+    metric: "Privacy & stabiliteit voorop",
+    points: ["GDPR-compliant", "Gebouwd voor de NL horecamarkt"],
+    layout: "lg:col-span-6",
+    surface: "from-slate-500/15 via-slate-500/5 to-transparent",
   },
 ];
 
@@ -49,6 +79,39 @@ const stats = [
   { value: "100%", label: "Gratis starten" },
   { value: "5 min", label: "Eerste listing online" },
   { value: "24/7", label: "Zichtbaar voor ondernemers" },
+];
+
+const processSteps = [
+  {
+    step: "1",
+    title: "Registreer",
+    desc: "Maak een gratis account aan als makelaar",
+    detail: "Binnen enkele minuten staat je profiel live en kun je direct publiceren.",
+    tag: "2 min",
+    icon: Users,
+    layout: "lg:col-span-2",
+    surface: "from-primary/15 via-primary/5 to-transparent",
+  },
+  {
+    step: "2",
+    title: "Voeg pand toe",
+    desc: "Gebruik onze wizard — in 5 minuten klaar",
+    detail: "Upload media, vul kerngegevens in en laat AI een sterke eerste versie schrijven.",
+    tag: "5 min",
+    icon: Building2,
+    layout: "lg:col-span-4",
+    surface: "from-sky-500/15 via-sky-500/5 to-transparent",
+  },
+  {
+    step: "3",
+    title: "Ontvang leads",
+    desc: "Ondernemers nemen direct contact op",
+    detail: "Volg elke aanvraag op vanuit één inbox en stuur sneller op kwaliteit en conversie.",
+    tag: "24/7",
+    icon: BarChart3,
+    layout: "lg:col-span-6",
+    surface: "from-emerald-500/15 via-emerald-500/5 to-transparent",
+  },
 ];
 
 const testimonials = [
@@ -125,19 +188,58 @@ export default function VoorMakelaarsPage() {
               Krachtige tools om je horecapanden te presenteren en leads te beheren
             </p>
           </div>
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature) => {
+          <div className="grid auto-rows-fr gap-4 sm:grid-cols-2 lg:grid-cols-6">
+            {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
-                <Card key={feature.title} className="border-0 shadow-none bg-muted/30">
-                  <CardContent className="p-8">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                      <Icon className="h-6 w-6 text-primary" />
+                <article
+                  key={feature.title}
+                  className={`group relative overflow-hidden rounded-2xl border border-border/70 bg-card/90 p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-3 ${feature.layout}`}
+                  style={{ animationDelay: `${index * 90}ms` }}
+                >
+                  <div
+                    aria-hidden
+                    className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${feature.surface} opacity-80`}
+                  />
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute -right-14 -top-14 h-36 w-36 rounded-full bg-primary/10 blur-2xl transition-transform duration-500 group-hover:scale-125"
+                  />
+
+                  <div className="relative flex h-full flex-col">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-primary/20 bg-background/80 text-primary">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                        {feature.eyebrow}
+                      </span>
                     </div>
-                    <h3 className="mt-4 text-lg font-semibold">{feature.title}</h3>
-                    <p className="mt-2 text-muted-foreground">{feature.description}</p>
-                  </CardContent>
-                </Card>
+
+                    <h3 className="mt-5 text-xl font-semibold tracking-tight text-foreground">
+                      {feature.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
+                      {feature.description}
+                    </p>
+
+                    <div className="mt-5 rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm font-medium text-foreground/85">
+                      {feature.metric}
+                    </div>
+
+                    <ul className="mt-4 space-y-2 text-sm text-foreground/80">
+                      {feature.points.map((point) => (
+                        <li key={point} className="flex items-start gap-2">
+                          <span
+                            aria-hidden
+                            className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60"
+                          />
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
               );
             })}
           </div>
@@ -145,25 +247,55 @@ export default function VoorMakelaarsPage() {
       </section>
 
       {/* How it works */}
-      <section className="border-y bg-muted/30 py-24">
+      <section className="border-y bg-muted/40 py-24">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold tracking-tight">Zo werkt het</h2>
+            <p className="mt-3 text-lg text-muted-foreground">
+              Een duidelijke flow van onboarding tot concrete aanvragen
+            </p>
           </div>
-          <div className="mx-auto grid max-w-3xl gap-8 sm:grid-cols-3">
-            {[
-              { step: "1", title: "Registreer", desc: "Maak een gratis account aan als makelaar" },
-              { step: "2", title: "Voeg pand toe", desc: "Gebruik onze wizard — in 5 minuten klaar" },
-              { step: "3", title: "Ontvang leads", desc: "Ondernemers nemen direct contact op" },
-            ].map((item) => (
-              <div key={item.step} className="text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground">
-                  {item.step}
-                </div>
-                <h3 className="mt-4 font-semibold text-lg">{item.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{item.desc}</p>
-              </div>
-            ))}
+          <div className="mx-auto grid max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-6">
+            {processSteps.map((item, index) => {
+              const Icon = item.icon;
+              return (
+                <article
+                  key={item.step}
+                  className={`group relative overflow-hidden rounded-2xl border border-border/70 bg-card/90 p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-3 ${item.layout}`}
+                  style={{ animationDelay: `${index * 110}ms` }}
+                >
+                  <div
+                    aria-hidden
+                    className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.surface} opacity-80`}
+                  />
+
+                  <div className="relative flex h-full flex-col">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="inline-flex items-center rounded-full border border-primary/20 bg-background/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+                        Stap {item.step}
+                      </span>
+                      <span className="text-xs font-medium text-muted-foreground">{item.tag}</span>
+                    </div>
+
+                    <div className="mt-5 flex h-11 w-11 items-center justify-center rounded-xl border border-primary/20 bg-background/80 text-primary transition-transform duration-300 group-hover:scale-105">
+                      <Icon className="h-5 w-5" />
+                    </div>
+
+                    <h3 className="mt-4 text-2xl font-semibold tracking-tight">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
+                      {item.desc}
+                    </p>
+
+                    <p className="mt-auto border-t border-border/70 pt-5 text-sm font-medium text-foreground/80">
+                      {item.detail}
+                    </p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          <div className="mx-auto mt-6 max-w-5xl rounded-2xl border border-border/70 bg-card/80 px-4 py-3 text-sm text-muted-foreground">
+            Tip: publiceer eerst je drie sterkste panden voor maximale zichtbaarheid in de eerste week.
           </div>
         </div>
       </section>

@@ -35,11 +35,11 @@ export function ProjectDetailHeader({ id, name, meta, onEditProject }: ProjectDe
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-2xl font-semibold text-foreground leading-tight">{name}</h1>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-none flex items-center gap-1">
+            <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-50 border-none flex items-center gap-1">
               <Star className="h-3 w-3" />
               Active
             </Badge>
-            <Badge variant="outline" className="flex items-center gap-1 text-orange-800 bg-orange-100 border-none">
+            <Badge variant="outline" className="flex items-center gap-1 text-orange-800 bg-orange-100 dark:text-orange-100 dark:bg-orange-500/15 border-none">
               <User className="h-3 w-3" />
               Assigned to me
             </Badge>

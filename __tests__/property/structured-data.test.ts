@@ -5,6 +5,10 @@ import {
   generateAgencyStructuredData,
 } from "@/lib/property/structured-data";
 
+function expectDefined<T>(value: T | null | undefined): asserts value is T {
+  expect(value).toBeDefined();
+}
+
 describe("Property Structured Data", () => {
   const mockProperty = {
     id: "clh1234567890",
@@ -54,6 +58,7 @@ describe("Property Structured Data", () => {
     it("should include address information", () => {
       const result = generatePropertyStructuredData(mockProperty);
 
+      expectDefined(result.address);
       expect(result.address["@type"]).toBe("PostalAddress");
       expect(result.address.streetAddress).toBe("Damstraat 1");
       expect(result.address.addressLocality).toBe("Amsterdam");
@@ -65,7 +70,7 @@ describe("Property Structured Data", () => {
     it("should include geo coordinates when available", () => {
       const result = generatePropertyStructuredData(mockProperty);
 
-      expect(result.geo).toBeDefined();
+      expectDefined(result.geo);
       expect(result.geo["@type"]).toBe("GeoCoordinates");
       expect(result.geo.latitude).toBe(52.3702);
       expect(result.geo.longitude).toBe(4.8952);
@@ -86,7 +91,8 @@ describe("Property Structured Data", () => {
     it("should calculate price correctly from cents for rent", () => {
       const result = generatePropertyStructuredData(mockProperty);
 
-      expect(result.offers).toBeDefined();
+      expectDefined(result.offers);
+      expectDefined(result.offers.priceSpecification);
       expect(result.offers.price).toBe(4500); // 450000 cents = €4,500
       expect(result.offers.priceCurrency).toBe("EUR");
       expect(result.offers.priceSpecification.unitText).toBe("MONTH");
@@ -102,6 +108,7 @@ describe("Property Structured Data", () => {
 
       const result = generatePropertyStructuredData(saleProperty);
 
+      expectDefined(result.offers);
       expect(result.offers.price).toBe(500000);
       expect(result.offers.priceSpecification).toBeUndefined();
     });
@@ -125,6 +132,8 @@ describe("Property Structured Data", () => {
     it("should include agency as seller", () => {
       const result = generatePropertyStructuredData(mockProperty);
 
+      expectDefined(result.offers);
+      expectDefined(result.offers.seller);
       expect(result.offers.seller["@type"]).toBe("RealEstateAgent");
       expect(result.offers.seller.name).toBe("Horeca Makelaars");
       expect(result.offers.seller.telephone).toBe("+31 20 123 4567");
@@ -213,7 +222,7 @@ describe("Property Structured Data", () => {
     it("should include address when city is provided", () => {
       const result = generateAgencyStructuredData(mockAgency);
 
-      expect(result.address).toBeDefined();
+      expectDefined(result.address);
       expect(result.address["@type"]).toBe("PostalAddress");
       expect(result.address.addressLocality).toBe("Amsterdam");
       expect(result.address.addressRegion).toBe("Noord-Holland");

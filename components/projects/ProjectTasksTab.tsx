@@ -68,9 +68,9 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
 }
 
 const STATUS_COLORS: Record<TaskStatus, string> = {
-  TODO: "bg-zinc-100 text-zinc-700",
-  IN_PROGRESS: "bg-blue-100 text-blue-700",
-  DONE: "bg-green-100 text-green-700",
+  TODO: "bg-muted text-muted-foreground",
+  IN_PROGRESS: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-50",
+  DONE: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-50",
 }
 
 function formatDate(date: Date | null): string | null {
@@ -109,6 +109,7 @@ export function ProjectTasksTab({
   const [dialogOpen, setDialogOpen] = useState(false)
   const [newTaskName, setNewTaskName] = useState("")
   const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>("TODO")
+  const [newTaskAssigneeId, setNewTaskAssigneeId] = useState<string | undefined>(undefined)
   const [isCreating, setIsCreating] = useState(false)
 
   // Workstream lookup
@@ -154,11 +155,13 @@ export function ProjectTasksTab({
       projectId,
       name: newTaskName.trim(),
       status: newTaskStatus,
+      assigneeId: newTaskAssigneeId,
       order: tasks.length, // Add to end of list
     })
     if (result.success) {
       setNewTaskName("")
       setNewTaskStatus("TODO")
+      setNewTaskAssigneeId(undefined)
       setDialogOpen(false)
       router.refresh()
       toast.success("Task created")
@@ -262,6 +265,26 @@ export function ProjectTasksTab({
                 </Select>
               </div>
 
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="task-assignee">Assignee</Label>
+                <Select
+                  value={newTaskAssigneeId ?? "unassigned"}
+                  onValueChange={(v) => setNewTaskAssigneeId(v === "unassigned" ? undefined : v)}
+                >
+                  <SelectTrigger id="task-assignee">
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {members.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.name || "Unnamed"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <Button
                 onClick={handleCreate}
                 disabled={isCreating || !newTaskName.trim()}
@@ -287,7 +310,7 @@ export function ProjectTasksTab({
           </p>
         </div>
       ) : (
-        <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
+        <div className="flex flex-col divide-y divide-border rounded-2xl bg-card shadow-[var(--shadow-workstream)] border border-border">
           {filteredTasks.map((task) => {
             const isDone = task.status === "DONE"
             const workstreamName = task.workstreamId

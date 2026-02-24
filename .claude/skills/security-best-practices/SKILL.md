@@ -6,17 +6,28 @@ allowed-tools: Read, Write, Bash
 
 # Security Best Practices
 
-## Authentication (Better Auth)
-```typescript
-// Always check session in server actions
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+## Authentication & Authorization (RBAC)
 
-const session = await auth.api.getSession({ headers: await headers() });
-if (!session?.user) {
-  return { success: false, error: "Niet ingelogd" };
-}
+Use the centralized RBAC system — NEVER write inline `role === "admin"` checks.
+
+```typescript
+// Server actions — use requirePermission()
+import { requirePermission } from "@/lib/session";
+
+const authCheck = await requirePermission("users:manage");
+if (!authCheck.success) return { success: false, error: authCheck.error };
+const { userId, role } = authCheck.data!;
+
+// Server pages — use requirePagePermission() (auto-redirects)
+import { requirePagePermission } from "@/lib/session";
+const { userId, role } = await requirePagePermission("users:manage");
+
+// Client components — use usePermissions()
+import { usePermissions } from "@/hooks/use-permissions";
+const { can, isAdmin } = usePermissions();
 ```
+
+See `rbac-permissions` skill for full documentation.
 
 ## Authorization — Multi-tenant
 ```typescript

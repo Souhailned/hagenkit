@@ -1,9 +1,15 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { getPropertyBySlug } from "@/app/actions/properties";
 import { trackPropertyView } from "@/app/actions/track-view";
+import { getDemoConcepts, getMostPopularStyle } from "@/app/actions/public-demo-concepts";
+import { getPublishedAiMediaForProperty } from "@/app/actions/public-ai-media";
+import { getSimilarProperties } from "@/app/actions/recommendations";
+import { getUserAiQuota } from "@/app/actions/ai-quota";
+import { auth } from "@/lib/auth";
 import { PropertyDetail } from "./property-detail";
-import { SimilarProperties } from "@/components/property/similar-properties";
 import { PropertyJsonLd } from "@/components/seo/property-jsonld";
 
 const typeLabels: Record<string, string> = {
@@ -11,13 +17,18 @@ const typeLabels: Record<string, string> = {
   EETCAFE: "Eetcafé", LUNCHROOM: "Lunchroom", KOFFIEBAR: "Koffiebar",
 };
 
+// Deduplicate getPropertyBySlug between generateMetadata and page render
+const getCachedProperty = cache(async (slug: string) => {
+  return getPropertyBySlug(slug);
+});
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const result = await getPropertyBySlug(slug);
+  const result = await getCachedProperty(slug);
 
   if (!result.success || !result.data) {
     return { title: "Pand niet gevonden - Horecagrond" };
@@ -61,7 +72,7 @@ export default async function PropertyDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const result = await getPropertyBySlug(slug);
+  const result = await getCachedProperty(slug);
 
   if (!result.success || !result.data) {
     notFound();
@@ -72,6 +83,21 @@ export default async function PropertyDetailPage({
 
   const p = result.data;
   const imgUrl = p.images?.[0]?.originalUrl || p.images?.[0]?.thumbnailUrl;
+
+  // Fetch dream slider + AI media + similar properties in parallel
+  const reqHeaders = await headers();
+  const [demoConcepts, session, publishedAiMedia, similarResult, teaserStyle] = await Promise.all([
+    getDemoConcepts(p.id),
+    auth.api.getSession({ headers: reqHeaders }).catch(() => null),
+    getPublishedAiMediaForProperty(p.id),
+    getSimilarProperties(p.id, 4),
+    getMostPopularStyle(p.id),
+  ]);
+
+  // Fetch AI quota for logged-in users
+  const aiQuota = session?.user?.id
+    ? await getUserAiQuota(session.user.id).catch(() => null)
+    : null;
 
   return (
     <>
@@ -88,10 +114,15 @@ export default async function PropertyDetailPage({
         imageUrl={imgUrl || undefined}
         slug={p.slug}
       />
-      <PropertyDetail property={p} />
-      <div className="mx-auto max-w-6xl px-6 pb-16 lg:px-12">
-        <SimilarProperties propertyId={result.data.id} />
-      </div>
+      <PropertyDetail
+        property={p}
+        demoConcepts={demoConcepts}
+        isLoggedIn={!!session?.user}
+        publishedAiMedia={publishedAiMedia}
+        similarProperties={similarResult.properties}
+        teaserStyle={teaserStyle}
+        aiQuota={aiQuota}
+      />
     </>
   );
 }

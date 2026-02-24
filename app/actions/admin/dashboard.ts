@@ -1,39 +1,8 @@
 "use server";
 
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
 import type { ActionResult } from "@/types/actions";
-
-// Helper to check if user is admin
-async function checkAdmin(): Promise<ActionResult<boolean>> {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return { success: false, error: "Unauthorized - Not authenticated" };
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    });
-
-    if (user?.role !== "admin") {
-      return {
-        success: false,
-        error: "Unauthorized - Admin access required",
-      };
-    }
-
-    return { success: true, data: true };
-  } catch (error) {
-    console.error("Error checking admin status:", error);
-    return { success: false, error: "Failed to verify permissions" };
-  }
-}
+import { requirePermission } from "@/lib/session";
 
 export interface DashboardStats {
   users: {
@@ -74,7 +43,7 @@ export interface ActivityItem {
 export async function getDashboardStats(): Promise<
   ActionResult<DashboardStats>
 > {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("analytics:platform");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {
@@ -172,7 +141,7 @@ export async function getDashboardStats(): Promise<
 
 // Get recent users (last 5)
 export async function getRecentUsers(): Promise<ActionResult<RecentUser[]>> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("analytics:platform");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {
@@ -201,7 +170,7 @@ export async function getRecentUsers(): Promise<ActionResult<RecentUser[]>> {
 export async function getRecentActivity(): Promise<
   ActionResult<ActivityItem[]>
 > {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("analytics:platform");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {

@@ -40,6 +40,7 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react/dist/ssr";
 import { toast } from "sonner";
+import { useImageProcessing, getStepLabel } from "@/hooks/use-image-processing";
 
 const statusConfig: Record<
   ProjectStatus,
@@ -117,15 +118,6 @@ export function ProjectDetailPageClient({
     }
   }, [projectId]);
 
-  React.useEffect(() => {
-    if (project.status === "PROCESSING") {
-      const interval = setInterval(() => {
-        void loadData();
-      }, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [project.status, loadData]);
-
   const pendingImages = React.useMemo(
     () => images.filter((img) => img.status === "PENDING" && !img.parentId),
     [images]
@@ -134,6 +126,23 @@ export function ProjectDetailPageClient({
     () => images.filter((img) => img.status === "PROCESSING"),
     [images]
   );
+
+  const processingImageIds = React.useMemo(
+    () => processingImages.map((img) => img.id),
+    [processingImages]
+  );
+
+  const { progressMap } = useImageProcessing(processingImageIds);
+
+  const hasProcessing = processingImages.length > 0;
+  const hasPending = pendingImages.length > 0;
+
+  React.useEffect(() => {
+    if (!hasProcessing && !hasPending) return;
+    const pollInterval = hasProcessing ? 2000 : 10000;
+    const interval = setInterval(() => void loadData(), pollInterval);
+    return () => clearInterval(interval);
+  }, [hasProcessing, hasPending, loadData]);
   const completedImages = React.useMemo(
     () => images.filter((img) => img.status === "COMPLETED"),
     [images]
@@ -256,9 +265,20 @@ export function ProjectDetailPageClient({
           <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-900 dark:bg-blue-900/20">
             <h2 className="mb-4 font-semibold">Processing ({processingImages.length})</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {processingImages.map((image) => (
-                <ImageCard key={image.id} image={image} />
-              ))}
+              {processingImages.map((image) => {
+                const progress = progressMap.get(image.id);
+                return (
+                  <ImageCard
+                    key={image.id}
+                    image={image}
+                    processingProgress={
+                      progress
+                        ? { step: getStepLabel(progress.step), pct: progress.pct }
+                        : undefined
+                    }
+                  />
+                );
+              })}
             </div>
           </div>
         )}

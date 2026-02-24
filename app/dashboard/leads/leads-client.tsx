@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LeadThermometer } from "@/components/leads/lead-thermometer";
-import { Clock, User, Mail, Phone, Building2, ChevronDown, ChevronUp, Filter } from "lucide-react";
+import { Clock, User, Mail, Phone, Building2, ChevronDown, ChevronUp, Filter, Sparkles } from "lucide-react";
 import type { ScoredLead } from "@/app/actions/lead-scoring";
 import { cn } from "@/lib/utils";
 import type { LeadTemperature } from "@/lib/lead-scoring";
@@ -28,10 +28,13 @@ interface LeadsClientProps {
 export function LeadsClient({ leads }: LeadsClientProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filterTemp, setFilterTemp] = useState<LeadTemperature | "all">("all");
+  const [filterSource, setFilterSource] = useState<"all" | "DREAM_SLIDER">("all");
 
-  const filtered = filterTemp === "all"
-    ? leads
-    : leads.filter((l) => l.score.temperature === filterTemp);
+  const filtered = leads.filter((l) => {
+    if (filterTemp !== "all" && l.score.temperature !== filterTemp) return false;
+    if (filterSource !== "all" && l.source !== filterSource) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-4">
@@ -55,6 +58,31 @@ export function LeadsClient({ leads }: LeadsClientProps) {
             </span>
           </Button>
         ))}
+      </div>
+
+      {/* Source filter */}
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-muted-foreground" />
+        <Button
+          variant={filterSource === "all" ? "default" : "outline"}
+          size="sm"
+          className="h-8"
+          onClick={() => setFilterSource("all")}
+        >
+          Alle bronnen
+          <span className="ml-1 text-xs opacity-60">({leads.length})</span>
+        </Button>
+        <Button
+          variant={filterSource === "DREAM_SLIDER" ? "default" : "outline"}
+          size="sm"
+          className="h-8"
+          onClick={() => setFilterSource("DREAM_SLIDER")}
+        >
+          AI Slider
+          <span className="ml-1 text-xs opacity-60">
+            ({leads.filter((l) => l.source === "DREAM_SLIDER").length})
+          </span>
+        </Button>
       </div>
 
       {/* Lead cards */}
@@ -83,6 +111,11 @@ export function LeadsClient({ leads }: LeadsClientProps) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-semibold">{lead.name}</span>
+                      {lead.source === "DREAM_SLIDER" && (
+                        <Badge variant="outline" className="text-xs border-primary/30 text-primary bg-primary/5">
+                          AI
+                        </Badge>
+                      )}
                       <LeadThermometer score={lead.score} compact />
                       <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
                       <span className="text-xs text-muted-foreground flex items-center gap-1">

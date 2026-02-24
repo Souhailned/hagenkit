@@ -113,7 +113,7 @@ export function ImageUploadDialog({
         throw new Error(urlsResult.error || "Failed to get upload URLs");
       }
 
-      // Step 2: Upload each file directly to Supabase
+      // Step 2: Upload each file directly to R2
       const uploadedImages: {
         imageId: string;
         path: string;

@@ -5,33 +5,7 @@ import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types/actions";
-
-// Helper to check if user is admin
-async function checkAdmin(): Promise<ActionResult<boolean>> {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return { success: false, error: "Unauthorized - Not authenticated" };
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    });
-
-    if (user?.role !== "admin") {
-      return { success: false, error: "Unauthorized - Admin access required" };
-    }
-
-    return { success: true, data: true };
-  } catch (error) {
-    console.error("Error checking admin status:", error);
-    return { success: false, error: "Failed to verify permissions" };
-  }
-}
+import { requirePermission } from "@/lib/session";
 
 // Get impersonation status
 export async function getImpersonationStatus(): Promise<
@@ -112,7 +86,7 @@ export async function getImpersonationStatus(): Promise<
 
 // Impersonate a user
 export async function impersonateUser(userId: string): Promise<ActionResult> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("users:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {

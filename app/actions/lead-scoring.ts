@@ -14,6 +14,7 @@ export type ScoredLead = {
   message: string;
   createdAt: Date;
   status: string;
+  source: string;
   propertyTitle: string;
   propertySlug: string;
   score: LeadScore;
@@ -59,6 +60,7 @@ export async function getScoredLeads(): Promise<ScoredLead[]> {
         message: inquiry.message,
         createdAt: inquiry.createdAt,
         status: inquiry.status,
+        source: inquiry.source,
         propertyTitle: inquiry.property.title,
         propertySlug: inquiry.property.slug,
         score,

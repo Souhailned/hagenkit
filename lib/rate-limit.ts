@@ -14,12 +14,14 @@ export interface RateLimitResult {
 // ---------------------------------------------------------------------------
 // Tier definitions (sliding window)
 // ---------------------------------------------------------------------------
-type RateLimitTier = "ai" | "export" | "api";
+type RateLimitTier = "ai" | "export" | "api" | "dream-guest" | "ai-seeker";
 
 const tierConfig: Record<RateLimitTier, { requests: number; window: string }> = {
   ai: { requests: 10, window: "1 m" },
   export: { requests: 5, window: "1 m" },
   api: { requests: 60, window: "1 m" },
+  "dream-guest": { requests: 1, window: "24 h" },
+  "ai-seeker": { requests: 3, window: "24 h" },
 };
 
 // ---------------------------------------------------------------------------
@@ -58,6 +60,18 @@ function getRateLimiters(): Record<RateLimitTier, Ratelimit> | null {
         redis,
         limiter: Ratelimit.slidingWindow(tierConfig.api.requests, tierConfig.api.window as Parameters<typeof Ratelimit.slidingWindow>[1]),
         prefix: "ratelimit:api",
+        analytics: true,
+      }),
+      "dream-guest": new Ratelimit({
+        redis,
+        limiter: Ratelimit.fixedWindow(tierConfig["dream-guest"].requests, tierConfig["dream-guest"].window as Parameters<typeof Ratelimit.fixedWindow>[1]),
+        prefix: "ratelimit:dream-guest",
+        analytics: true,
+      }),
+      "ai-seeker": new Ratelimit({
+        redis,
+        limiter: Ratelimit.fixedWindow(tierConfig["ai-seeker"].requests, tierConfig["ai-seeker"].window as Parameters<typeof Ratelimit.fixedWindow>[1]),
+        prefix: "ratelimit:ai-seeker",
         analytics: true,
       }),
     };

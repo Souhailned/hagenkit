@@ -19,7 +19,6 @@ import { ResultsPagination } from "./results-pagination";
 import { ViewToggle } from "./view-toggle";
 import { searchProperties } from "@/app/actions/properties";
 import { cn } from "@/lib/utils";
-import { SearchBar } from "@/components/search/search-bar";
 import { SaveSearchDialog } from "@/components/search/save-search-dialog";
 
 const PropertyMap = dynamic(
@@ -106,6 +105,12 @@ export function AanbodClient({
   const [sortBy, setSortBy] = React.useState<SortOption>(initialFilters.sortBy);
   const [page, setPage] = React.useState(initialFilters.page);
   const [view, setView] = React.useState<"list" | "map">(initialFilters.view);
+
+  // Keep view state in sync when navigating within /aanbod via URL query changes
+  // (e.g. clicking "Bekijk op kaart" from the hero while staying on the same route).
+  React.useEffect(() => {
+    setView(initialFilters.view);
+  }, [initialFilters.view]);
 
   // Trigger map resize when switching to map view
   React.useEffect(() => {
@@ -380,9 +385,6 @@ export function AanbodClient({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Search bar */}
-      <SearchBar size="lg" className="max-w-2xl" />
-
       <div className="flex flex-col lg:flex-row gap-8">
       {/* Desktop sidebar */}
       <FilterSidebar

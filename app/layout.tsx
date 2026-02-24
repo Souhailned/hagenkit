@@ -4,6 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { constructMetadata } from "@/lib/constructMetadata";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 
 export const metadata = constructMetadata();
 
@@ -23,7 +25,7 @@ export default function RootLayout({
           />
         )}
       </head>
-      <body className="font-sans antialiased">
+      <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

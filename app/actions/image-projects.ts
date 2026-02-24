@@ -31,11 +31,31 @@ export async function createImageProject(data: {
   name: string;
   styleTemplateId?: string;
   roomType?: string;
+  propertyId?: string;
 }): Promise<ActionResult<ImageProject>> {
   try {
     const context = await getActiveWorkspace();
     if (!context) {
       return { success: false, error: "Not authenticated or no active workspace" };
+    }
+
+    // Verify workspace membership
+    const member = await prisma.workspaceMember.findFirst({
+      where: { userId: context.userId, workspaceId: context.workspaceId },
+    });
+    if (!member) {
+      return { success: false, error: "Not a workspace member" };
+    }
+
+    // If propertyId is provided, verify the property exists
+    if (data.propertyId) {
+      const property = await prisma.property.findUnique({
+        where: { id: data.propertyId },
+        select: { id: true },
+      });
+      if (!property) {
+        return { success: false, error: "Property not found" };
+      }
     }
 
     const project = await prisma.imageProject.create({
@@ -45,6 +65,7 @@ export async function createImageProject(data: {
         roomType: data.roomType,
         workspaceId: context.workspaceId,
         userId: context.userId,
+        propertyId: data.propertyId || null,
       },
     });
 
@@ -163,7 +184,7 @@ export async function deleteImageProject(
     }
 
     // Import deleteProjectImages dynamically to avoid circular deps
-    const { deleteProjectImages } = await import("@/lib/supabase");
+    const { deleteProjectImages } = await import("@/lib/storage");
 
     // Attempt storage cleanup first. We proceed with DB delete even on partial storage failure.
     const storageDeleted = await deleteProjectImages(context.workspaceId, projectId);
@@ -187,5 +208,40 @@ export async function deleteImageProject(
   } catch (error) {
     console.error("[deleteImageProject] Error:", error);
     return { success: false, error: "Failed to delete project" };
+  }
+}
+
+// Get all image projects linked to a specific property
+export async function getImageProjectsForProperty(
+  propertyId: string
+): Promise<ActionResult<ImageProject[]>> {
+  try {
+    const context = await getActiveWorkspace();
+    if (!context) {
+      return { success: false, error: "Not authenticated or no active workspace" };
+    }
+
+    // Verify workspace membership
+    const member = await prisma.workspaceMember.findFirst({
+      where: { userId: context.userId, workspaceId: context.workspaceId },
+    });
+    if (!member) {
+      return { success: false, error: "Not a workspace member" };
+    }
+
+    const projects = await prisma.imageProject.findMany({
+      where: {
+        propertyId,
+        workspaceId: context.workspaceId,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return { success: true, data: projects };
+  } catch (error) {
+    console.error("[getImageProjectsForProperty] Error:", error);
+    return { success: false, error: "Failed to fetch image projects for property" };
   }
 }

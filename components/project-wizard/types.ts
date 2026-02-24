@@ -1,5 +1,12 @@
 export type ProjectMode = 'quick' | 'guided'
 
+export interface WizardAccount {
+  id: string
+  name: string | null
+  email: string
+  image?: string | null
+}
+
 export type ProjectIntent = 'delivery' | 'experiment' | 'internal'
 
 export type SuccessType = 'deliverable' | 'metric' | 'undefined'
@@ -29,6 +36,7 @@ export interface OwnershipEntry {
 
 export interface ProjectData {
   mode?: ProjectMode
+  title?: string
   intent?: ProjectIntent
   successType: SuccessType
   deliverables: ProjectDeliverable[]
@@ -45,4 +53,6 @@ export interface ProjectData {
   stakeholderOwnerships?: OwnershipEntry[]
   structure?: WorkStructure
   addStarterTasks: boolean
+  /** Workspace members loaded by StepOwnership — shared with StepReview for name display */
+  wizardAccounts?: WizardAccount[]
 }

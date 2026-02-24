@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -17,11 +17,16 @@ import { NeighborhoodInfo } from "@/components/property/neighborhood-info";
 import { WhatsAppButton } from "@/components/property/whatsapp-button";
 import { BuurtIntelligence } from "@/components/property/buurt-intelligence";
 import { ConceptSuggestions } from "@/components/property/concept-suggestions";
+import { ConceptChecker } from "@/components/property/concept-checker";
+import { PropertyAdvisor } from "@/components/property/property-advisor";
 import { ViewingRequestDialog } from "@/components/property/viewing-request-dialog";
 import { RevealPhone } from "@/components/property/reveal-phone";
 import { SaveReminderBar } from "@/components/property/save-reminder-bar";
 import { SimilarProperties } from "@/components/property/similar-properties";
 import { addRecentView } from "@/lib/recent-views";
+import { formatPrice } from "@/lib/format";
+import { toast } from "sonner";
+import type { EnhancedBuurtAnalysis } from "@/lib/buurt/types";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -43,7 +48,6 @@ import {
   UtensilsCrossed,
   ChevronLeft,
   ChevronRight,
-  Heart,
   Share2,
   Printer,
   Phone,
@@ -55,13 +59,23 @@ import {
   ArrowLeft,
   X,
 } from "lucide-react";
-import type { Property } from "@/types/property";
+import type { Property, PropertyImage } from "@/types/property";
+import type { DemoConceptData } from "@/app/actions/public-demo-concepts";
+import type { PublishedAiMedia } from "@/app/actions/public-ai-media";
 import {
   PropertyTypeLabels,
   PropertyFeatureLabels,
   PriceTypeLabels,
 } from "@/types/property";
 import { cn } from "@/lib/utils";
+
+const AiInterieurSection = dynamic(
+  () =>
+    import("@/components/property/ai-interieur-section").then(
+      (m) => m.AiInterieurSection
+    ),
+  { ssr: false }
+);
 
 const PropertyDetailMap = dynamic(
   () => import("@/components/aanbod/property-map").then((mod) => mod.PropertyDetailMap),
@@ -93,24 +107,46 @@ const propertyTypeIcons: Record<string, React.ReactNode> = {
   PARTYCENTRUM: <Building2 className="size-4" />,
 };
 
-function formatPrice(amount: number | null | undefined): string {
-  if (amount == null) return "Op aanvraag";
-  return new Intl.NumberFormat("nl-NL", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0,
-  }).format(amount);
+interface SimilarProperty {
+  id: string;
+  title: string;
+  slug: string;
+  city: string;
+  propertyType: string;
+  rentPrice: number | null;
+  surfaceTotal: number | null;
+  images: string[];
+  matchReason: string;
 }
 
 interface PropertyDetailProps {
   property: Property;
+  demoConcepts?: DemoConceptData[];
+  isLoggedIn?: boolean;
+  publishedAiMedia?: PublishedAiMedia;
+  similarProperties?: SimilarProperty[];
+  teaserStyle?: string | null;
+  aiQuota?: { freeEditsUsed: number; freeEditsLimit: number; remaining: number; totalEdits: number } | null;
 }
 
-export function PropertyDetail({ property }: PropertyDetailProps) {
+export function PropertyDetail({
+  property,
+  demoConcepts,
+  isLoggedIn,
+  publishedAiMedia,
+  similarProperties = [],
+  teaserStyle,
+  aiQuota,
+}: PropertyDetailProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const lightboxRef = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition();
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
+  const [sharedAnalysis, setSharedAnalysis] = useState<EnhancedBuurtAnalysis | null>(null);
+  const handleAnalysisLoaded = useCallback((data: EnhancedBuurtAnalysis) => {
+    setSharedAnalysis(data);
+  }, []);
   const [formState, setFormState] = useState({
     name: "",
     email: "",
@@ -120,6 +156,9 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
 
   // Track recently viewed
   useEffect(() => {
+    const firstImage = property.images?.[0];
+    const previewImage = firstImage?.originalUrl || firstImage?.thumbnailUrl || "";
+
     addToRecentlyViewed({
       id: property.id,
       title: property.title,
@@ -132,16 +171,18 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
       slug: property.slug,
       title: property.title,
       city: property.city,
-      image: property.images[0]?.originalUrl || "",
-      price: property.rentPrice ?? null,
+      image: previewImage,
+      price:
+        property.priceType === "SALE"
+          ? property.salePrice ?? null
+          : property.rentPrice ?? property.salePrice ?? null,
+      priceType: property.priceType,
     });
-  }, [property.id, property.title, property.slug, property.city, property.propertyType, property.images, property.rentPrice]);
+  }, [property.id]);
 
-  // Get images from mock data - handle both string[] and PropertyImage[]
+  // Get images from PropertyImage[]
   const images: string[] = Array.isArray(property.images)
-    ? property.images.map((img: any) =>
-        typeof img === "string" ? img : img.originalUrl || img.thumbnailUrl
-      )
+    ? property.images.map((img: PropertyImage) => img.originalUrl || img.thumbnailUrl || "")
     : [];
 
   const currentImage = images[currentImageIndex] || "";
@@ -156,8 +197,8 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
     );
   };
 
-  // Get price display
-  const price = (property as any).price || property.rentPrice || property.salePrice;
+  // Get price display (prices in cents, formatPrice divides by 100)
+  const price = property.rentPrice || property.salePrice;
   const priceType = property.priceType;
   const priceDisplay = formatPrice(price);
   const priceSuffix = priceType === "RENT" ? "/maand" : "";
@@ -165,13 +206,35 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
   // Get features
   const features: string[] = property.features || [];
 
-  // Area from mock or real data
-  const area = (property as any).area || property.surfaceTotal || 0;
+  // Area
+  const area = property.surfaceTotal || 0;
+
+  // Focus lightbox on open
+  useEffect(() => {
+    if (lightboxOpen && lightboxRef.current) {
+      lightboxRef.current.focus();
+    }
+  }, [lightboxOpen]);
+
+  // Lightbox keyboard handler
+  const handleLightboxKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setLightboxOpen(false);
+      } else if (e.key === "ArrowLeft") {
+        prevImage();
+      } else if (e.key === "ArrowRight") {
+        nextImage();
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [images.length]
+  );
 
   return (
     <>
       {/* Breadcrumbs */}
-      <div className="border-b bg-muted/30">
+      <div className="border-b bg-muted/30 pt-16">
         <div className="mx-auto max-w-6xl px-6 py-4 lg:px-12">
           <Breadcrumb>
             <BreadcrumbList>
@@ -203,50 +266,70 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
           Terug naar aanbod
         </Link>
 
-        {/* ────────── GALLERY ────────── */}
+        {/* Gallery */}
         <div className="mb-8">
           <div className="grid gap-3 md:grid-cols-[2fr_1fr]">
             {/* Main image */}
-            <div
-              className="group relative cursor-pointer overflow-hidden rounded-xl bg-muted"
+            <button
+              type="button"
+              className="group relative aspect-[16/10] cursor-pointer overflow-hidden rounded-xl bg-muted text-left md:aspect-auto"
               onClick={() => setLightboxOpen(true)}
+              aria-label="Open foto galerij"
             >
-              <div className="aspect-[16/10]">
-                {currentImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={currentImage}
-                    alt={property.title}
-                    className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                  />
-                ) : (
-                  <div className="flex size-full items-center justify-center text-muted-foreground">
-                    <Building2 className="size-16 opacity-20" />
-                  </div>
-                )}
-              </div>
+              {currentImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={currentImage}
+                  alt={property.title}
+                  className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                  <Building2 className="size-16 opacity-20" />
+                </div>
+              )}
 
               {/* Navigation arrows */}
               {images.length > 1 && (
                 <>
-                  <button
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Vorige foto"
                     onClick={(e) => {
                       e.stopPropagation();
                       prevImage();
                     }}
-                    className="absolute left-3 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 shadow-lg transition-all hover:bg-white"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        prevImage();
+                      }
+                    }}
+                    className="absolute left-3 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 shadow-lg transition-all hover:bg-background"
                   >
                     <ChevronLeft className="size-5" />
-                  </button>
-                  <button
+                  </span>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Volgende foto"
                     onClick={(e) => {
                       e.stopPropagation();
                       nextImage();
                     }}
-                    className="absolute right-3 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 shadow-lg transition-all hover:bg-white"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        nextImage();
+                      }
+                    }}
+                    className="absolute right-3 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 shadow-lg transition-all hover:bg-background"
                   >
                     <ChevronRight className="size-5" />
-                  </button>
+                  </span>
                 </>
               )}
 
@@ -268,13 +351,13 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                 {property.isFeatured && (
                   <Badge
                     variant="secondary"
-                    className="border-0 bg-white/90 shadow-lg backdrop-blur-sm"
+                    className="border-0 bg-background/90 shadow-lg backdrop-blur-sm"
                   >
                     Uitgelicht
                   </Badge>
                 )}
               </div>
-            </div>
+            </button>
 
             {/* Thumbnail grid */}
             <div className="hidden gap-3 md:grid md:grid-rows-3">
@@ -306,10 +389,10 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
           </div>
         </div>
 
-        {/* ────────── CONTENT GRID ────────── */}
+        {/* Content grid */}
         <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
           {/* LEFT: Main content */}
-          <div>
+          <div className="min-h-[80vh]">
             {/* Header */}
             <div className="mb-6">
               <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -370,8 +453,8 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
               <div className="rounded-xl border bg-card p-4 text-center">
                 <Users className="mx-auto mb-2 size-5 text-primary" />
                 <p className="text-lg font-semibold">
-                  {(property as any).seatingCapacityInside ||
-                    (property as any).seatingCapacity ||
+                  {property.seatingCapacityInside ||
+                    property.seatingCapacityOutside ||
                     "—"}
                 </p>
                 <p className="text-xs text-muted-foreground">Zitplaatsen</p>
@@ -396,6 +479,21 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                 <p className="text-xs text-muted-foreground">Beschikbaar</p>
               </div>
             </div>
+
+            {/* AI Interieur Preview / Studio */}
+            <Separator className="my-6" />
+            <AiInterieurSection
+              propertyId={property.id}
+              propertySlug={property.slug}
+              propertyTitle={property.title}
+              sourceImageUrl={property.images?.[0]?.originalUrl ?? ""}
+              demoConcepts={demoConcepts || []}
+              publishedAiMedia={publishedAiMedia}
+              isLoggedIn={!!isLoggedIn}
+              teaserStyle={teaserStyle ?? undefined}
+              aiQuota={aiQuota ?? undefined}
+            />
+            <Separator className="mb-6" />
 
             {/* Tabs */}
             <Tabs defaultValue="algemeen" className="w-full">
@@ -468,7 +566,7 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                           key={feature}
                           className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3"
                         >
-                          <CheckCircle2 className="size-5 shrink-0 text-emerald-500" />
+                          <CheckCircle2 className="size-5 shrink-0 text-primary" />
                           <span className="text-sm font-medium">
                             {PropertyFeatureLabels[
                               feature as keyof typeof PropertyFeatureLabels
@@ -514,7 +612,7 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                           key={item.label}
                           className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3"
                         >
-                          <CheckCircle2 className="size-5 shrink-0 text-emerald-500" />
+                          <CheckCircle2 className="size-5 shrink-0 text-primary" />
                           <span className="text-sm font-medium">
                             {item.label}
                           </span>
@@ -590,11 +688,18 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                       lat={property.latitude}
                       lng={property.longitude}
                       radius={500}
+                      onAnalysisLoaded={handleAnalysisLoaded}
                     />
                     <ConceptSuggestions
                       lat={property.latitude}
                       lng={property.longitude}
                       surface={property.surfaceTotal || 100}
+                      sharedAnalysis={sharedAnalysis}
+                    />
+                    <ConceptChecker
+                      lat={property.latitude}
+                      lng={property.longitude}
+                      radius={500}
                     />
                   </>
                 )}
@@ -625,11 +730,17 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                         phone: formState.phone,
                         message: formState.message,
                       });
-                      if ("error" in result) {
+                      if (!result.success) {
                         setSubmitStatus("error");
                       } else {
                         setSubmitStatus("success");
-                        setFormState((s) => ({ ...s, name: "", email: "", phone: "" }));
+                        setFormState((s) => ({
+                          ...s,
+                          name: "",
+                          email: "",
+                          phone: "",
+                          message: `Beste makelaar,\n\nIk heb interesse in "${property.title}" en zou graag meer informatie ontvangen.\n\nMet vriendelijke groet`,
+                        }));
                       }
                     });
                   }}
@@ -704,12 +815,12 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                     />
                   </div>
                   {submitStatus === "success" && (
-                    <div className="rounded-lg bg-green-50 p-3 text-sm text-green-800 dark:bg-green-950 dark:text-green-200">
-                      ✅ Bedankt voor je interesse! De makelaar neemt spoedig contact met je op.
+                    <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-foreground">
+                      Bedankt voor je interesse! De makelaar neemt spoedig contact met je op.
                     </div>
                   )}
                   {submitStatus === "error" && (
-                    <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">
+                    <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
                       Er ging iets mis. Probeer het opnieuw.
                     </div>
                   )}
@@ -745,15 +856,19 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                 className="flex-1"
                 size="sm"
                 onClick={async () => {
-                  if (navigator.share) {
-                    await navigator.share({
-                      title: property.title,
-                      text: `Bekijk dit horecapand: ${property.title}`,
-                      url: window.location.href,
-                    });
-                  } else {
-                    await navigator.clipboard.writeText(window.location.href);
-                    alert("Link gekopieerd!");
+                  try {
+                    if (navigator.share) {
+                      await navigator.share({
+                        title: property.title,
+                        text: `Bekijk dit horecapand: ${property.title}`,
+                        url: window.location.href,
+                      });
+                    } else {
+                      await navigator.clipboard.writeText(window.location.href);
+                      toast.success("Link gekopieerd!");
+                    }
+                  } catch {
+                    // User cancelled share dialog — ignore
                   }
                 }}
               >
@@ -772,7 +887,7 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
               </Button>
             </div>
 
-            {/* Agent info placeholder */}
+            {/* Agent info */}
             <Card className="mt-4">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -790,17 +905,34 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                 </div>
                 <Separator className="my-4" />
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Phone className="size-4" />
-                    <span>020-1234567</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="size-4" />
-                    <span>info@horecagrond.nl</span>
-                  </div>
+                  {property.agency?.phone && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Phone className="size-4" />
+                      <span>{property.agency.phone}</span>
+                    </div>
+                  )}
+                  {property.agency?.email && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Mail className="size-4" />
+                      <span>{property.agency.email}</span>
+                    </div>
+                  )}
+                  {!property.agency?.phone && !property.agency?.email && (
+                    <p className="text-muted-foreground">Contactgegevens niet beschikbaar</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
+
+            {/* AI Pand Adviseur */}
+            <div className="mt-4">
+              <PropertyAdvisor
+                propertySlug={property.slug}
+                propertyTitle={property.title}
+                propertyType={property.propertyType}
+                city={property.city}
+              />
+            </div>
 
             {/* Neighborhood info */}
             <NeighborhoodInfo city={property.city} neighborhood={property.neighborhood} className="mt-4" />
@@ -811,14 +943,21 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
         </div>
       </div>
 
-      {/* ────────── LIGHTBOX ────────── */}
+      {/* Lightbox */}
       {lightboxOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
+          ref={lightboxRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Foto galerij"
+          tabIndex={0}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 outline-none"
           onClick={() => setLightboxOpen(false)}
+          onKeyDown={handleLightboxKeyDown}
         >
           <button
             onClick={() => setLightboxOpen(false)}
+            aria-label="Galerij sluiten"
             className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
           >
             <X className="size-5" />
@@ -831,6 +970,7 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                   e.stopPropagation();
                   prevImage();
                 }}
+                aria-label="Vorige foto"
                 className="absolute left-4 flex size-12 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
               >
                 <ChevronLeft className="size-6" />
@@ -840,6 +980,7 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                   e.stopPropagation();
                   nextImage();
                 }}
+                aria-label="Volgende foto"
                 className="absolute right-4 flex size-12 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
               >
                 <ChevronRight className="size-6" />
@@ -865,10 +1006,9 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
         </div>
       )}
 
-      {/* Mobile save reminder */}
       {/* Similar properties */}
-      <div className="container py-8">
-        <SimilarProperties propertyId={property.id} />
+      <div className="mx-auto max-w-6xl px-6 pb-12 lg:px-12">
+        <SimilarProperties properties={similarProperties} />
       </div>
 
       <SaveReminderBar propertyId={property.id} />

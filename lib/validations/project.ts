@@ -66,6 +66,34 @@ export const createProjectSchema = z.object({
   clientName: z.string().max(200).optional(),
   location: z.string().max(200).optional(),
   sprints: z.string().max(100).optional(),
+  // Wizard extra fields (all optional for backward compat)
+  wizardOwnerId: z.string().optional(),
+  wizardMembers: z
+    .array(
+      z.object({
+        userId: z.string().min(1),
+        role: pmProjectRoleEnum,
+        access: pmAccessLevelEnum,
+      })
+    )
+    .optional(),
+  wizardDeliverables: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(500),
+        dueDate: z.string().datetime().optional().or(z.literal("")),
+      })
+    )
+    .optional(),
+  wizardMetrics: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(200),
+        target: z.string().max(100).optional(),
+      })
+    )
+    .optional(),
+  addStarterTasks: z.boolean().default(false),
 });
 
 // Schema for updating a project

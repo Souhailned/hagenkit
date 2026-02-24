@@ -18,9 +18,9 @@ import { TaskWeekBoardView } from "@/components/tasks/task-week-board-view"
 import { TaskListView } from "@/components/tasks/task-list-view"
 import { TaskQuickCreateModal } from "@/components/tasks/task-quick-create-modal"
 import { Button } from "@/components/ui/button"
-import { FilterPopover } from "@/components/tasks/filter-popover"
-import { ChipOverflow } from "@/components/tasks/chip-overflow"
-import { ViewOptionsPopover } from "@/components/tasks/view-options-popover"
+import { FilterPopover } from "@/components/dashboard/filter-popover"
+import { ChipOverflow } from "@/components/dashboard/chip-overflow"
+import { ViewOptionsPopover } from "@/components/dashboard/view-options-popover"
 import { toast } from "sonner"
 import {
   toggleTaskStatus,
@@ -425,15 +425,6 @@ export function MyTasksPage({ initialGroups }: MyTasksPageProps) {
           <ViewOptionsPopover
             options={viewOptions}
             onChange={setViewOptions}
-            onSetDefault={async () => {
-              await saveViewOptions(viewOptions)
-              toast.success("View options saved as default")
-            }}
-            onReset={async () => {
-              setViewOptions(DEFAULT_VIEW_OPTIONS)
-              await resetViewOptions()
-              toast.success("View options reset")
-            }}
             allowedViewTypes={["list", "board"]}
           />
           <Button

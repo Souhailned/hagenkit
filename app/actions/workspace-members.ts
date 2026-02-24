@@ -6,6 +6,69 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import type { ActionResult } from "@/types/actions";
 import type { WorkspaceMemberWithUser } from "@/types/workspace";
+
+// ============================================
+// PROJECT WIZARD HELPERS
+// ============================================
+
+export interface ProjectWizardMember {
+  id: string;
+  name: string | null;
+  email: string;
+  image: string | null;
+}
+
+export interface ProjectWizardMembersData {
+  members: ProjectWizardMember[];
+  currentUserId: string;
+}
+
+/**
+ * Get all members of the current user's workspace for the project wizard.
+ * Auto-resolves workspace — no workspaceId param needed.
+ */
+export async function getProjectWizardMembers(): Promise<
+  ActionResult<ProjectWizardMembersData>
+> {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user?.id) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    const myMembership = await prisma.workspaceMember.findFirst({
+      where: { userId: session.user.id },
+      orderBy: { joinedAt: "asc" },
+    });
+
+    if (!myMembership) {
+      return { success: false, error: "No workspace membership" };
+    }
+
+    const all = await prisma.workspaceMember.findMany({
+      where: { workspaceId: myMembership.workspaceId },
+      include: {
+        user: { select: { id: true, name: true, email: true, image: true } },
+      },
+      orderBy: { joinedAt: "asc" },
+    });
+
+    const members: ProjectWizardMember[] = all.map((m) => ({
+      id: m.user.id,
+      name: m.user.name,
+      email: m.user.email,
+      image: m.user.image,
+    }));
+
+    return {
+      success: true,
+      data: { members, currentUserId: session.user.id },
+    };
+  } catch (error) {
+    console.error("getProjectWizardMembers error:", error);
+    return { success: false, error: "Failed to load workspace members" };
+  }
+}
 import {
   updateMemberRoleSchema,
   removeMemberSchema,

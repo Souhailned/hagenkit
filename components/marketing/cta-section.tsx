@@ -21,7 +21,7 @@ export function CtaSection() {
             </Button>
           </Link>
           <Link href="/voor-makelaars">
-            <Button size="lg" variant="outline" className="text-base px-8 border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">
+            <Button size="lg" variant="secondary" className="text-base px-8 bg-primary-foreground/15 text-primary-foreground border border-primary-foreground/30 hover:bg-primary-foreground/25">
               Voor makelaars
             </Button>
           </Link>

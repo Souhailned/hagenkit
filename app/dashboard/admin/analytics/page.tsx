@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
-import { Building2, Users, Eye, MessageCircle, Heart, TrendingUp } from "lucide-react";
+import { Building2, Users, Eye, MessageCircle, Heart, TrendingUp, Sparkles } from "lucide-react";
 import {
   ContentCard,
   ContentCardHeader,
@@ -70,6 +70,23 @@ export default async function AdminAnalyticsPage() {
               </Card>
             );
           })}
+        </div>
+
+        {/* AI Costs link */}
+        <div className="mt-6">
+          <a
+            href="/dashboard/admin/ai-costs"
+            className="flex items-center gap-3 rounded-lg border p-4 hover:bg-muted/50 transition-colors"
+          >
+            <Sparkles className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-sm font-medium">AI Kosten Dashboard</p>
+              <p className="text-xs text-muted-foreground">
+                Bekijk API kosten per service en feature
+              </p>
+            </div>
+            <div className="ml-auto text-muted-foreground">&rarr;</div>
+          </a>
         </div>
       </ContentCardBody>
     </ContentCard>

@@ -80,7 +80,7 @@ export function TimelineGantt({ tasks }: TimelineGanttProps) {
         <h2 className="text-base font-semibold text-foreground">Expected Timeline</h2>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-border">
+      <div className="mt-4 overflow-x-auto rounded-2xl border border-border shadow-[var(--shadow-workstream)]">
         <div className="w-full">
           <div className="grid grid-cols-[240px_1fr]">
             <div className="px-4 py-3 text-sm font-medium text-muted-foreground border-r border-border bg-muted/20">
@@ -125,10 +125,11 @@ export function TimelineGantt({ tasks }: TimelineGanttProps) {
 
           <div className="grid grid-cols-[240px_1fr]">
             <div className="border-r border-border bg-muted/10" />
-            <div className={`grid px-4 py-2 bg-muted/10`} style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+            <div className={`grid py-2 bg-muted/10`} style={{ gridTemplateColumns: `repeat(${days.length}, minmax(3rem, 1fr))` }}>
               {days.map((d) => (
-                <div key={d.toISOString()} className="text-xs text-muted-foreground">
-                  {format(d, "EEE d")}
+                <div key={d.toISOString()} className="flex flex-col items-center text-xs text-muted-foreground leading-tight">
+                  <span>{format(d, "EEE")}</span>
+                  <span className="font-medium text-foreground">{format(d, "d")}</span>
                 </div>
               ))}
             </div>
@@ -139,7 +140,7 @@ export function TimelineGantt({ tasks }: TimelineGanttProps) {
           <div className="relative">
             <div
               className="absolute top-0 bottom-0 w-px bg-primary"
-              style={{ left: `calc(240px + 16px + ${(todayIndex / days.length) * 100}%)` }}
+              style={{ left: `calc(240px + (100% - 240px) * ${todayIndex / days.length})` }}
               aria-hidden="true"
             />
 
@@ -158,10 +159,10 @@ export function TimelineGantt({ tasks }: TimelineGanttProps) {
                   <div className="px-4 py-2 text-sm text-foreground border-r border-border truncate">
                     {t.name}
                   </div>
-                  <div className="relative px-4 py-0">
-                    <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+                  <div className="relative">
+                    <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(3rem, 1fr))` }}>
                       {Array.from({ length: days.length }).map((_, i) => (
-                        <div key={i} className="h-10 first:border-l-0" />
+                        <div key={i} className="h-10" />
                       ))}
                     </div>
                     <div

@@ -49,6 +49,12 @@ export const createInquirySchema = z.object({
     .max(2000, "Bericht mag maximaal 2000 karakters bevatten"),
   intendedUse: z.string().optional(),
   budget: z.string().optional(),
+  // Lead attribution / UTM tracking
+  source: z.string().optional(),
+  utmSource: z.string().optional(),
+  utmMedium: z.string().optional(),
+  utmCampaign: z.string().optional(),
+  referrer: z.string().optional(),
 });
 
 export type CreateInquiryInput = z.infer<typeof createInquirySchema>;

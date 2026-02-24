@@ -39,9 +39,9 @@ export function FeaturesSection() {
     <section className="py-24">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight">Waarom Horecagrond?</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Platform functies</h2>
           <p className="mt-3 text-lg text-muted-foreground">
-            Alles wat je nodig hebt om horecapanden te zoeken of aan te bieden
+            Alles wat je nodig hebt om sneller te zoeken, vergelijken en opvolgen
           </p>
         </div>
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">

@@ -6,7 +6,6 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types/actions";
 import type { VideoProject, Prisma } from "@/generated/prisma/client";
-import { generateVideoTask } from "@/trigger/video-orchestrator";
 
 // Get current user's active workspace
 async function getActiveWorkspace() {
@@ -51,11 +50,31 @@ export async function createVideoProject(data: {
   generateNativeAudio?: boolean;
   musicVolume?: number;
   videoVolume?: number;
+  propertyId?: string;
 }): Promise<ActionResult<VideoProject>> {
   try {
     const context = await getActiveWorkspace();
     if (!context) {
       return { success: false, error: "Not authenticated or no active workspace" };
+    }
+
+    // Verify workspace membership
+    const member = await prisma.workspaceMember.findFirst({
+      where: { userId: context.userId, workspaceId: context.workspaceId },
+    });
+    if (!member) {
+      return { success: false, error: "Not a workspace member" };
+    }
+
+    // If propertyId is provided, verify the property exists
+    if (data.propertyId) {
+      const property = await prisma.property.findUnique({
+        where: { id: data.propertyId },
+        select: { id: true },
+      });
+      if (!property) {
+        return { success: false, error: "Property not found" };
+      }
     }
 
     const project = await prisma.videoProject.create({
@@ -67,6 +86,7 @@ export async function createVideoProject(data: {
         musicVolume: data.musicVolume || 0.3,
         videoVolume: data.videoVolume || 1.0,
         status: "pending",
+        propertyId: data.propertyId || null,
       },
     });
 
@@ -196,7 +216,7 @@ export async function deleteVideoProject(
   }
 }
 
-// Start video generation (trigger orchestrator)
+// Start video generation (call orchestrator API route)
 export async function startVideoGeneration(
   projectId: string
 ): Promise<ActionResult<{ runId: string }>> {
@@ -234,17 +254,68 @@ export async function startVideoGeneration(
       data: { status: "processing", errorMessage: null },
     });
 
-    // Trigger the orchestrator task
-    const handle = await generateVideoTask.trigger({
-      videoProjectId: projectId,
+    // Call the orchestrator API route instead of Trigger.dev directly
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const headersList = await headers();
+    const cookieHeader = headersList.get("cookie") || "";
+
+    const response = await fetch(`${baseUrl}/api/ai/videos/start`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookieHeader,
+      },
+      body: JSON.stringify({ videoProjectId: projectId }),
     });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      return { success: false, error: err.error || "Failed to start generation" };
+    }
+
+    const responseData = await response.json();
 
     revalidatePath(`/dashboard/videos/${projectId}`);
     revalidatePath("/dashboard/videos");
 
-    return { success: true, data: { runId: handle.id } };
+    return { success: true, data: { runId: responseData.runId || "direct" } };
   } catch (error) {
     console.error("[startVideoGeneration] Error:", error);
     return { success: false, error: "Failed to start video generation" };
+  }
+}
+
+// Get all video projects linked to a specific property
+export async function getVideoProjectsForProperty(
+  propertyId: string
+): Promise<ActionResult<VideoProject[]>> {
+  try {
+    const context = await getActiveWorkspace();
+    if (!context) {
+      return { success: false, error: "Not authenticated or no active workspace" };
+    }
+
+    // Verify workspace membership
+    const member = await prisma.workspaceMember.findFirst({
+      where: { userId: context.userId, workspaceId: context.workspaceId },
+    });
+    if (!member) {
+      return { success: false, error: "Not a workspace member" };
+    }
+
+    const projects = await prisma.videoProject.findMany({
+      where: {
+        propertyId,
+        workspaceId: context.workspaceId,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return { success: true, data: projects };
+  } catch (error) {
+    console.error("[getVideoProjectsForProperty] Error:", error);
+    return { success: false, error: "Failed to fetch video projects for property" };
   }
 }

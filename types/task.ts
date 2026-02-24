@@ -176,21 +176,21 @@ export function getTaskStatusConfig(status: PMTaskStatus) {
   > = {
     TODO: {
       label: "To Do",
-      dot: "bg-zinc-400",
-      bg: "bg-zinc-100",
-      text: "text-zinc-700",
+      dot: "bg-muted-foreground",
+      bg: "bg-muted",
+      text: "text-muted-foreground",
     },
     IN_PROGRESS: {
       label: "In Progress",
-      dot: "bg-blue-500",
-      bg: "bg-blue-100",
-      text: "text-blue-700",
+      dot: "bg-amber-500",
+      bg: "bg-amber-100 dark:bg-amber-500/15",
+      text: "text-amber-700 dark:text-amber-50",
     },
     DONE: {
       label: "Done",
-      dot: "bg-green-500",
-      bg: "bg-green-100",
-      text: "text-green-700",
+      dot: "bg-emerald-500",
+      bg: "bg-emerald-100 dark:bg-emerald-500/15",
+      text: "text-emerald-700 dark:text-emerald-50",
     },
   };
   return configs[status];

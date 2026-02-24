@@ -3,10 +3,11 @@
  * @param cents Amount in cents (e.g., 250000 = €2.500)
  */
 export function formatPrice(cents: number | null | undefined): string {
-  if (!cents) return "Prijs n.t.b.";
+  if (cents == null || cents === 0) return "Op aanvraag";
   return new Intl.NumberFormat("nl-NL", {
     style: "currency",
     currency: "EUR",
+    minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(cents / 100);
 }

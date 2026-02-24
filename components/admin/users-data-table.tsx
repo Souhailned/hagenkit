@@ -25,18 +25,33 @@ import { format } from "date-fns";
 import type { AdminUser } from "@/types/admin";
 import { useRouter } from "next/navigation";
 import { updateUser } from "@/app/actions/admin/users";
+import { usePermissions } from "@/hooks/use-permissions";
+import type { Row } from "@tanstack/react-table";
 
 interface UsersDataTableProps {
   data: AdminUser[];
   pageCount: number;
   total: number;
+  /** ID of the currently logged-in user (to prevent self-role-edit) */
+  currentUserId: string;
 }
 
-export function UsersDataTable({ data, pageCount, total }: UsersDataTableProps) {
+export function UsersDataTable({ data, pageCount, total, currentUserId }: UsersDataTableProps) {
   const router = useRouter();
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [deleteAlertOpen, setDeleteAlertOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<AdminUser | null>(null);
+
+  const { canEdit: canEditCol } = usePermissions();
+
+  const canEdit = React.useCallback(
+    (row: Row<AdminUser>, columnId: string) => {
+      // Prevent editing your own role
+      if (columnId === "role" && row.original.id === currentUserId) return false;
+      return canEditCol("admin-users", columnId);
+    },
+    [currentUserId, canEditCol]
+  );
 
   const handleCellSave = React.useCallback(
     async ({ row, columnId, value }: { row: any; columnId: string; value: unknown }) => {
@@ -308,7 +323,7 @@ export function UsersDataTable({ data, pageCount, total }: UsersDataTableProps) 
 
   return (
     <>
-      <EditableDataTable table={table} onCellSave={handleCellSave}>
+      <EditableDataTable table={table} onCellSave={handleCellSave} canEdit={canEdit}>
         <DataTableToolbar table={table} />
       </EditableDataTable>
 

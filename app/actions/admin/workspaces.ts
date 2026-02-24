@@ -13,33 +13,7 @@ import {
 } from "@/lib/validations/workspace";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types/actions";
-
-// Helper to check if user is admin
-async function checkAdmin(): Promise<ActionResult<boolean>> {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return { success: false, error: "Unauthorized - Not authenticated" };
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    });
-
-    if (user?.role !== "admin") {
-      return { success: false, error: "Unauthorized - Admin access required" };
-    }
-
-    return { success: true, data: true };
-  } catch (error) {
-    console.error("Error checking admin status:", error);
-    return { success: false, error: "Failed to verify permissions" };
-  }
-}
+import { requirePermission } from "@/lib/session";
 
 // Get paginated workspaces with search, sort, and filters
 export async function getWorkspaces(params?: {
@@ -49,7 +23,7 @@ export async function getWorkspaces(params?: {
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 }): Promise<ActionResult<{ workspaces: any[]; total: number; pageCount: number }>> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("platform:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {
@@ -108,7 +82,7 @@ export async function getWorkspaces(params?: {
 
 // Get single workspace by ID
 export async function getWorkspaceById(id: string): Promise<ActionResult<any>> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("platform:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {
@@ -157,7 +131,7 @@ export async function getWorkspaceById(id: string): Promise<ActionResult<any>> {
 
 // Create a new workspace
 export async function createWorkspace(input: CreateWorkspaceInput): Promise<ActionResult<any>> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("platform:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {
@@ -225,7 +199,7 @@ export async function createWorkspace(input: CreateWorkspaceInput): Promise<Acti
 
 // Update a workspace
 export async function updateWorkspace(input: UpdateWorkspaceInput): Promise<ActionResult<any>> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("platform:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {
@@ -293,7 +267,7 @@ export async function updateWorkspace(input: UpdateWorkspaceInput): Promise<Acti
 
 // Delete a workspace
 export async function deleteWorkspace(input: DeleteWorkspaceInput): Promise<ActionResult> {
-  const authCheck = await checkAdmin();
+  const authCheck = await requirePermission("platform:manage");
   if (!authCheck.success) return { success: false, error: authCheck.error };
 
   try {

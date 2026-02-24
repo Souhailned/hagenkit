@@ -28,6 +28,7 @@ interface PropertyMapProps {
 
 export function PropertyMap({ properties, className }: PropertyMapProps) {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [popupCoords, setPopupCoords] = useState<[number, number] | null>(null);
 
   // Filter properties met locatiegegevens
   const mappableProperties = useMemo(
@@ -78,18 +79,27 @@ export function PropertyMap({ properties, className }: PropertyMapProps) {
           clusterColors={["#3b82f6", "#f97316", "#ef4444"]} // Blauw → Oranje → Rood
           clusterThresholds={[10, 50]} // Klein < 10, Medium < 50, Groot >= 50
           pointColor="#2563eb" // Primary blue (hex for MapLibre compatibility)
-          onPointClick={(feature) => {
-            setSelectedProperty(feature.properties.property);
+          onPointClick={(feature, coordinates) => {
+            // MapLibre serializes nested objects in GeoJSON properties —
+            // parse if needed and use feature coordinates for popup position
+            const prop = typeof feature.properties.property === "string"
+              ? JSON.parse(feature.properties.property)
+              : feature.properties.property;
+            setSelectedProperty(prop);
+            setPopupCoords(coordinates);
           }}
         />
 
         {/* Property popup bij klik op individuele marker */}
-        {selectedProperty && (
+        {selectedProperty && popupCoords && (
           <MapPopup
-            longitude={selectedProperty.longitude!}
-            latitude={selectedProperty.latitude!}
+            longitude={popupCoords[0]}
+            latitude={popupCoords[1]}
             closeButton
-            onClose={() => setSelectedProperty(null)}
+            onClose={() => {
+              setSelectedProperty(null);
+              setPopupCoords(null);
+            }}
           >
             <PropertyPopupCard property={selectedProperty} />
           </MapPopup>

@@ -10,6 +10,8 @@ import type {
   ProjectDetail,
   PaginatedProjects,
 } from "@/types/project";
+import { requirePermission } from "@/lib/session";
+import { logActivity } from "@/app/actions/project-activity";
 import {
   createProjectSchema,
   updateProjectSchema,
@@ -124,53 +126,232 @@ async function canModifyProject(
 // PROJECT CRUD OPERATIONS
 // ============================================
 
+// ============================================
+// STARTER TASK TEMPLATES
+// ============================================
+
+type TxClient = Omit<
+  typeof prisma,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
+>;
+
+async function createStarterTasks(
+  tx: TxClient,
+  projectId: string,
+  structure: string
+) {
+  if (structure === "LINEAR") {
+    const tasks = [
+      "Define scope & requirements",
+      "Design & planning",
+      "Development & execution",
+      "Review, test & launch",
+    ];
+    await tx.projectTask.createMany({
+      data: tasks.map((name, i) => ({
+        projectId,
+        name,
+        status: "TODO" as const,
+        order: i,
+      })),
+    });
+  } else if (structure === "MILESTONES" || structure === "MULTISTREAM") {
+    const streams =
+      structure === "MILESTONES"
+        ? [
+            {
+              name: "Phase 1 — Discovery",
+              tasks: ["Stakeholder alignment", "Requirements definition"],
+            },
+            {
+              name: "Phase 2 — Execution",
+              tasks: ["Core development", "Internal review"],
+            },
+            {
+              name: "Phase 3 — Delivery",
+              tasks: ["User acceptance testing", "Go-live & handover"],
+            },
+          ]
+        : [
+            {
+              name: "Planning",
+              tasks: ["Define scope", "Resource planning"],
+            },
+            {
+              name: "Development",
+              tasks: ["Core implementation", "Quality assurance"],
+            },
+            {
+              name: "Communication",
+              tasks: ["Stakeholder updates", "Documentation"],
+            },
+          ];
+
+    for (let i = 0; i < streams.length; i++) {
+      const stream = streams[i];
+      const ws = await tx.projectWorkstream.create({
+        data: { projectId, name: stream.name, order: i },
+      });
+      await tx.projectTask.createMany({
+        data: stream.tasks.map((name, j) => ({
+          projectId,
+          workstreamId: ws.id,
+          name,
+          status: "TODO" as const,
+          order: j,
+        })),
+      });
+    }
+  }
+}
+
+// ============================================
+// PROJECT CRUD OPERATIONS (continued)
+// ============================================
+
 /**
- * Create a new project
+ * Create a new project (with full wizard support)
  */
 export async function createProject(
   input: CreateProjectInput
 ): Promise<ActionResult<ProjectDetail>> {
   try {
-    const ctxResult = await getSessionContext();
-    if (!ctxResult.success) {
-      return { success: false, error: ctxResult.error };
+    // Auth + RBAC permission check
+    const authCheck = await requirePermission("projects:create");
+    if (!authCheck.success) {
+      return { success: false, error: authCheck.error };
     }
-    const ctx = ctxResult.data;
+    const { userId } = authCheck.data!;
+
+    // Get workspace context
+    const membership = await prisma.workspaceMember.findFirst({
+      where: { userId },
+      orderBy: { joinedAt: "asc" },
+    });
+    if (!membership) {
+      return { success: false, error: "User has no workspace membership" };
+    }
+    const workspaceId = membership.workspaceId;
 
     // Validate input
     const validatedData = createProjectSchema.parse(input);
 
-    // Create project with creator as OWNER member
-    const project = await prisma.project.create({
-      data: {
-        workspaceId: ctx.workspaceId,
-        createdById: ctx.userId,
-        name: validatedData.name,
-        description: validatedData.description || null,
-        status: validatedData.status,
-        priority: validatedData.priority,
-        startDate: validatedData.startDate ? new Date(validatedData.startDate) : null,
-        endDate: validatedData.endDate ? new Date(validatedData.endDate) : null,
-        estimate: validatedData.estimate || null,
-        deadlineType: validatedData.deadlineType,
-        intent: validatedData.intent || null,
-        successType: validatedData.successType,
-        structure: validatedData.structure || null,
-        typeLabel: validatedData.typeLabel || null,
-        groupLabel: validatedData.groupLabel || null,
-        label: validatedData.label || null,
-        clientName: validatedData.clientName || null,
-        location: validatedData.location || null,
-        sprints: validatedData.sprints || null,
-        // Add creator as OWNER member
-        members: {
-          create: {
-            userId: ctx.userId,
+    const {
+      wizardOwnerId,
+      wizardMembers,
+      wizardDeliverables,
+      wizardMetrics,
+      addStarterTasks,
+      ...projectFields
+    } = validatedData;
+
+    // Determine owner: wizard-selected owner or session user
+    const ownerId = wizardOwnerId || userId;
+
+    // Run everything in a single transaction
+    const project = await prisma.$transaction(async (tx) => {
+      // 1. Create project — always add session user as creator member
+      const creatorRole = ownerId === userId ? "OWNER" : "PIC";
+      const newProject = await tx.project.create({
+        data: {
+          workspaceId,
+          createdById: userId,
+          name: projectFields.name,
+          description: projectFields.description || null,
+          status: projectFields.status,
+          priority: projectFields.priority,
+          startDate: projectFields.startDate
+            ? new Date(projectFields.startDate)
+            : null,
+          endDate: projectFields.endDate
+            ? new Date(projectFields.endDate)
+            : null,
+          estimate: projectFields.estimate || null,
+          deadlineType: projectFields.deadlineType,
+          intent: projectFields.intent || null,
+          successType: projectFields.successType,
+          structure: projectFields.structure || null,
+          typeLabel: projectFields.typeLabel || null,
+          groupLabel: projectFields.groupLabel || null,
+          label: projectFields.label || null,
+          clientName: projectFields.clientName || null,
+          location: projectFields.location || null,
+          sprints: projectFields.sprints || null,
+          members: {
+            create: {
+              userId,
+              role: creatorRole,
+              access: "FULL_ACCESS",
+            },
+          },
+        },
+      });
+
+      // 2. Add selected owner (if different from creator)
+      if (ownerId !== userId) {
+        await tx.projectMember.create({
+          data: {
+            projectId: newProject.id,
+            userId: ownerId,
             role: "OWNER",
             access: "FULL_ACCESS",
           },
-        },
-      },
+        });
+      }
+
+      // 3. Add contributors and stakeholders from wizard
+      if (wizardMembers?.length) {
+        const existingUserIds = new Set([userId, ownerId]);
+        const uniqueMembers = wizardMembers.filter(
+          (m) => !existingUserIds.has(m.userId)
+        );
+        if (uniqueMembers.length > 0) {
+          await tx.projectMember.createMany({
+            data: uniqueMembers.map((m) => ({
+              projectId: newProject.id,
+              userId: m.userId,
+              role: m.role,
+              access: m.access,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      // 4. Create deliverables
+      if (wizardDeliverables?.length) {
+        await tx.projectDeliverable.createMany({
+          data: wizardDeliverables.map((d, i) => ({
+            projectId: newProject.id,
+            title: d.title,
+            dueDate: d.dueDate ? new Date(d.dueDate) : null,
+            order: i,
+          })),
+        });
+      }
+
+      // 5. Create metrics
+      if (wizardMetrics?.length) {
+        await tx.projectMetric.createMany({
+          data: wizardMetrics.map((m) => ({
+            projectId: newProject.id,
+            name: m.name,
+            target: m.target || null,
+          })),
+        });
+      }
+
+      // 6. Create starter tasks based on structure
+      if (addStarterTasks && projectFields.structure) {
+        await createStarterTasks(tx, newProject.id, projectFields.structure);
+      }
+
+      return newProject;
+    });
+
+    // Fetch full project for response
+    const fullProject = await prisma.project.findUniqueOrThrow({
+      where: { id: project.id },
       include: {
         createdBy: {
           select: { id: true, name: true, email: true, image: true },
@@ -218,18 +399,15 @@ export async function createProject(
             },
           },
         },
-        tags: {
-          include: { tag: true },
-        },
+        tags: { include: { tag: true } },
       },
     });
 
-    // Transform to response type
     const result = {
-      ...project,
-      tags: project.tags.map((t) => t.tag),
-      workstreams: project.workstreams ?? [],
-      notes: project.notes ?? [],
+      ...fullProject,
+      tags: fullProject.tags.map((t) => t.tag),
+      workstreams: fullProject.workstreams ?? [],
+      notes: fullProject.notes ?? [],
     } as ProjectDetail;
 
     revalidatePath("/dashboard/projects");
@@ -362,6 +540,19 @@ export async function updateProject(
       workstreams: project.workstreams ?? [],
       notes: project.notes ?? [],
     } as ProjectDetail;
+
+    void logActivity({
+      projectId: validatedData.id,
+      actorId: ctx.userId,
+      action: "updated",
+      entity: "project",
+      entityName: validatedData.name ?? project.name,
+      description: validatedData.name
+        ? `renamed project to "${validatedData.name}"`
+        : validatedData.status
+        ? `updated status to ${validatedData.status.toLowerCase()}`
+        : "updated project details",
+    });
 
     revalidatePath("/dashboard/projects");
     revalidatePath(`/dashboard/projects/${validatedData.id}`);
@@ -705,6 +896,15 @@ export async function createProjectTask(
       },
     });
 
+    void logActivity({
+      projectId: validatedData.projectId,
+      actorId: ctx.userId,
+      action: "created",
+      entity: "task",
+      entityName: validatedData.name,
+      description: `created task "${validatedData.name}"`,
+    });
+
     revalidatePath(`/dashboard/projects/${validatedData.projectId}`);
 
     return { success: true, data: { id: task.id } };
@@ -767,10 +967,29 @@ export async function updateProjectTask(
     }
     if (validatedData.order !== undefined) updateData.order = validatedData.order;
 
+    const taskRecord = await prisma.projectTask.findUnique({
+      where: { id: validatedData.id },
+      select: { name: true },
+    });
+
     await prisma.projectTask.update({
       where: { id: validatedData.id },
       data: updateData,
     });
+
+    if (validatedData.status) {
+      const statusLabel =
+        validatedData.status === "DONE" ? "done" :
+        validatedData.status === "IN_PROGRESS" ? "in progress" : "to do";
+      void logActivity({
+        projectId: task.projectId,
+        actorId: ctx.userId,
+        action: validatedData.status === "DONE" ? "completed" : "updated",
+        entity: "task",
+        entityName: taskRecord?.name ?? null,
+        description: `marked "${taskRecord?.name ?? "task"}" as ${statusLabel}`,
+      });
+    }
 
     revalidatePath(`/dashboard/projects/${task.projectId}`);
 

@@ -175,7 +175,7 @@ export function NotesTab({ projectId, notes }: NotesTabProps) {
   const [editTitle, setEditTitle] = useState("")
   const [editContent, setEditContent] = useState("")
 
-  const recentNotes = notes.slice(0, 4)
+  const recentNotes = notes.slice(0, 8)
 
   const handleCreate = async () => {
     if (!newTitle.trim()) return

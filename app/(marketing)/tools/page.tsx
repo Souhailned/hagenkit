@@ -8,11 +8,11 @@ export const metadata: Metadata = {
 
 export default function ToolsPage() {
   return (
-    <div className="container mx-auto px-4 py-24">
-      <div className="mb-12 text-center">
-        <h1 className="text-4xl font-bold tracking-tight">Gratis Horeca Tools</h1>
-        <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
-          Alles wat je nodig hebt om je horecadroom te realiseren — van naamgeving tot financiële planning.
+    <div className="container mx-auto px-4 py-24 max-w-5xl">
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Gratis Horeca Tools</h1>
+        <p className="mt-2 text-sm text-muted-foreground max-w-md">
+          AI-gedreven inzichten voor je horecadroom — van naamgeving tot financiële planning.
         </p>
       </div>
       <ToolsGrid />

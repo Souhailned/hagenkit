@@ -12,7 +12,7 @@ import {
   type KlingVideoOutput,
 } from "@/lib/fal";
 import type { AIProvider } from "@/lib/providers/types";
-import { getVideoPath, uploadVideo } from "@/lib/supabase";
+import { getVideoPath, uploadVideo } from "@/lib/storage";
 import {
   DEFAULT_NEGATIVE_PROMPT,
   getMotionPrompt,
@@ -285,7 +285,7 @@ export const generateVideoClipTask = task({
         resultVideoUrl = output.video.url;
       }
 
-      // Step 5: Save to Supabase
+      // Step 5: Save to R2
       metadata.set("status", {
         step: "saving",
         label: "Saving video…",
@@ -308,7 +308,7 @@ export const generateVideoClipTask = task({
         `${clipId}.mp4`
       );
 
-      logger.info("Uploading to Supabase", { videoPath });
+      logger.info("Uploading to R2", { videoPath });
 
       const storedVideoUrl = await uploadVideo(
         Buffer.from(resultVideoBuffer),

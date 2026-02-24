@@ -12,7 +12,7 @@ import {
   getExtensionFromContentType,
   generateImagePath,
   deleteImage as deleteStorageImage,
-} from "@/lib/supabase";
+} from "@/lib/storage";
 import { recomputeImageProjectCounters } from "@/lib/image-project-state";
 import {
   generatePrompt,
@@ -351,7 +351,7 @@ export async function bulkUpdateImageRoomTypes(
     });
 
     await Promise.all(
-      images.map(async (image: any) => {
+      images.map(async (image) => {
         const newPrompt = generatePrompt(
           image.project.styleTemplateId as StyleTemplateId,
           roomType as RoomTypeId
@@ -378,6 +378,23 @@ export async function bulkUpdateImageRoomTypes(
     console.error("[bulkUpdateImageRoomTypes] Error:", error);
     return { success: false, error: "Failed to update room types" };
   }
+}
+
+// Fire-and-forget helper to trigger the image processing API route
+async function fireProcessImage(imageId: string): Promise<void> {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const cookieHeader = (await headers()).get("cookie") ?? "";
+
+  fetch(`${baseUrl}/api/ai/images/process`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: cookieHeader,
+    },
+    body: JSON.stringify({ imageId }),
+  }).catch((err: unknown) => {
+    console.error("[fireProcessImage] Fire-and-forget error:", err);
+  });
 }
 
 // Start processing for a project
@@ -415,8 +432,6 @@ export async function startProjectProcessing(
       };
     }
 
-    const { processImageTask } = await import("@/trigger/process-image");
-
     let processedCount = 0;
 
     for (const image of pendingImages) {
@@ -438,14 +453,14 @@ export async function startProjectProcessing(
         continue;
       }
 
-      const handle = await processImageTask.trigger({ imageId: image.id });
+      // Fire-and-forget: trigger the SSE processing route
+      await fireProcessImage(image.id);
 
       await prisma.image.update({
         where: { id: image.id },
         data: {
           metadata: {
             ...(image.metadata as object),
-            runId: handle.id,
             startedAt: new Date().toISOString(),
             model: "fal-ai/nano-banana-pro",
           },
@@ -470,7 +485,7 @@ export async function startProjectProcessing(
 // Retry failed image
 export async function retryImageProcessing(
   imageId: string
-): Promise<ActionResult<{ runId: string }>> {
+): Promise<ActionResult> {
   try {
     const context = await getActiveWorkspace();
     if (!context) {
@@ -504,16 +519,14 @@ export async function retryImageProcessing(
       return { success: false, error: "Image already being retried" };
     }
 
-    const { processImageTask } = await import("@/trigger/process-image");
-
-    const handle = await processImageTask.trigger({ imageId });
+    // Fire-and-forget: trigger the SSE processing route
+    await fireProcessImage(imageId);
 
     await prisma.image.update({
       where: { id: imageId },
       data: {
         metadata: {
           ...(image.metadata as object),
-          runId: handle.id,
           startedAt: new Date().toISOString(),
           model: "fal-ai/nano-banana-pro",
         },
@@ -523,7 +536,7 @@ export async function retryImageProcessing(
     await recomputeImageProjectCounters(image.projectId);
 
     revalidatePath(`/dashboard/images/${image.projectId}`);
-    return { success: true, data: { runId: handle.id } };
+    return { success: true };
   } catch (error) {
     console.error("[retryImageProcessing] Error:", error);
     return { success: false, error: "Failed to retry processing" };
@@ -595,22 +608,13 @@ export async function triggerInpaintTask(
       },
     });
 
-    const { inpaintImageTask } = await import("@/trigger/inpaint-image");
-
-    const handle = await inpaintImageTask.trigger({
-      imageId,
-      newImageId: placeholder.id,
-      prompt,
-      mode,
-      maskDataUrl,
-    });
-
+    // Update metadata with run info before firing the API call
     await prisma.image.update({
       where: { id: placeholder.id },
       data: {
         metadata: {
           ...(placeholder.metadata as object),
-          runId: handle.id,
+          runId: "direct",
           startedAt: new Date().toISOString(),
           model:
             mode === "remove"
@@ -620,10 +624,32 @@ export async function triggerInpaintTask(
       },
     });
 
+    // Fire-and-forget: call the SSE inpaint API route
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const cookieHeader = (await headers()).get("cookie") || "";
+
+    fetch(`${baseUrl}/api/ai/images/inpaint`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookieHeader,
+      },
+      body: JSON.stringify({
+        imageId,
+        newImageId: placeholder.id,
+        prompt,
+        mode,
+        maskDataUrl,
+      }),
+    }).catch((err: unknown) =>
+      console.error("[triggerInpaintTask] Fire-and-forget fetch error:", err)
+    );
+
     revalidatePath(`/dashboard/images/${image.projectId}`);
     return {
       success: true,
-      data: { runId: handle.id, newImageId: placeholder.id },
+      data: { runId: "direct", newImageId: placeholder.id },
     };
   } catch (error) {
     console.error("[triggerInpaintTask] Error:", error);
@@ -708,7 +734,7 @@ export async function deleteProjectImage(
   }
 }
 
-// Update image (for Trigger.dev callback)
+// Update image (for API route callback)
 export async function updateImage(
   imageId: string,
   data: Partial<{

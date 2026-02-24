@@ -82,7 +82,7 @@ export function SearchBar({
 
     switch (suggestion.type) {
       case "city":
-        router.push(`/aanbod?city=${encodeURIComponent(suggestion.value)}`);
+        router.push(`/aanbod?cities=${encodeURIComponent(suggestion.value)}`);
         break;
       case "property_type":
         router.push(`/aanbod?types=${suggestion.value}`);

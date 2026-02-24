@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch"
 import {
   Sliders,
   ListBullets,
-  Kanban,
+  Columns,
   ChartBar,
   TextIndent,
   CaretUpDown,
@@ -35,7 +35,7 @@ export function ViewOptionsPopover({ options, onChange, allowedViewTypes }: View
 
   const viewTypes = [
     { id: "list", label: "List", icon: ListBullets },
-    { id: "board", label: "Board", icon: Kanban },
+    { id: "board", label: "Board", icon: Columns },
     { id: "timeline", label: "Timeline", icon: ChartBar },
   ].filter((type) => !allowedViewTypes || allowedViewTypes.includes(type.id))
 

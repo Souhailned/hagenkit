@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { type ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/data-table/data-table";
+import { EditableDataTable } from "@/components/data-table/editable";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { useDataTable } from "@/hooks/use-data-table";
@@ -39,6 +39,8 @@ import { AgencyDetailModal } from "@/components/admin/agency-detail-modal";
 import { updateAgencyVerified, updateAgencyPlan, getAgencyOwnerId } from "@/app/actions/admin/agencies";
 import { impersonateUser } from "@/app/actions/admin/impersonate";
 import { useRouter } from "next/navigation";
+import { usePermissions } from "@/hooks/use-permissions";
+import type { Row } from "@tanstack/react-table";
 import { toast } from "sonner";
 import type { AdminAgency, AgencyPlan } from "@/types/admin";
 
@@ -62,6 +64,7 @@ const planVariants: Record<AgencyPlan, "secondary" | "default" | "destructive"> 
 
 export function AgenciesDataTable({ data, pageCount }: AgenciesDataTableProps) {
   const router = useRouter();
+  const { canEdit: canEditCol } = usePermissions();
   const [detailModalOpen, setDetailModalOpen] = React.useState(false);
   const [selectedAgency, setSelectedAgency] = React.useState<AdminAgency | null>(null);
   const [isLoading, setIsLoading] = React.useState<string | null>(null);
@@ -148,6 +151,39 @@ export function AgenciesDataTable({ data, pageCount }: AgenciesDataTableProps) {
       setIsLoading(null);
     }
   }, [router]);
+
+  const canEdit = React.useCallback(
+    (_row: Row<AdminAgency>, columnId: string) =>
+      canEditCol("admin-agencies", columnId),
+    [canEditCol]
+  );
+
+  const handleCellSave = React.useCallback(
+    async ({ row, columnId, value }: { row: any; columnId: string; value: unknown }) => {
+      const agency = row.original;
+
+      if (columnId === "plan") {
+        const result = await updateAgencyPlan({
+          id: agency.id,
+          plan: value as AgencyPlan,
+        });
+        if (!result.success) {
+          throw new Error(result.error || "Failed to update plan");
+        }
+      } else if (columnId === "verified") {
+        const result = await updateAgencyVerified({
+          id: agency.id,
+          verified: value as boolean,
+        });
+        if (!result.success) {
+          throw new Error(result.error || "Failed to update verification");
+        }
+      }
+
+      router.refresh();
+    },
+    [router]
+  );
 
   const columns = React.useMemo<ColumnDef<AdminAgency>[]>(
     () => [
@@ -241,6 +277,14 @@ export function AgenciesDataTable({ data, pageCount }: AgenciesDataTableProps) {
             { label: "Pro", value: "PRO" },
             { label: "Enterprise", value: "ENTERPRISE" },
           ],
+          editable: {
+            type: "select",
+            options: [
+              { label: "Free", value: "FREE" },
+              { label: "Pro", value: "PRO" },
+              { label: "Enterprise", value: "ENTERPRISE" },
+            ],
+          },
         },
       },
       {
@@ -271,6 +315,9 @@ export function AgenciesDataTable({ data, pageCount }: AgenciesDataTableProps) {
             { label: "Verified", value: "true" },
             { label: "Unverified", value: "false" },
           ],
+          editable: {
+            type: "boolean",
+          },
         },
       },
       {
@@ -414,9 +461,9 @@ export function AgenciesDataTable({ data, pageCount }: AgenciesDataTableProps) {
 
   return (
     <>
-      <DataTable table={table}>
+      <EditableDataTable table={table} onCellSave={handleCellSave} canEdit={canEdit}>
         <DataTableToolbar table={table} />
-      </DataTable>
+      </EditableDataTable>
 
       {selectedAgency && (
         <AgencyDetailModal

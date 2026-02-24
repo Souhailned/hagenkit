@@ -14,7 +14,7 @@ import {
   getVideoProjectById,
   updateVideoProject,
 } from "@/lib/db/queries";
-import { getVideoPath, uploadVideo } from "@/lib/supabase";
+import { getVideoPath, uploadVideo } from "@/lib/storage";
 
 export interface CompileVideoPayload {
   videoProjectId: string;

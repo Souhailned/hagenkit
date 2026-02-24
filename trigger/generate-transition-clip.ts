@@ -6,7 +6,7 @@ import {
   type KlingVideoInput,
   type KlingVideoOutput,
 } from "@/lib/fal";
-import { getVideoPath, uploadVideo } from "@/lib/supabase";
+import { getVideoPath, uploadVideo } from "@/lib/storage";
 import { DEFAULT_NEGATIVE_PROMPT } from "@/lib/video/motion-prompts";
 
 export interface GenerateTransitionClipPayload {
@@ -155,7 +155,7 @@ export const generateTransitionClipTask = task({
 
       const resultVideoUrl = output.video.url;
 
-      // Step 5: Save to Supabase
+      // Step 5: Save to R2
       metadata.set("status", {
         step: "saving",
         label: "Saving transition…",
@@ -177,7 +177,7 @@ export const generateTransitionClipTask = task({
         `transition_${clipId}.mp4`
       );
 
-      logger.info("Uploading transition to Supabase", { videoPath });
+      logger.info("Uploading transition to R2", { videoPath });
 
       const storedVideoUrl = await uploadVideo(
         Buffer.from(resultVideoBuffer),

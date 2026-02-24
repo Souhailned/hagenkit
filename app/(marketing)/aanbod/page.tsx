@@ -8,6 +8,7 @@ import {
 import { searchProperties } from "@/app/actions/properties";
 import { AanbodClient } from "@/components/aanbod/aanbod-client";
 import { RecentViews } from "@/components/property/recent-views";
+import { HeroSearchCard } from "@/components/aanbod/hero-search-card";
 
 export const metadata: Metadata = {
   title: "Horecapanden | Vind jouw perfecte horecalocatie",
@@ -130,18 +131,28 @@ export default async function AanbodPage({ searchParams }: AanbodPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero section */}
-      <section className="border-b bg-background">
-        <div className="container mx-auto px-4 py-8 sm:py-10">
-          <h1 className="text-center text-2xl font-bold tracking-tight sm:text-3xl">
-            Horecapanden
-          </h1>
+    <div className="min-h-screen bg-background pt-16">
+      {/* Hero section with category tabs + search */}
+      <section className="border-b bg-gradient-to-b from-primary/[0.04] via-primary/[0.02] to-background">
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-12 lg:py-10">
+          <div className="mb-5 flex flex-col gap-1">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              Horecapanden
+            </h1>
+            <p className="text-sm text-muted-foreground sm:text-base">
+              Vind jouw perfecte horecalocatie in Nederland.
+            </p>
+          </div>
+
+          <HeroSearchCard
+            popularCities={allCities}
+            totalCount={result.data.total}
+          />
+
+          {/* Recent views integrated into hero */}
+          <RecentViews />
         </div>
       </section>
-
-      {/* Recent views */}
-      <RecentViews />
 
       {/* Main content */}
       <section className="container mx-auto px-4 py-10 lg:py-12">

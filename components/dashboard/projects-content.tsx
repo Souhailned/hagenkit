@@ -5,7 +5,7 @@ import { ProjectHeader } from "@/components/dashboard/project-header"
 import { ProjectCardsView } from "@/components/dashboard/project-cards-view"
 import { ProjectBoardView } from "@/components/dashboard/project-board-view"
 import { ProjectTimelineView } from "@/components/dashboard/project-timeline-view"
-import { ProjectWizard } from "@/components/project-wizard/ProjectWizard"
+import { ProjectWizard, type ProjectWizardSubmitData } from "@/components/project-wizard/ProjectWizard"
 import { listProjects, createProject } from "@/app/actions/projects"
 import type { ProjectListItem } from "@/types/project"
 import type { FilterCounts } from "@/lib/data/projects"
@@ -80,21 +80,7 @@ export function ProjectsContent() {
   const openWizard = () => setIsWizardOpen(true)
   const closeWizard = () => setIsWizardOpen(false)
 
-  const handleProjectCreated = async (projectData?: {
-    name: string
-    description?: string
-    priority?: string
-    status?: string
-    startDate?: string
-    endDate?: string
-    clientName?: string
-    typeLabel?: string
-  }) => {
-    if (!projectData) {
-      closeWizard()
-      return
-    }
-
+  const handleProjectCreated = async (projectData: ProjectWizardSubmitData) => {
     startTransition(async () => {
       const result = await createProject({
         name: projectData.name,
@@ -105,9 +91,15 @@ export function ProjectsContent() {
         endDate: projectData.endDate || "",
         clientName: projectData.clientName,
         typeLabel: projectData.typeLabel,
-        // Required defaults
-        deadlineType: "NONE",
-        successType: "UNDEFINED",
+        deadlineType: (projectData.deadlineType || "NONE") as "NONE" | "TARGET" | "FIXED",
+        successType: (projectData.successType || "UNDEFINED") as "DELIVERABLE" | "METRIC" | "UNDEFINED",
+        intent: projectData.intent?.toUpperCase() as "DELIVERY" | "EXPERIMENT" | "INTERNAL" | undefined,
+        structure: projectData.structure as "LINEAR" | "MILESTONES" | "MULTISTREAM" | undefined,
+        wizardOwnerId: projectData.ownerId,
+        wizardMembers: projectData.wizardMembers,
+        wizardDeliverables: projectData.wizardDeliverables,
+        wizardMetrics: projectData.wizardMetrics,
+        addStarterTasks: projectData.addStarterTasks,
       })
 
       if (result.success) {

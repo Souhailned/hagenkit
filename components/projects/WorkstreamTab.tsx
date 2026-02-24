@@ -4,10 +4,10 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { CaretDown } from "@phosphor-icons/react/dist/ssr"
-import { Plus } from "lucide-react"
+import { Plus, Trash2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { createWorkstream, updateWorkstream } from "@/app/actions/workstreams"
+import { createWorkstream, updateWorkstream, deleteWorkstream } from "@/app/actions/workstreams"
 import { updateProjectTask } from "@/app/actions/projects"
 
 import {
@@ -178,6 +178,9 @@ export function WorkstreamTab({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState("")
 
+  // Delete confirm state
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+
   // ---- Actions ----
 
   const handleRenameWorkstream = async () => {
@@ -299,98 +302,151 @@ export function WorkstreamTab({
 
       {/* Workstream accordions */}
       {sortedWorkstreams.length > 0 && (
-        <Accordion
-          type="multiple"
-          defaultValue={sortedWorkstreams.map((ws) => ws.id)}
-          className="w-full"
-        >
-          {sortedWorkstreams.map((ws) => {
-            const doneTasks = ws.tasks.filter((t) => t.status === "DONE")
-            const totalTasks = ws.tasks.length
-            const progress =
-              totalTasks > 0 ? (doneTasks.length / totalTasks) * 100 : 0
-            const sortedTasks = [...ws.tasks].sort((a, b) => a.order - b.order)
+        <div className="rounded-2xl border border-border bg-muted shadow-[var(--shadow-workstream)] p-3 space-y-3">
+          <div className="flex items-center justify-between gap-3 px-2">
+            <h4 className="text-sm font-semibold tracking-normal text-foreground uppercase">
+              Workstream Breakdown
+            </h4>
+          </div>
 
-            return (
-              <AccordionItem
-                key={ws.id}
-                value={ws.id}
-                className="border-b border-border"
-              >
-                <AccordionTrigger
-                  className={cn(
-                    "items-center gap-3 px-2 py-3 hover:no-underline hover:bg-muted/50",
-                    // Hide the built-in CaretDown appended by AccordionTrigger
-                    "[&>svg:last-child]:hidden"
-                  )}
+          <Accordion
+            type="multiple"
+            defaultValue={sortedWorkstreams.map((ws) => ws.id)}
+            className="w-full space-y-2"
+          >
+            {sortedWorkstreams.map((ws) => {
+              const doneTasks = ws.tasks.filter((t) => t.status === "DONE")
+              const totalTasks = ws.tasks.length
+              const progress =
+                totalTasks > 0 ? (doneTasks.length / totalTasks) * 100 : 0
+              const sortedTasks = [...ws.tasks].sort((a, b) => a.order - b.order)
+
+              return (
+                <AccordionItem
+                  key={ws.id}
+                  value={ws.id}
+                  className="overflow-hidden rounded-xl border border-border bg-background last:border-b"
                 >
-                  {/* Our own caret - rotates via [data-state=open]>svg on the trigger */}
-                  <CaretDown className="size-4 shrink-0 text-muted-foreground transition-transform duration-200" />
-
-                  {editingId === ws.id ? (
-                    <Input
-                      autoFocus
-                      value={editingName}
-                      onChange={(e) => setEditingName(e.target.value)}
-                      onBlur={() => handleRenameWorkstream()}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault()
-                          handleRenameWorkstream()
-                        }
-                        if (e.key === "Escape") setEditingId(null)
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="h-7 text-sm font-medium"
-                    />
-                  ) : (
-                    <span
-                      className="flex-1 truncate text-left"
-                      onDoubleClick={(e) => {
-                        e.stopPropagation()
-                        setEditingId(ws.id)
-                        setEditingName(ws.name)
-                      }}
-                    >
-                      {ws.name}
-                    </span>
-                  )}
-
-                  <Badge
-                    variant="secondary"
-                    className="text-[10px] px-1.5 py-0 shrink-0"
+                  <AccordionTrigger
+                    className={cn(
+                      "items-center gap-3 px-3 py-3 hover:no-underline hover:bg-muted/50 bg-background",
+                      "[&>svg:last-child]:hidden"
+                    )}
                   >
-                    {doneTasks.length}/{totalTasks}
-                  </Badge>
+                    <CaretDown className="size-4 shrink-0 text-muted-foreground transition-transform duration-200" />
 
-                  <ProgressCircle
-                    progress={progress}
-                    size={22}
-                    strokeWidth={2.5}
-                  />
-                </AccordionTrigger>
+                    {editingId === ws.id ? (
+                      <Input
+                        autoFocus
+                        value={editingName}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        onBlur={() => handleRenameWorkstream()}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault()
+                            handleRenameWorkstream()
+                          }
+                          if (e.key === "Escape") setEditingId(null)
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-7 text-sm font-medium"
+                      />
+                    ) : (
+                      <span
+                        className="flex-1 truncate text-left text-sm font-medium text-foreground"
+                        onDoubleClick={(e) => {
+                          e.stopPropagation()
+                          setEditingId(ws.id)
+                          setEditingName(ws.name)
+                        }}
+                      >
+                        {ws.name}
+                      </span>
+                    )}
 
-                <AccordionContent className="pl-2">
-                  {sortedTasks.length === 0 ? (
-                    <p className="py-3 text-xs text-muted-foreground text-center">
-                      No tasks in this workstream.
-                    </p>
-                  ) : (
-                    <div className="flex flex-col gap-0.5">
-                      {sortedTasks.map((task) => (
-                        <TaskRow
-                          key={task.id}
-                          task={task}
-                          onToggle={toggleTask}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </AccordionContent>
-              </AccordionItem>
-            )
-          })}
-        </Accordion>
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] px-1.5 py-0 shrink-0"
+                    >
+                      {doneTasks.length}/{totalTasks}
+                    </Badge>
+
+                    {/* Delete workstream */}
+                    {confirmDeleteId === ws.id ? (
+                      <>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="h-6 px-2 text-[10px]"
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            const result = await deleteWorkstream({ id: ws.id })
+                            if (result.success) {
+                              toast.success("Workstream deleted")
+                              router.refresh()
+                            } else {
+                              toast.error(result.error || "Failed to delete")
+                            }
+                            setConfirmDeleteId(null)
+                          }}
+                        >
+                          Confirm
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-[10px]"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setConfirmDeleteId(null)
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setConfirmDeleteId(ws.id)
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+
+                    <ProgressCircle
+                      progress={progress}
+                      size={22}
+                      strokeWidth={2.5}
+                    />
+                  </AccordionTrigger>
+
+                  <AccordionContent className="px-2 pb-2">
+                    {sortedTasks.length === 0 ? (
+                      <p className="py-3 text-xs text-muted-foreground text-center">
+                        No tasks in this workstream.
+                      </p>
+                    ) : (
+                      <div className="flex flex-col gap-0.5">
+                        {sortedTasks.map((task) => (
+                          <TaskRow
+                            key={task.id}
+                            task={task}
+                            onToggle={toggleTask}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              )
+            })}
+          </Accordion>
+        </div>
       )}
 
       {/* Unassigned tasks */}

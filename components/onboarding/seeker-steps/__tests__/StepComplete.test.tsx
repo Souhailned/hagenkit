@@ -109,6 +109,7 @@ describe("StepComplete", () => {
 
   it("stops confetti after duration", async () => {
     const confetti = await import("canvas-confetti");
+    const confettiMock = confetti.default as unknown as ReturnType<typeof vi.fn>;
 
     render(<StepComplete />);
 
@@ -116,13 +117,13 @@ describe("StepComplete", () => {
     vi.advanceTimersByTime(5000);
 
     // Get call count and ensure interval was cleared
-    const callCount = (confetti.default as ReturnType<typeof vi.fn>).mock.calls.length;
+    const callCount = confettiMock.mock.calls.length;
 
     // Advance more time - should not increase call count
     vi.advanceTimersByTime(2000);
 
     // Call count should remain the same after duration ends
-    expect((confetti.default as ReturnType<typeof vi.fn>).mock.calls.length).toBe(callCount);
+    expect(confettiMock.mock.calls.length).toBe(callCount);
   });
 
   it("cleans up confetti interval on unmount", () => {

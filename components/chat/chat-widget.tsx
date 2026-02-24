@@ -3,6 +3,7 @@
 import * as React from "react";
 import {
   ChatCircleDots,
+  CircleNotch,
   PaperPlaneTilt,
   X,
   MapPin,
@@ -96,6 +97,11 @@ const WIZARD_BUDGETS = [
   { label: "Te koop", value: "koop" },
   { label: "Maakt niet uit", value: "" },
 ];
+
+const CHAT_FALLBACK_ERROR_MESSAGE =
+  "Ik krijg nu geen antwoord van de server. Probeer het opnieuw over een paar seconden.";
+const CHAT_RETRY_QUICK_REPLY = "Opnieuw proberen";
+const CHAT_WIDGET_PANEL_ID = "horecagrond-chat-widget-panel";
 
 // ============================================================================
 // Helper: Extract text from UIMessage parts
@@ -440,11 +446,17 @@ function CopyButton({ text }: { text: string }) {
 
 function TypingIndicator() {
   return (
-    <div className="flex justify-start">
-      <div className="flex items-center gap-1 rounded-2xl bg-muted px-4 py-3 rounded-bl-md">
-        <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:0ms]" />
-        <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:150ms]" />
-        <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:300ms]" />
+    <div className="flex justify-start" aria-live="polite" aria-label="Assistent typt">
+      <div className="inline-flex items-center gap-2 rounded-2xl rounded-bl-md border border-border/60 bg-muted/55 px-3.5 py-2.5 shadow-sm">
+        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/12 text-primary">
+          <ChatCircleDots className="h-3.5 w-3.5" weight="fill" />
+        </span>
+        <div className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary/75 animate-bounce [animation-delay:-200ms]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-primary/75 animate-bounce [animation-delay:-100ms]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-primary/75 animate-bounce" />
+        </div>
+        <span className="text-xs text-muted-foreground">Assistent typt…</span>
       </div>
     </div>
   );
@@ -460,17 +472,21 @@ function QuickReplies({
   disabled: boolean;
 }) {
   return (
-    <div className="flex flex-wrap gap-1.5 mt-2 ml-1">
+    <div className="mt-2 ml-1 flex flex-wrap gap-2 pb-1">
       {replies.map((reply) => (
         <button
           key={reply}
           type="button"
           disabled={disabled}
           className={cn(
-            "rounded-full border border-primary/30 bg-background px-3 py-1.5 text-xs font-medium",
-            "text-primary hover:bg-primary/5 hover:border-primary/50",
-            "active:scale-95 transition-all",
-            "disabled:opacity-50 disabled:cursor-not-allowed"
+            "inline-flex min-h-11 items-center justify-center rounded-full border px-3.5 py-1.5 text-xs font-semibold leading-none sm:min-h-9",
+            "border-primary/25 bg-primary/[0.06] text-primary",
+            "shadow-[0_1px_0_0_rgba(255,255,255,0.65)_inset]",
+            "hover:-translate-y-0.5 hover:border-primary/45 hover:bg-primary/[0.12]",
+            "active:translate-y-0 active:scale-[0.98]",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2",
+            "touch-manipulation transition-all duration-200",
+            "disabled:pointer-events-none disabled:opacity-50"
           )}
           onClick={() => onSelect(reply)}
         >
@@ -637,12 +653,123 @@ export function ChatWidget() {
     },
   ]);
 
+  const [isAssistantThinking, setIsAssistantThinking] = React.useState(false);
+  const [pendingAssistantBaseline, setPendingAssistantBaseline] =
+    React.useState<number | null>(null);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const triggerButtonRef = React.useRef<HTMLButtonElement>(null);
+  const lastSentPromptRef = React.useRef<string | null>(null);
+  const sawTransportActivityRef = React.useRef(false);
+  const responseTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+
+  const closeChat = React.useCallback(() => {
+    setOpen(false);
+    setTimeout(() => triggerButtonRef.current?.focus(), 0);
+  }, []);
+
+  const appendAssistantError = React.useCallback(() => {
+    setLocalMessages((prev) => {
+      const lastMessage = prev[prev.length - 1];
+      if (
+        lastMessage?.role === "assistant" &&
+        lastMessage.content === CHAT_FALLBACK_ERROR_MESSAGE
+      ) {
+        return prev;
+      }
+
+      return [
+        ...prev,
+        {
+          id: `${Date.now()}-chat-error`,
+          role: "assistant",
+          content: CHAT_FALLBACK_ERROR_MESSAGE,
+          quickReplies: [CHAT_RETRY_QUICK_REPLY, "Nieuwe zoekopdracht"],
+        },
+      ];
+    });
+  }, []);
+
   // AI SDK useChat hook
   const { messages: aiMessages, sendMessage, status } = useChat({
     id: "horecagrond-chat",
+    onError: () => {
+      if (responseTimeoutRef.current) {
+        clearTimeout(responseTimeoutRef.current);
+        responseTimeoutRef.current = null;
+      }
+      sawTransportActivityRef.current = false;
+      setPendingAssistantBaseline(null);
+      setIsAssistantThinking(false);
+      appendAssistantError();
+    },
   });
 
   const isLoading = status === "streaming" || status === "submitted";
+  const assistantMessageCount = React.useMemo(
+    () => aiMessages.filter((message) => message.role === "assistant").length,
+    [aiMessages]
+  );
+  const isBusy = isLoading || isAssistantThinking;
+
+  React.useEffect(() => {
+    return () => {
+      if (responseTimeoutRef.current) {
+        clearTimeout(responseTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) return;
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeChat();
+      }
+    };
+
+    window.addEventListener("keydown", onEscape);
+    return () => window.removeEventListener("keydown", onEscape);
+  }, [open, closeChat]);
+
+  React.useEffect(() => {
+    if (status === "submitted" || status === "streaming") {
+      sawTransportActivityRef.current = true;
+      return;
+    }
+
+    if (!isAssistantThinking || pendingAssistantBaseline === null) {
+      return;
+    }
+
+    // Avoid premature fallback before transport starts updating status.
+    if (!sawTransportActivityRef.current) {
+      return;
+    }
+
+    if (responseTimeoutRef.current) {
+      clearTimeout(responseTimeoutRef.current);
+      responseTimeoutRef.current = null;
+    }
+
+    if (assistantMessageCount <= pendingAssistantBaseline) {
+      appendAssistantError();
+    }
+
+    sawTransportActivityRef.current = false;
+    setPendingAssistantBaseline(null);
+    setIsAssistantThinking(false);
+  }, [
+    status,
+    assistantMessageCount,
+    appendAssistantError,
+    isAssistantThinking,
+    pendingAssistantBaseline,
+  ]);
 
   // Fetch auth session on mount
   React.useEffect(() => {
@@ -682,15 +809,12 @@ export function ChatWidget() {
       .catch(() => {});
   }, []);
 
-  const scrollRef = React.useRef<HTMLDivElement>(null);
-  const inputRef = React.useRef<HTMLInputElement>(null);
-
   // Auto-scroll
   React.useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [localMessages, aiMessages, isLoading]);
+  }, [localMessages, aiMessages, isBusy]);
 
   // Focus input when chat opens
   React.useEffect(() => {
@@ -767,11 +891,40 @@ export function ChatWidget() {
 
   // Send message to AI
   const sendToAi = async (text: string) => {
+    lastSentPromptRef.current = text;
+
     // Clear quick replies from local messages
     setLocalMessages((prev) =>
       prev.map((m) => ({ ...m, quickReplies: undefined }))
     );
-    await sendMessage({ text });
+    sawTransportActivityRef.current = false;
+    setPendingAssistantBaseline(assistantMessageCount);
+    setIsAssistantThinking(true);
+
+    if (responseTimeoutRef.current) {
+      clearTimeout(responseTimeoutRef.current);
+    }
+
+    responseTimeoutRef.current = setTimeout(() => {
+      sawTransportActivityRef.current = false;
+      setPendingAssistantBaseline(null);
+      setIsAssistantThinking(false);
+      appendAssistantError();
+      responseTimeoutRef.current = null;
+    }, 20000);
+
+    try {
+      await sendMessage({ text });
+    } catch {
+      if (responseTimeoutRef.current) {
+        clearTimeout(responseTimeoutRef.current);
+        responseTimeoutRef.current = null;
+      }
+      sawTransportActivityRef.current = false;
+      setPendingAssistantBaseline(null);
+      setIsAssistantThinking(false);
+      appendAssistantError();
+    }
   };
 
   // ========== Wizard Flow ==========
@@ -835,14 +988,18 @@ export function ChatWidget() {
       setWizard({ active: false, step: "type", filters: {} });
 
       // Send the constructed search query to the AI with tools
-      await sendMessage({
-        text: `Zoek ${parts.join(" ") || "horecapanden"}`,
-      });
+      await sendToAi(`Zoek ${parts.join(" ") || "horecapanden"}`);
     }
   };
 
   // ========== Quick Reply Handler ==========
   const handleQuickReply = async (text: string) => {
+    if (text === CHAT_RETRY_QUICK_REPLY) {
+      if (!lastSentPromptRef.current || isBusy) return;
+      await sendToAi(lastSentPromptRef.current);
+      return;
+    }
+
     // Dashboard redirects
     if (text === "Mijn favorieten") {
       window.location.href = "/dashboard/favorieten";
@@ -1053,7 +1210,7 @@ export function ChatWidget() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = inputValue.trim();
-    if (!text || isLoading) return;
+    if (!text || isBusy) return;
 
     setInputValue("");
 
@@ -1083,14 +1240,27 @@ export function ChatWidget() {
       {/* Floating button */}
       {!open && (
         <button
+          ref={triggerButtonRef}
           onClick={() => setOpen(true)}
+          aria-label="Open chatassistent"
+          aria-haspopup="dialog"
+          aria-controls={CHAT_WIDGET_PANEL_ID}
+          aria-expanded={open}
           className={cn(
-            "fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center",
-            "rounded-full bg-primary text-primary-foreground shadow-lg",
-            "hover:scale-105 active:scale-95 transition-transform"
+            "fixed bottom-5 right-5 z-50 inline-flex h-14 w-14 items-center justify-center rounded-full",
+            "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground",
+            "shadow-[0_18px_40px_-22px_hsl(var(--primary)/0.95)] ring-1 ring-white/60",
+            "transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.03]",
+            "active:translate-y-0 active:scale-[0.98]",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2",
+            "touch-manipulation"
           )}
         >
           <ChatCircleDots className="h-6 w-6" weight="fill" />
+          <span
+            aria-hidden="true"
+            className="absolute -right-0.5 -top-0.5 inline-flex h-3 w-3 rounded-full border border-background bg-emerald-500"
+          />
         </button>
       )}
 
@@ -1098,46 +1268,63 @@ export function ChatWidget() {
       {open && (
         <>
           {/* Mobile backdrop */}
-          <div className="fixed inset-0 z-40 bg-background sm:hidden" />
+          <div className="fixed inset-0 z-40 bg-background/70 backdrop-blur-sm sm:hidden" />
           <div
+            id={CHAT_WIDGET_PANEL_ID}
+            role="dialog"
+            aria-modal="false"
+            aria-label="Horecagrond chatassistent"
             className={cn(
-              "fixed z-50 flex flex-col border bg-background shadow-2xl",
-              "animate-in slide-in-from-bottom-5 fade-in duration-200",
-              "sm:bottom-6 sm:right-6 sm:w-[400px] sm:max-h-[600px] sm:rounded-2xl",
-              "max-sm:inset-0 max-sm:w-full max-sm:h-full max-sm:rounded-none"
+              "fixed z-50 flex flex-col overflow-hidden border border-border/70",
+              "bg-background/95 shadow-[0_28px_70px_-38px_rgba(15,23,42,0.55)]",
+              "supports-[backdrop-filter]:bg-background/88 supports-[backdrop-filter]:backdrop-blur-xl",
+              "animate-in slide-in-from-bottom-6 fade-in zoom-in-95 duration-300",
+              "sm:bottom-4 sm:right-4 sm:w-[min(430px,calc(100vw-1.5rem))]",
+              "sm:h-[min(680px,calc(100vh-2rem))] sm:rounded-[1.5rem]",
+              "max-sm:inset-x-0 max-sm:bottom-0 max-sm:h-[88dvh] max-sm:rounded-t-[1.5rem]"
             )}
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b px-4 py-3">
+            <div className="border-b border-border/70 bg-gradient-to-r from-primary/[0.08] via-background to-background px-4 py-3.5 sm:px-5">
+              <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/12 ring-1 ring-primary/20">
                   <ChatCircleDots
-                    className="h-4 w-4 text-primary"
+                      className="h-5 w-5 text-primary"
                     weight="fill"
                   />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold">
+                    <p className="text-[15px] font-semibold tracking-tight">
                     Horecagrond Assistent
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {isLoading ? "Aan het typen..." : "Online"}
+                    <p className="mt-0.5 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          "inline-flex h-2 w-2 rounded-full",
+                          isBusy ? "animate-pulse bg-primary" : "bg-emerald-500"
+                        )}
+                      />
+                      {isBusy ? "Aan het typen…" : "Online"}
                   </p>
                 </div>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
-                onClick={() => setOpen(false)}
+                  aria-label="Chat sluiten"
+                  className="h-9 w-9 rounded-xl text-muted-foreground hover:bg-background/80 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/35"
+                onClick={closeChat}
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
+            </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 p-4 min-h-0" ref={scrollRef}>
-              <div className="space-y-3">
+            <ScrollArea className="min-h-0 flex-1 px-4 py-4 sm:px-5" ref={scrollRef}>
+              <div className="space-y-3.5 pb-2">
                 {allMessages.map((message) => (
                   <div key={message.id}>
                     <div
@@ -1151,10 +1338,10 @@ export function ChatWidget() {
                       {message.content && (
                         <div
                           className={cn(
-                            "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed relative group",
+                            "relative max-w-[86%] rounded-2xl px-4 py-3 text-[15px] leading-relaxed shadow-sm",
                             message.role === "user"
-                              ? "bg-primary text-primary-foreground rounded-br-md"
-                              : "bg-muted rounded-bl-md"
+                              ? "rounded-br-md bg-primary text-primary-foreground shadow-primary/25"
+                              : "rounded-bl-md border border-border/60 bg-muted/55 text-foreground"
                           )}
                         >
                           {message.role === "assistant" ? (
@@ -1186,7 +1373,7 @@ export function ChatWidget() {
                         <QuickReplies
                           replies={message.quickReplies}
                           onSelect={handleQuickReply}
-                          disabled={isLoading}
+                          disabled={isBusy}
                         />
                       )}
                   </div>
@@ -1201,31 +1388,45 @@ export function ChatWidget() {
                 )}
 
                 {/* Typing indicator */}
-                {isLoading && <TypingIndicator />}
+                {isBusy && <TypingIndicator />}
               </div>
             </ScrollArea>
 
             {/* Input */}
             <form
               onSubmit={handleSubmit}
-              className="flex items-center gap-2 border-t p-3"
+              className="border-t border-border/70 bg-background/90 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] supports-[backdrop-filter]:backdrop-blur-xl sm:p-3.5"
             >
-              <Input
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Typ je vraag..."
-                className="flex-1 rounded-xl border-0 bg-muted text-sm focus-visible:ring-0"
-                disabled={isLoading}
-              />
-              <Button
-                type="submit"
-                size="icon"
-                className="h-9 w-9 shrink-0 rounded-xl"
-                disabled={isLoading || !inputValue.trim()}
-              >
-                <PaperPlaneTilt className="h-4 w-4" weight="fill" />
-              </Button>
+              <div className="flex items-center gap-2 rounded-2xl border border-border/70 bg-muted/35 p-1.5 shadow-sm">
+                <Input
+                  ref={inputRef}
+                  id="chat-widget-input"
+                  name="chat_message"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="Typ je vraag…"
+                  className="h-10 flex-1 rounded-xl border-0 bg-transparent px-3 text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/35 sm:text-sm"
+                  disabled={isBusy}
+                  autoComplete="off"
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  aria-label={isBusy ? "Bericht wordt verzonden" : "Verstuur bericht"}
+                  className={cn(
+                    "h-10 w-10 shrink-0 rounded-xl",
+                    "shadow-[0_10px_20px_-16px_hsl(var(--primary)/0.95)]",
+                    "focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
+                  )}
+                  disabled={isBusy || !inputValue.trim()}
+                >
+                  {isBusy ? (
+                    <CircleNotch className="h-4 w-4 animate-spin" weight="bold" />
+                  ) : (
+                    <PaperPlaneTilt className="h-4 w-4" weight="fill" />
+                  )}
+                </Button>
+              </div>
             </form>
           </div>
         </>

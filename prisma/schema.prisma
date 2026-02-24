@@ -50,6 +50,7 @@ model User {
   tasksAssigned      ProjectTask[]   @relation("TaskAssignee")
   filesUploaded      ProjectFile[]   @relation("ProjectFileUploader")
   notesCreated       ProjectNote[]   @relation("ProjectNoteCreator")
+  projectActivities  ProjectActivity[] @relation("ActivityActor")
 
   // ============================================
   // HORECAGROND RELATIONS
@@ -64,15 +65,20 @@ model User {
   agencyInvitations AgencyInvitation[] @relation("AgencyInvitedBy")
 
   // Property Relations
-  propertiesCreated Property[]        @relation("PropertyCreator")
-  savedProperties   SavedProperty[]
-  inquiriesMade     PropertyInquiry[] @relation("InquirySeeker")
-  inquiriesAssigned PropertyInquiry[] @relation("InquiryAssignee")
-  propertyViews     PropertyView[]
-  favorites         FavoriteProperty[]
+  propertiesCreated  Property[]        @relation("PropertyCreator")
+  propertiesAssigned Property[]        @relation("PropertyAgent")
+  savedProperties    SavedProperty[]
+  inquiriesMade      PropertyInquiry[] @relation("InquirySeeker")
+  inquiriesAssigned  PropertyInquiry[] @relation("InquiryAssignee")
+  propertyViews      PropertyView[]
+  favorites          FavoriteProperty[]
+  documentsUploaded  PropertyDocument[] @relation("DocumentUploader")
 
   // Search Alerts
   searchAlerts      SearchAlert[]
+
+  // AI Quota
+  aiQuota           UserAiQuota?
 
   @@map("user")
 }
@@ -235,6 +241,9 @@ model Agency {
   stripeCustomerId  String?             // Voor betalingen
   stripeSubscriptionId String?
 
+  // AI Features
+  dreamSliderEnabled Boolean @default(false) // Activeer Droom Slider voor deze agency
+
   // Limits based on plan
   maxListings       Int       @default(3)  // FREE = 3
   maxAgents         Int       @default(1)  // FREE = 1
@@ -386,6 +395,8 @@ model Property {
   agency            Agency          @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   createdById       String
   createdBy         User            @relation("PropertyCreator", fields: [createdById], references: [id])
+  assignedAgentId   String?
+  assignedAgent     User?           @relation("PropertyAgent", fields: [assignedAgentId], references: [id])
 
   // Basic Info
   title             String
@@ -488,6 +499,23 @@ model Property {
   locationScore     Int?            // 1-100
   footfallEstimate  Int?            // Geschatte passanten/dag
 
+  // Media (directe links)
+  videoUrl              String?         // Video tour URL
+  virtualTourUrl        String?         // 360° tour URL (bijv. Matterport)
+  floorplanUrl          String?         // Plattegrond URL
+
+  // Branchebeperkingen & Concurrentie
+  brancheBeperkingen    String[]        // Restricties: ["geen_fastfood", "alleen_cat1"]
+  concurrentiebeding         Boolean    @default(false)
+  concurrentiebedingDetails  String?    @db.Text
+  concurrentiebedingTot      DateTime?
+
+  // Leegstand
+  vacantSince           DateTime?       // Sinds wanneer leegstaand
+
+  // Tags (vrije labels)
+  tags                  String[]        // ["instapklaar", "toplocatie", "hoekpand"]
+
   // SEO & Marketing
   metaTitle         String?
   metaDescription   String?
@@ -521,13 +549,19 @@ model Property {
   inquiries         PropertyInquiry[]
   savedBy           SavedProperty[]
   views             PropertyView[]
-  imageProjects     ImageProject[]  // Link naar AI processing
+  imageProjects     ImageProject[]  @relation("ProjectImageProjects")
+  videoProjects     VideoProject[]  @relation("ProjectVideoProjects")
   favorites         FavoriteProperty[]
+  demoConcepts      PropertyDemoConcept[]  // AI-gegenereerde stijlconcepts
+
+  // Documents
+  documents         PropertyDocument[]
 
   // Detail Relations (1:1)
   financials        PropertyFinancials?
   building          PropertyBuilding?
   staffing          PropertyStaffing?
+  aiContent         PropertyAiContent?
 
   // Detail Relations (1:N)
   licenses          PropertyLicense[]
@@ -551,6 +585,8 @@ model Property {
   @@index([surfaceTotal])
   @@index([locationClassification])
   @@index([currentlyOperating])
+  @@index([assignedAgentId])
+  @@index([vacantSince])
 
   @@map("property")
 }
@@ -897,6 +933,7 @@ enum InquirySource {
   EMAIL         // Direct email
   REFERRAL      // Doorverwijzing
   WALK_IN       // Spontaan bezoek
+  DREAM_SLIDER  // Via de AI Droom Slider (hogere lead score)
 }
 
 // ============================================
@@ -962,6 +999,17 @@ model PropertyFinancials {
   omzetTrend              OmzetTrend?
   winst                   Int?           // In centen
 
+  // WOZ & Taxatie
+  wozWaarde               Int?           // In centen
+  wozJaar                 Int?           // Jaar van WOZ-waarde
+
+  // Koopoptie
+  optieTotkoop            Boolean        @default(false)
+  koopoptieDetails        String?        @db.Text
+
+  // Huur per m2 (cached berekening)
+  huurPerM2               Int?           // In centen, berekend: rentPrice / surfaceTotal
+
   // Verkoop
   discreteVerkoop         Boolean        @default(false)
   priceOnRequest          Boolean        @default(false)
@@ -997,6 +1045,27 @@ model PropertyBuilding {
 
   // Staat
   staat                 PropertyStaat?
+
+  // Nutsvoorzieningen
+  gasAansluiting            Boolean         @default(false)
+  gasCapaciteit             String?         // Bijv. "G25", "G16"
+  elektraAansluiting        Boolean         @default(false)
+  elektraCapaciteit         String?         // Bijv. "3x25A", "3x35A"
+  elektra3Fase              Boolean         @default(false)
+  waterAansluiting          Boolean         @default(false)
+  waterCapaciteit           String?         // Bijv. "½ inch", "¾ inch"
+
+  // Horeca-specifieke Installaties
+  vetafscheider             Boolean         @default(false)
+  vetafscheiderCapaciteit   String?         // Bijv. "NS4", "NS7"
+  afzuiginstallatie         Boolean         @default(false)
+  afzuigCapaciteit          String?         // Bijv. "5000 m3/h"
+  rioolAansluiting          Boolean         @default(true)
+
+  // Klimaat & Isolatie
+  airco                     Boolean         @default(false)
+  vloerverwarming           Boolean         @default(false)
+  dubbeleGlazing            Boolean         @default(false)
 
   // Bedrijfswoning
   bedrijfswoning        Boolean         @default(false)
@@ -1149,6 +1218,139 @@ model PropertyHistory {
   @@index([propertyId])
   @@index([previousType])
   @@map("property_history")
+}
+
+// ============================================
+// PROPERTY DOCUMENT MODEL
+// ============================================
+
+model PropertyDocument {
+  id              String              @id @default(cuid())
+  propertyId      String
+  property        Property            @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  uploadedById    String
+  uploadedBy      User                @relation("DocumentUploader", fields: [uploadedById], references: [id])
+
+  // Document Info
+  type            DocumentType
+  name            String
+  description     String?
+  url             String
+  mimeType        String?
+  sizeBytes       Int?
+
+  // Vertrouwelijkheid (voor Deal Room)
+  isConfidential  Boolean             @default(false)
+  ndaRequired     Boolean             @default(false)  // Alleen zichtbaar na NDA
+
+  // AI Document Analysis
+  aiSummary       String?             @db.Text        // AI-gegenereerde samenvatting
+  aiAnalysis      Json?                               // Gestructureerde AI-analyse (risico's, kernpunten)
+  aiAnalyzedAt    DateTime?
+
+  // Display
+  displayOrder    Int                 @default(0)
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([propertyId])
+  @@index([propertyId, type])
+  @@map("property_document")
+}
+
+enum DocumentType {
+  BROCHURE            // Verkoopbrochure
+  FLOORPLAN           // Plattegrond
+  HUURCONTRACT        // Huurovereenkomst
+  KOOPCONTRACT        // Koopovereenkomst
+  ENERGIELABEL        // Energielabel certificaat
+  BODEMRAPPORT        // Bodemonderzoek
+  ASBESTRAPPORT       // Asbestinventarisatie
+  BRANDVEILIGHEID     // Brandpreventie rapport
+  EXPLOITATIEPLAN     // Exploitatieplan
+  JAARCIJFERS         // Jaarrekening / financials
+  TAXATIERAPPORT      // Taxatieverslag
+  FOTO_RAPPORT        // Fotoreportage
+  BESTEMMINGSPLAN     // Bestemmingsplan uittreksel
+  KADASTER            // Kadastrale gegevens
+  VERGUNNING          // Vergunningsdocument
+  NDA                 // Geheimhoudingsverklaring
+  OVERIG
+}
+
+// ============================================
+// PROPERTY AI CONTENT MODEL (1:1)
+// AI-gegenereerde content & analyses per pand
+// ============================================
+
+model PropertyAiContent {
+  id                    String          @id @default(cuid())
+  propertyId            String          @unique
+  property              Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // ── AI Listing Generator ──────────────────
+  // One-Click Listing: auto-gegenereerde teksten voor 3 doelgroepen
+  aiDescription         String?         @db.Text     // Volledige AI beschrijving
+  aiShortDescription    String?                      // AI korte beschrijving (max 200 chars)
+  aiHighlights          Json?                        // ["Toplocatie A1", "Professionele keuken", ...]
+  aiListingRestaurant   String?         @db.Text     // Listing gericht op restaurant-zoekers
+  aiListingInvestor     String?         @db.Text     // Listing gericht op investeerders
+  aiListingStarter      String?         @db.Text     // Listing gericht op horeca-starters
+
+  // ── AI Analyse ────────────────────────────
+  aiTargetAudiences     Json?                        // [{audience: "Familie restaurant", fit: 0.85, reason: "..."}]
+  aiSwotAnalysis        Json?                        // {strengths: [], weaknesses: [], opportunities: [], threats: []}
+  aiSocialPosts         Json?                        // [{platform: "instagram", text: "...", hashtags: [...]}]
+
+  // ── AI Waardering (AVM) ───────────────────
+  // Automated Valuation Model: geschatte waarde op basis van vergelijkbare panden
+  aiValuation           Int?                         // Geschatte waarde in centen
+  aiValuationDetails    Json?                        // {goodwill: X, inventaris: Y, locatiePremie: Z, ...}
+  aiValuationConfidence Float?                       // 0.0 - 1.0 betrouwbaarheid
+  aiValuationDate       DateTime?
+  aiComparables         Json?                        // [{propertyId, address, price, similarity}] vergelijkbare panden
+
+  // ── AI Matching Engine ────────────────────
+  // Profiel voor proactieve matching met zoekende gebruikers
+  aiMatchingProfile     Json?                        // {cuisine_fit: [...], budget_range: {...}, ideal_operator: "..."}
+  aiMatchingKeywords    String[]                     // Zoekwoorden: ["terras", "centrum", "bezorgkeuken"]
+
+  // ── AI Document Analysis ──────────────────
+  // Samenvatting van alle geanalyseerde documenten bij het pand
+  aiDocumentsSummary    Json?                        // {totalDocs: N, analyzed: N, keyFindings: [...]}
+  aiRiskFlags           Json?                        // [{severity: "high", category: "compliance", description: "..."}]
+  aiFinancialHealth     Json?                        // {score: 75, trend: "stijgend", flags: [...]}
+
+  // ── AI Location Intelligence ──────────────
+  // Per-property locatiedata: voetgangersstromen, demografie, concurrentie
+  aiLocationInsights    Json?                        // {demographics: {...}, footTraffic: {...}, trends: [...]}
+  aiFootTrafficData     Json?                        // {daily: N, peakHours: [...], seasonal: {...}}
+  aiCompetitorAnalysis  Json?                        // [{name, type, distance, rating, priceRange}]
+  aiAreaTrends          Json?                        // {gentrification: 0.7, horecaGrowth: 0.3, ...}
+
+  // ── Semantic Search (Vector DB) ───────────
+  // Reference naar embedding in external vector DB (Upstash)
+  embeddingId           String?                      // External vector DB reference
+  embeddingModel        String?                      // Bijv. "text-embedding-3-small"
+  embeddingUpdatedAt    DateTime?
+
+  // ── AI Pre-qualification Chatbot ──────────
+  // Gestructureerde data die de chatbot gebruikt voor lead kwalificatie
+  aiChatbotContext      Json?                        // Pre-compiled context voor snelle chatbot responses
+  aiFrequentQuestions   Json?                        // [{question, answer}] meest gestelde vragen + antwoorden
+
+  // ── Meta ───────────────────────────────────
+  lastGeneratedAt       DateTime?                    // Wanneer laatst AI content gegenereerd
+  generationVersion     Int             @default(0)  // Track AI pipeline versie
+  generationCostCents   Int?                         // Kosten van AI generatie in centen
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([propertyId])
+  @@index([embeddingId])
+  @@map("property_ai_content")
 }
 
 // ============================================
@@ -1312,6 +1514,7 @@ model Project {
   tags          ProjectTagAssignment[]
   workstreams   ProjectWorkstream[]
   notes         ProjectNote[]
+  activities    ProjectActivity[]
 
   @@index([workspaceId])
   @@index([createdById])
@@ -1319,6 +1522,26 @@ model Project {
   @@index([priority])
   @@index([workspaceId, status])
   @@map("project")
+}
+
+// Project activity log (audit trail)
+model ProjectActivity {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actorId     String
+  actor       User     @relation("ActivityActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  // What happened
+  action      String   // "created" | "updated" | "deleted" | "completed" | "reopened"
+  entity      String   // "task" | "workstream" | "note" | "file" | "scope_item" | "feature" | "project"
+  entityName  String?  // human readable name (e.g. task name)
+  description String   // full sentence: "created task Define requirements"
+
+  createdAt   DateTime @default(now())
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@map("project_activity")
 }
 
 // Project member (Owner, PIC, Contributors, Stakeholders)
@@ -1657,7 +1880,7 @@ model ImageProject {
 
   // Optionele link naar Property (Horecagrond)
   propertyId      String?
-  property        Property?     @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  property        Property?     @relation("ProjectImageProjects", fields: [propertyId], references: [id], onDelete: SetNull)
 
   name            String
   styleTemplateId String        @default("modern")
@@ -1752,7 +1975,12 @@ model VideoProject {
   updatedAt           DateTime @updatedAt
   clips               VideoClip[]
 
+  // Optionele link naar Property (Horecagrond)
+  propertyId          String?
+  property            Property? @relation("ProjectVideoProjects", fields: [propertyId], references: [id], onDelete: SetNull)
+
   @@index([workspaceId])
+  @@index([propertyId])
   @@map("video_project")
 }
 
@@ -1777,4 +2005,68 @@ model VideoClip {
   @@index([videoProjectId])
   @@index([imageId])
   @@map("video_clip")
+}
+
+// ============================================
+// AI DROOM SLIDER MODELS
+// ============================================
+
+/// AI-gegenereerde stijlconcepts voor de publieke Droom Slider
+model PropertyDemoConcept {
+  id          String   @id @default(cuid())
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  style        String    // bijv. "restaurant_modern", "cafe_gezellig"
+  imageUrl     String?   // Nullable: null terwijl pending/generating
+  sourceUrl    String    // Originele bronafbeelding
+  status       String    @default("pending") // pending | generating | completed | failed
+  retryCount   Int       @default(0)
+  errorMessage String?
+  generatedAt  DateTime? // Nullable: ingevuld bij completion
+  isActive     Boolean   @default(true)
+
+  @@unique([propertyId, style])
+  @@index([propertyId])
+  @@map("property_demo_concept")
+}
+
+/// Logt alle AI API aanroepen voor kosten-inzicht in het admin dashboard
+model AiUsageLog {
+  id          String   @id @default(cuid())
+  workspaceId String?
+  userId      String?
+  agencyId    String?
+
+  service     String   // "fal-ai" | "groq" | "openai"
+  model       String   // bijv. "fal-ai/nano-banana-pro/edit"
+  feature     String   // "demo-concept" | "virtual-staging" | "description" | "listing-package"
+  costCents   Int      @default(0)   // Kosten in eurocenten
+  tokens      Int?                   // LLM tokens gebruikt
+  durationMs  Int?                   // Verwerkingtijd in ms
+  status      String   // "success" | "failed"
+  metadata    Json?
+
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([feature, createdAt])
+  @@index([service, createdAt])
+  @@index([createdAt])
+  @@map("ai_usage_log")
+}
+
+/// Houdt bij hoeveel gratis AI edits een user heeft gebruikt
+model UserAiQuota {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  freeEditsUsed  Int       @default(0)
+  freeEditsLimit Int       @default(3)
+  totalEdits     Int       @default(0)
+  lastEditAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("user_ai_quota")
 }

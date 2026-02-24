@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "motion/react"
 import type { Project } from "@/lib/data/projects"
 import { Breadcrumbs } from "@/components/projects/Breadcrumbs"
 import { ProjectDetailHeader } from "@/components/projects/ProjectDetailHeader"
+import { EditProjectModal } from "@/components/projects/EditProjectModal"
 import { ScopeColumns } from "@/components/projects/ScopeColumns"
 import { OutcomesList } from "@/components/projects/OutcomesList"
 import { KeyFeaturesColumns } from "@/components/projects/KeyFeaturesColumns"
@@ -23,6 +24,9 @@ import { WorkstreamTab } from "@/components/projects/WorkstreamTab"
 import { ProjectTasksTab } from "@/components/projects/ProjectTasksTab"
 import { NotesTab } from "@/components/projects/NotesTab"
 import { AssetsFilesTab } from "@/components/projects/AssetsFilesTab"
+import { ActivityTab } from "@/components/projects/ActivityTab"
+import { AiMediaTab } from "@/components/projects/AiMediaTab"
+import type { ActivityEntry } from "@/app/actions/project-activity"
 
 // ---------------------------------------------------------------------------
 // Exported types for page-level data mapping
@@ -94,6 +98,10 @@ type ProjectDetailContentProps = {
   files?: FileData[]
   allTasks?: TaskData[]
   members?: MemberData[]
+  scopeItems?: Array<{ id: string; content: string; type: "IN_SCOPE" | "OUT_OF_SCOPE" | "EXPECTED_OUTCOME" }>
+  dbFeatures?: Array<{ id: string; content: string; priority: "P0" | "P1" | "P2" }>
+  deliverables?: Array<{ id: string; title: string; completed: boolean; dueDate: Date | null }>
+  activities?: ActivityEntry[]
 }
 
 export function ProjectDetailContent({
@@ -104,8 +112,13 @@ export function ProjectDetailContent({
   files,
   allTasks,
   members,
+  scopeItems,
+  dbFeatures,
+  deliverables,
+  activities,
 }: ProjectDetailContentProps) {
   const [showMeta, setShowMeta] = useState(true)
+  const [editModalOpen, setEditModalOpen] = useState(false)
   const resolvedProjectId = projectId || project.id
 
   const copyLink = useCallback(async () => {
@@ -139,24 +152,36 @@ export function ProjectDetailContent({
     lastSyncLabel: detail?.lastSync || "Just now",
   }
 
-  const scope = detail ? {
-    inScope: detail.inScope,
-    outOfScope: detail.outOfScope,
-  } : {
-    inScope: ["Define scope", "Draft solution", "Validate with stakeholders"],
-    outOfScope: ["Backend logic changes", "Marketing landing pages"],
-  }
+  // Build typed scope/feature data for the new CRUD-capable overview components.
+  // Prefer DB items (with real IDs); fall back to legacy strings with synthetic IDs.
+  const inScopeItems = scopeItems?.filter((s) => s.type === "IN_SCOPE") ??
+    (detail?.inScope || ["Define scope", "Draft solution", "Validate with stakeholders"]).map(
+      (content, i) => ({ id: `legacy-in-${i}`, content })
+    )
+  const outOfScopeItems = scopeItems?.filter((s) => s.type === "OUT_OF_SCOPE") ??
+    (detail?.outOfScope || ["Backend logic changes", "Marketing landing pages"]).map(
+      (content, i) => ({ id: `legacy-out-${i}`, content })
+    )
+  const outcomeItems = scopeItems?.filter((s) => s.type === "EXPECTED_OUTCOME") ??
+    (detail?.expectedOutcomes || [
+      "Reduce steps and improve usability",
+      "Increase success rate",
+      "Deliver production-ready UI",
+    ]).map((content, i) => ({ id: `legacy-outcome-${i}`, content }))
 
-  const outcomes = detail?.expectedOutcomes || [
-    "Reduce steps and improve usability",
-    "Increase success rate",
-    "Deliver production-ready UI",
-  ]
-
-  const keyFeatures = detail?.keyFeatures || {
-    p0: ["Core user flow"],
-    p1: ["Filters and empty states"],
-    p2: ["Visual polish"],
+  const featureItems = {
+    p0: dbFeatures?.filter((f) => f.priority === "P0") ??
+      (detail?.keyFeatures?.p0 || ["Core user flow"]).map((content, i) => ({
+        id: `legacy-p0-${i}`, content, priority: "P0" as const,
+      })),
+    p1: dbFeatures?.filter((f) => f.priority === "P1") ??
+      (detail?.keyFeatures?.p1 || ["Filters and empty states"]).map((content, i) => ({
+        id: `legacy-p1-${i}`, content, priority: "P1" as const,
+      })),
+    p2: dbFeatures?.filter((f) => f.priority === "P2") ??
+      (detail?.keyFeatures?.p2 || ["Visual polish"]).map((content, i) => ({
+        id: `legacy-p2-${i}`, content, priority: "P2" as const,
+      })),
   }
 
   const timelineTasks: TimelineTask[] = project.tasks.map(t => ({
@@ -244,28 +269,41 @@ export function ProjectDetailContent({
                   id={project.id}
                   name={project.name}
                   meta={meta}
+                  onEditProject={() => setEditModalOpen(true)}
                 />
 
                 <Tabs defaultValue="overview">
-                  <TabsList className="w-full gap-6">
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="workstream">Workstream</TabsTrigger>
-                    <TabsTrigger value="tasks">Tasks</TabsTrigger>
-                    <TabsTrigger value="notes">Notes</TabsTrigger>
-                    <TabsTrigger value="assets">Assets &amp; Files</TabsTrigger>
+                  <TabsList className="w-full gap-6 bg-transparent rounded-none h-auto p-0 border-b border-border">
+                    <TabsTrigger value="overview" className="rounded-none data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none border-0 border-b-2 border-b-transparent data-[state=active]:border-b-foreground h-auto py-2 px-3 flex-initial -mb-px text-muted-foreground/80 data-[state=active]:text-foreground">Overview</TabsTrigger>
+                    <TabsTrigger value="workstream" className="rounded-none data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none border-0 border-b-2 border-b-transparent data-[state=active]:border-b-foreground h-auto py-2 px-3 flex-initial -mb-px text-muted-foreground/80 data-[state=active]:text-foreground">Workstream</TabsTrigger>
+                    <TabsTrigger value="tasks" className="rounded-none data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none border-0 border-b-2 border-b-transparent data-[state=active]:border-b-foreground h-auto py-2 px-3 flex-initial -mb-px text-muted-foreground/80 data-[state=active]:text-foreground">Tasks</TabsTrigger>
+                    <TabsTrigger value="notes" className="rounded-none data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none border-0 border-b-2 border-b-transparent data-[state=active]:border-b-foreground h-auto py-2 px-3 flex-initial -mb-px text-muted-foreground/80 data-[state=active]:text-foreground">Notes</TabsTrigger>
+                    <TabsTrigger value="assets" className="rounded-none data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none border-0 border-b-2 border-b-transparent data-[state=active]:border-b-foreground h-auto py-2 px-3 flex-initial -mb-px text-muted-foreground/80 data-[state=active]:text-foreground">Assets &amp; Files</TabsTrigger>
+                    <TabsTrigger value="activity" className="rounded-none data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none border-0 border-b-2 border-b-transparent data-[state=active]:border-b-foreground h-auto py-2 px-3 flex-initial -mb-px text-muted-foreground/80 data-[state=active]:text-foreground">Activity</TabsTrigger>
+                    <TabsTrigger value="ai-media" className="rounded-none data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none border-0 border-b-2 border-b-transparent data-[state=active]:border-b-foreground h-auto py-2 px-3 flex-initial -mb-px text-muted-foreground/80 data-[state=active]:text-foreground">AI Media</TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="overview">
+                  <TabsContent value="overview" className="mt-6">
                     <div className="space-y-10">
                       <p className="text-sm leading-6 text-muted-foreground">{detail?.description || `Project for ${project.client || "internal use"}.`}</p>
-                      <ScopeColumns scope={scope} />
-                      <OutcomesList outcomes={outcomes} />
-                      <KeyFeaturesColumns features={keyFeatures} />
+                      <ScopeColumns
+                        inScope={inScopeItems}
+                        outOfScope={outOfScopeItems}
+                        projectId={resolvedProjectId}
+                      />
+                      <OutcomesList
+                        outcomes={outcomeItems}
+                        projectId={resolvedProjectId}
+                      />
+                      <KeyFeaturesColumns
+                        features={featureItems}
+                        projectId={resolvedProjectId}
+                      />
                       <TimelineGantt tasks={timelineTasks} />
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="workstream">
+                  <TabsContent value="workstream" className="mt-6">
                     {workstreams ? (
                       <WorkstreamTab
                         projectId={resolvedProjectId}
@@ -279,7 +317,7 @@ export function ProjectDetailContent({
                     )}
                   </TabsContent>
 
-                  <TabsContent value="tasks">
+                  <TabsContent value="tasks" className="mt-6">
                     {allTasks ? (
                       <ProjectTasksTab
                         projectId={resolvedProjectId}
@@ -294,7 +332,7 @@ export function ProjectDetailContent({
                     )}
                   </TabsContent>
 
-                  <TabsContent value="notes">
+                  <TabsContent value="notes" className="mt-6">
                     {notes ? (
                       <NotesTab
                         projectId={resolvedProjectId}
@@ -307,7 +345,7 @@ export function ProjectDetailContent({
                     )}
                   </TabsContent>
 
-                  <TabsContent value="assets">
+                  <TabsContent value="assets" className="mt-6">
                     {files ? (
                       <AssetsFilesTab
                         projectId={resolvedProjectId}
@@ -318,6 +356,17 @@ export function ProjectDetailContent({
                         Assets &amp; Files section is upcoming.
                       </div>
                     )}
+                  </TabsContent>
+
+                  <TabsContent value="activity" className="mt-6">
+                    <ActivityTab activities={activities ?? []} />
+                  </TabsContent>
+
+                  <TabsContent value="ai-media" className="mt-6">
+                    <AiMediaTab
+                      propertyId={resolvedProjectId}
+                      propertyName={project.name}
+                    />
                   </TabsContent>
                 </Tabs>
               </div>
@@ -332,7 +381,15 @@ export function ProjectDetailContent({
                     transition={{ type: "spring", stiffness: 260, damping: 26 }}
                     className="lg:border-l lg:border-border lg:pl-6"
                   >
-                    <RightMetaPanel time={time} backlog={backlog} quickLinks={quickLinks} />
+                    <RightMetaPanel
+                      time={time}
+                      backlog={backlog}
+                      quickLinks={quickLinks}
+                      client={project.client ? {
+                        name: project.client,
+                        status: project.status === "active" ? "Active" : project.status === "completed" ? "Inactive" : "Prospect",
+                      } : null}
+                    />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -342,6 +399,24 @@ export function ProjectDetailContent({
 
         <Separator className="mt-auto" />
       </div>
+
+      <EditProjectModal
+        projectId={resolvedProjectId}
+        initialValues={{
+          name: project.name,
+          status: project.status.toUpperCase(),
+          priority: project.priority.toUpperCase(),
+          estimate: detail?.estimate,
+          endDate: project.endDate ? new Date(project.endDate).toISOString().split("T")[0] : undefined,
+          sprints: detail?.sprints,
+          label: detail?.label,
+          groupLabel: detail?.group,
+          clientName: project.client,
+          description: detail?.description,
+        }}
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+      />
     </div>
   )
 }

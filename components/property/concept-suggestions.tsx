@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getBuurtAnalysis } from "@/app/actions/buurt-analysis";
 import { generateConceptSuggestions, type ConceptAnalysis } from "@/lib/concept-suggestion";
+import type { EnhancedBuurtAnalysis } from "@/lib/buurt/types";
 import { Lightbulb, Check, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -17,10 +18,13 @@ interface ConceptSuggestionsProps {
   hasKitchen?: boolean;
   hasTerrace?: boolean;
   seatingCapacity?: number;
+  /** Pass pre-loaded analysis to avoid double API call */
+  sharedAnalysis?: EnhancedBuurtAnalysis | null;
 }
 
 export function ConceptSuggestions({
   lat, lng, surface, hasKitchen, hasTerrace, seatingCapacity,
+  sharedAnalysis,
 }: ConceptSuggestionsProps) {
   const [analysis, setAnalysis] = useState<ConceptAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,24 +34,36 @@ export function ConceptSuggestions({
     let cancelled = false;
     setLoading(true);
 
-    getBuurtAnalysis(lat, lng, 500).then((buurt) => {
-      if (cancelled || !buurt) {
+    async function load() {
+      // Use shared analysis if available, otherwise fetch
+      let buurtData = sharedAnalysis;
+      if (!buurtData) {
+        const result = await getBuurtAnalysis(lat, lng, 500);
+        if (result.success) {
+          buurtData = result.data;
+        }
+      }
+
+      if (cancelled || !buurtData) {
         setLoading(false);
         return;
       }
+
       const result = generateConceptSuggestions({
         surface,
-        buurtAnalysis: buurt,
+        buurtAnalysis: buurtData,
         hasKitchen,
         hasTerrace,
         seatingCapacity,
       });
       setAnalysis(result);
       setLoading(false);
-    });
+    }
+
+    load();
 
     return () => { cancelled = true; };
-  }, [lat, lng, surface, hasKitchen, hasTerrace, seatingCapacity]);
+  }, [lat, lng, surface, hasKitchen, hasTerrace, seatingCapacity, sharedAnalysis]);
 
   if (loading) {
     return (
@@ -107,7 +123,6 @@ export function ConceptSuggestions({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {/* Score bar */}
                   <div className="w-16 h-2 rounded-full bg-muted overflow-hidden">
                     <div className={cn("h-full rounded-full", scoreBg)} style={{ width: `${s.score}%` }} />
                   </div>
@@ -115,7 +130,6 @@ export function ConceptSuggestions({
                 </div>
               </div>
 
-              {/* Expand button */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -136,7 +150,7 @@ export function ConceptSuggestions({
                       <ul className="space-y-1">
                         {s.opportunities.map((o, j) => (
                           <li key={j} className="text-sm text-muted-foreground flex items-start gap-1.5">
-                            <span className="text-green-500 mt-0.5">•</span> {o}
+                            <span className="text-green-500 mt-0.5">&#x2022;</span> {o}
                           </li>
                         ))}
                       </ul>
@@ -150,7 +164,7 @@ export function ConceptSuggestions({
                       <ul className="space-y-1">
                         {s.risks.map((r, j) => (
                           <li key={j} className="text-sm text-muted-foreground flex items-start gap-1.5">
-                            <span className="text-amber-500 mt-0.5">•</span> {r}
+                            <span className="text-amber-500 mt-0.5">&#x2022;</span> {r}
                           </li>
                         ))}
                       </ul>
