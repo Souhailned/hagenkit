@@ -1,8 +1,10 @@
 import type { NextConfig } from "next";
+import { existsSync } from "fs";
+import { join } from "path";
 import { withContentCollections } from "@content-collections/next";
 
 const nextConfig: NextConfig = {
-  output: "standalone", // Enable standalone output for Docker
+  output: "standalone",
   serverExternalPackages: ["mermaid"],
   images: {
     remotePatterns: [
@@ -55,5 +57,9 @@ const nextConfig: NextConfig = {
   },
 };
 
-// withContentCollections must be the outermost plugin
-export default withContentCollections(nextConfig);
+// Skip content-collections esbuild step if generated files already exist
+// Workaround for esbuild hang on Node 24 + Turbopack
+const generatedIndex = join(process.cwd(), ".content-collections/generated/index.js");
+const skipCC = existsSync(generatedIndex) && process.env.SKIP_CONTENT_COLLECTIONS !== "false";
+
+export default skipCC ? nextConfig : withContentCollections(nextConfig);
