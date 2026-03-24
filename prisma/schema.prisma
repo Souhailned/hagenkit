@@ -576,6 +576,7 @@ model Property {
   installations     PropertyInstallation[]
   obligations       PropertyObligation[]
   history           PropertyHistory[]
+  floorPlans        PropertyFloorPlan[]
 
   // Indexes voor zoeken
   @@index([agencyId])
@@ -2084,4 +2085,35 @@ model UserAiQuota {
   updatedAt      DateTime  @updatedAt
 
   @@map("user_ai_quota")
+}
+
+// ============================================
+// FLOOR PLAN / 3D EDITOR
+// ============================================
+
+model PropertyFloorPlan {
+  id              String   @id @default(cuid())
+  propertyId      String
+  property        Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  name            String   @default("Begane grond")
+  floor           Int      @default(0) // 0 = begane grond, 1 = eerste, -1 = kelder
+
+  // Scene data (JSON — flat node dictionary, same format as Pascal Editor)
+  sceneData       Json     // { nodes: Record<id, Node>, rootNodeIds: string[] }
+
+  // Metadata
+  totalArea       Float?   // Berekend totaal m²
+  zones           Json?    // [{ name: "Keuken", area: 25, type: "kitchen" }, ...]
+
+  // Thumbnail voor preview
+  thumbnailUrl    String?  // R2 URL van 2D top-down render
+
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([propertyId])
+  @@unique([propertyId, floor])
+  @@map("property_floor_plan")
 }
