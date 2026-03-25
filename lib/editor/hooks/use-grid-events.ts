@@ -2,13 +2,14 @@
 
 // lib/editor/hooks/use-grid-events.ts
 // Attaches DOM event listeners to the Three.js canvas element and performs
-// manual raycasting against a horizontal ground plane (Y=0).
-// Emits grid events via the mitt emitter, bypassing OrbitControls interception.
+// manual raycasting against both the ground plane (Y=0) and scene meshes.
 //
-// Click detection uses a pixel-distance threshold between pointerdown and
-// pointerup — if the pointer moved less than CLICK_THRESHOLD pixels, it is
-// treated as a click. This reliably distinguishes clicks from OrbitControls
-// pan/rotate gestures regardless of the mouseButtons configuration.
+// Every grid event payload includes:
+//   - position: snappable [x, z] world coordinates (ground plane intersection)
+//   - hitNodeId: ID of the closest interactive mesh under the pointer (if any)
+//
+// Click detection uses pixel-distance between pointerdown and pointerup.
+// If the pointer moved < CLICK_THRESHOLD pixels, it is treated as a click.
 
 import { useEffect, useRef } from "react";
 import { useThree } from "@react-three/fiber";
@@ -19,7 +20,7 @@ import { editorEmitter, type GridEventPayload } from "../events";
 const CLICK_THRESHOLD = 5;
 
 export function useGridEvents() {
-  const { gl, camera } = useThree();
+  const { gl, camera, scene } = useThree();
   const canvas = gl.domElement;
 
   const raycasterRef = useRef(new THREE.Raycaster());
@@ -29,41 +30,75 @@ export function useGridEvents() {
   );
 
   useEffect(() => {
-    /** Raycast from screen coordinates to the Y=0 ground plane */
-    const getGridPosition = (
-      clientX: number,
-      clientY: number,
-    ): GridEventPayload | null => {
+    /** Update the raycaster from screen coordinates */
+    const updateRaycaster = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect();
       pointerRef.current.x = ((clientX - rect.left) / rect.width) * 2 - 1;
       pointerRef.current.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-
       raycasterRef.current.setFromCamera(pointerRef.current, camera);
+    };
+
+    /** Raycast to the Y=0 ground plane for position */
+    const getGroundPosition = (): [number, number, number] | null => {
       const target = new THREE.Vector3();
       const hit = raycasterRef.current.ray.intersectPlane(
         planeRef.current,
         target,
       );
-
       if (!hit) return null;
+      return [target.x, target.y, target.z];
+    };
+
+    /** Raycast against scene meshes to find the closest interactive node */
+    const getHitNode = (): { nodeId: string; nodeType: string } | null => {
+      const intersects = raycasterRef.current.intersectObjects(
+        scene.children,
+        true,
+      );
+      for (const intersect of intersects) {
+        // Walk up the object tree to find the nearest ancestor with nodeId
+        // Stop at scene root to avoid false positives from R3F internals
+        let obj: THREE.Object3D | null = intersect.object;
+        while (obj && obj !== scene) {
+          if (obj.userData?.nodeId) {
+            return {
+              nodeId: obj.userData.nodeId as string,
+              nodeType: (obj.userData.nodeType as string) ?? "unknown",
+            };
+          }
+          obj = obj.parent;
+        }
+      }
+      return null;
+    };
+
+    /** Build a complete event payload from screen coordinates */
+    const buildPayload = (
+      clientX: number,
+      clientY: number,
+    ): GridEventPayload | null => {
+      updateRaycaster(clientX, clientY);
+      const groundPos = getGroundPosition();
+      if (!groundPos) return null;
+
+      const hitNode = getHitNode();
 
       return {
-        position: [target.x, target.z],
-        worldPosition: [target.x, target.y, target.z],
+        position: [groundPos[0], groundPos[2]],
+        worldPosition: groundPos,
+        hitNodeId: hitNode?.nodeId,
+        hitNodeType: hitNode?.nodeType,
       };
     };
 
     // ── Pixel-distance click detection ──────────────────────────────────
-    // Record where the pointer went down. On pointerup, compare pixel
-    // distance. If < CLICK_THRESHOLD, emit grid:click. This works
-    // regardless of whether OrbitControls consumed the drag.
     let pointerDownPos: { x: number; y: number } | null = null;
 
     const handlePointerDown = (e: PointerEvent) => {
       if (e.button !== 0) return; // Left button only
       pointerDownPos = { x: e.clientX, y: e.clientY };
 
-      const payload = getGridPosition(e.clientX, e.clientY);
+      const payload = buildPayload(e.clientX, e.clientY);
       if (payload) {
         editorEmitter.emit("grid:pointerdown", payload);
       }
@@ -72,7 +107,7 @@ export function useGridEvents() {
     const handlePointerUp = (e: PointerEvent) => {
       if (e.button !== 0) return;
 
-      const payload = getGridPosition(e.clientX, e.clientY);
+      const payload = buildPayload(e.clientX, e.clientY);
       if (payload) {
         editorEmitter.emit("grid:pointerup", payload);
       }
@@ -86,7 +121,6 @@ export function useGridEvents() {
         pointerDownPos = null;
 
         if (distance < CLICK_THRESHOLD) {
-          // Pointer barely moved — treat as a click
           if (payload) {
             editorEmitter.emit("grid:click", payload);
           }
@@ -95,7 +129,7 @@ export function useGridEvents() {
     };
 
     const handlePointerMove = (e: PointerEvent) => {
-      const payload = getGridPosition(e.clientX, e.clientY);
+      const payload = buildPayload(e.clientX, e.clientY);
       if (payload) {
         editorEmitter.emit("grid:pointermove", payload);
       }
@@ -110,5 +144,5 @@ export function useGridEvents() {
       canvas.removeEventListener("pointermove", handlePointerMove);
       canvas.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [canvas, camera]);
+  }, [canvas, camera, scene]);
 }

@@ -9,6 +9,21 @@ export const DEFAULT_WALL_HEIGHT = 3.0;
 /** Default wall thickness in meters */
 export const DEFAULT_WALL_THICKNESS = 0.2;
 
+/** Default door width in meters */
+export const DEFAULT_DOOR_WIDTH = 0.9;
+
+/** Default door height in meters */
+export const DEFAULT_DOOR_HEIGHT = 2.1;
+
+/** Default window width in meters */
+export const DEFAULT_WINDOW_WIDTH = 1.2;
+
+/** Default window height in meters */
+export const DEFAULT_WINDOW_HEIGHT = 1.2;
+
+/** Default window sill height from floor in meters */
+export const DEFAULT_WINDOW_SILL_HEIGHT = 0.9;
+
 /** Visualization color per zone type (hex) */
 export const ZONE_COLORS = {
   dining_area: "#4CAF50",

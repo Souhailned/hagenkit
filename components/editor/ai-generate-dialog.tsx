@@ -44,8 +44,20 @@ const PROPERTY_TYPES = [
   { value: "SNACKBAR", label: "Snackbar" },
 ] as const;
 
-export function AiGenerateDialog({ disabled }: { disabled?: boolean }) {
-  const [open, setOpen] = useState(false);
+interface AiGenerateDialogProps {
+  disabled?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function AiGenerateDialog({
+  disabled,
+  open: controlledOpen,
+  onOpenChange,
+}: AiGenerateDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [isPending, startTransition] = useTransition();
 
   const [surfaceTotal, setSurfaceTotal] = useState<string>("100");
@@ -83,7 +95,7 @@ export function AiGenerateDialog({ disabled }: { disabled?: boolean }) {
         hasStorage,
       });
 
-      if (result.success && result.data) {
+      if (result.success) {
         useSceneStore.getState().loadScene(result.data);
         toast.success("Plattegrond gegenereerd!");
         setOpen(false);
@@ -94,26 +106,30 @@ export function AiGenerateDialog({ disabled }: { disabled?: boolean }) {
     });
   };
 
+  const isControlled = controlledOpen !== undefined;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DialogTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={disabled}
-              className="gap-1.5"
-            >
-              <Sparkles className="size-4" />
-              <span className="hidden sm:inline">AI Genereren</span>
-            </Button>
-          </DialogTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          Genereer plattegrond met AI
-        </TooltipContent>
-      </Tooltip>
+      {!isControlled && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={disabled}
+                className="gap-1.5"
+              >
+                <Sparkles className="size-4" />
+                <span className="hidden sm:inline">AI Genereren</span>
+              </Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            Genereer plattegrond met AI
+          </TooltipContent>
+        </Tooltip>
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

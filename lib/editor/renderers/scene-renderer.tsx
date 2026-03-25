@@ -1,16 +1,27 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useSceneStore } from '../stores';
 import { useEditorStore } from '../stores';
 import { useEditorColors } from '@/lib/editor';
 import { WallRenderer } from './wall-renderer';
 import { ZoneRenderer } from './zone-renderer';
 import { ItemRenderer } from './item-renderer';
-import { ITEM_CATEGORY } from './item-renderer';
-import type { ItemCategory } from './item-renderer';
+import { DoorRenderer } from './door-renderer';
+import { WindowRenderer } from './window-renderer';
 import { GridRenderer } from './grid-renderer';
-import type { AnyNode, WallMaterial, HorecaZoneType } from '../schema';
+import { SiteRenderer } from './site-renderer';
+import { BuildingRenderer } from './building-renderer';
+import { LevelRenderer } from './level-renderer';
+import type {
+  AnyNode,
+  WallMaterial,
+  HorecaZoneType,
+  SiteNode,
+  BuildingNode,
+  LevelNode,
+} from '../schema';
+import type { ItemCategory } from './item-renderer';
 
 /** Maps each zone type to the corresponding key on EditorColors */
 const ZONE_TYPE_TO_COLOR_KEY: Record<HorecaZoneType, keyof ReturnType<typeof useEditorColors>> = {
@@ -28,21 +39,46 @@ const ZONE_TYPE_TO_COLOR_KEY: Record<HorecaZoneType, keyof ReturnType<typeof use
   hallway: 'zoneHallway',
 };
 
+/** Set of node types that act as hierarchy containers */
+const HIERARCHY_TYPES = new Set(['site', 'building', 'level']);
+
+/**
+ * Build a parent -> children index from the flat node dictionary.
+ * Returns a Map where key = parentId, value = array of child nodes.
+ * Nodes with parentId === null are collected under the key "__root__".
+ */
+function buildChildIndex(nodes: Record<string, AnyNode>): Map<string, AnyNode[]> {
+  const index = new Map<string, AnyNode[]>();
+  for (const node of Object.values(nodes)) {
+    const parentKey = node.parentId ?? '__root__';
+    const siblings = index.get(parentKey);
+    if (siblings) {
+      siblings.push(node);
+    } else {
+      index.set(parentKey, [node]);
+    }
+  }
+  return index;
+}
+
 /**
  * Main scene renderer that iterates over all nodes in the scene store
  * and dispatches each to the appropriate type-specific renderer.
+ *
+ * When hierarchy nodes (site / building / level) are present, child nodes
+ * are rendered inside their parent's group so that transforms propagate.
+ * Scenes without hierarchy nodes continue to work as before — all nodes
+ * render flat at the root level.
+ *
+ * Selection and hover are handled by the event system (useGridEvents +
+ * useToolEvents) — renderers only need to know their visual state.
  */
 export function SceneRenderer() {
   const nodes = useSceneStore((s) => s.nodes);
   const selectedNodeIds = useEditorStore((s) => s.selectedNodeIds);
+  const hoveredNodeId = useEditorStore((s) => s.hoveredNodeId);
   const gridVisible = useEditorStore((s) => s.gridVisible);
-  const selectNode = useEditorStore((s) => s.selectNode);
   const colors = useEditorColors();
-
-  const handleSelect = useCallback(
-    (id: string) => selectNode(id),
-    [selectNode],
-  );
 
   const selectionSet = useMemo(
     () => new Set(selectedNodeIds),
@@ -72,6 +108,119 @@ export function SceneRenderer() {
     [colors.itemTable, colors.itemSeating, colors.itemKitchen, colors.itemBar, colors.itemDecor],
   );
 
+  // Build a parent -> children lookup once per render
+  const childIndex = useMemo(() => buildChildIndex(nodes), [nodes]);
+
+  /**
+   * Renders a single leaf node (wall, zone, item, door, window, slab).
+   * Returns null for hierarchy types — those are handled by renderTree.
+   */
+  function renderLeafNode(node: AnyNode) {
+    if (!node.visible) return null;
+
+    const isSelected = selectionSet.has(node.id);
+    const isHovered = hoveredNodeId === node.id;
+
+    switch (node.type) {
+      case 'wall':
+        return (
+          <WallRenderer
+            key={node.id}
+            node={node}
+            selected={isSelected}
+            hovered={isHovered}
+            materialColors={materialColors}
+            selectedColor={colors.selected}
+          />
+        );
+      case 'zone':
+        return (
+          <ZoneRenderer
+            key={node.id}
+            node={node}
+            selected={isSelected}
+            hovered={isHovered}
+            zoneColor={colors[ZONE_TYPE_TO_COLOR_KEY[node.zoneType]]}
+          />
+        );
+      case 'item':
+        return (
+          <ItemRenderer
+            key={node.id}
+            node={node}
+            selected={isSelected}
+            hovered={isHovered}
+            categoryColors={categoryColors}
+            selectedColor={colors.selected}
+          />
+        );
+      case 'door':
+        return (
+          <DoorRenderer
+            key={node.id}
+            node={node}
+            selected={isSelected}
+            hovered={isHovered}
+            doorColor={colors.door}
+            selectedColor={colors.selected}
+          />
+        );
+      case 'window':
+        return (
+          <WindowRenderer
+            key={node.id}
+            node={node}
+            selected={isSelected}
+            hovered={isHovered}
+            windowColor={colors.window}
+            selectedColor={colors.selected}
+          />
+        );
+      case 'slab':
+        // Slab renderer not yet implemented; skip for now
+        return null;
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Recursively renders a node and its children.
+   * Hierarchy nodes (site/building/level) wrap their children in a group.
+   * Leaf nodes render directly.
+   */
+  function renderTree(node: AnyNode): React.ReactNode {
+    if (!node.visible && !HIERARCHY_TYPES.has(node.type)) return null;
+
+    const children = childIndex.get(node.id);
+
+    switch (node.type) {
+      case 'site':
+        return (
+          <SiteRenderer key={node.id} node={node as SiteNode}>
+            {children?.map((child) => renderTree(child))}
+          </SiteRenderer>
+        );
+      case 'building':
+        return (
+          <BuildingRenderer key={node.id} node={node as BuildingNode}>
+            {children?.map((child) => renderTree(child))}
+          </BuildingRenderer>
+        );
+      case 'level':
+        return (
+          <LevelRenderer key={node.id} node={node as LevelNode}>
+            {children?.map((child) => renderTree(child))}
+          </LevelRenderer>
+        );
+      default:
+        return renderLeafNode(node);
+    }
+  }
+
+  // Start rendering from root-level nodes (those with no parent)
+  const rootNodes = childIndex.get('__root__') ?? [];
+
   return (
     <>
       <GridRenderer
@@ -79,51 +228,7 @@ export function SceneRenderer() {
         cellColor={colors.gridCell}
         sectionColor={colors.gridSection}
       />
-      {Object.values(nodes).map((node: AnyNode) => {
-        if (!node.visible) return null;
-
-        const isSelected = selectionSet.has(node.id);
-
-        switch (node.type) {
-          case 'wall':
-            return (
-              <WallRenderer
-                key={node.id}
-                node={node}
-                selected={isSelected}
-                onSelect={handleSelect}
-                materialColors={materialColors}
-                selectedColor={colors.selected}
-              />
-            );
-          case 'zone':
-            return (
-              <ZoneRenderer
-                key={node.id}
-                node={node}
-                selected={isSelected}
-                onSelect={handleSelect}
-                zoneColor={colors[ZONE_TYPE_TO_COLOR_KEY[node.zoneType]]}
-              />
-            );
-          case 'item':
-            return (
-              <ItemRenderer
-                key={node.id}
-                node={node}
-                selected={isSelected}
-                onSelect={handleSelect}
-                categoryColors={categoryColors}
-                selectedColor={colors.selected}
-              />
-            );
-          case 'slab':
-            // Slab renderer not yet implemented; skip for now
-            return null;
-          default:
-            return null;
-        }
-      })}
+      {rootNodes.map((node) => renderTree(node))}
     </>
   );
 }

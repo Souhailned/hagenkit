@@ -105,8 +105,81 @@ export interface ItemNode extends BaseNode {
   model?: string;
 }
 
+/** Door styles available for placement in walls */
+export type DoorStyle = "single" | "double" | "sliding";
+
+/** Door node - placed within a wall segment */
+export interface DoorNode extends BaseNode {
+  type: "door";
+  /** Width of the door opening in meters */
+  width: number;
+  /** Height of the door in meters */
+  height: number;
+  /** Visual style of the door */
+  style: DoorStyle;
+  /** ID of the wall this door belongs to */
+  wallId: string;
+  /** Position along the wall as a ratio 0-1 */
+  wallPosition: number;
+}
+
+/** Window styles available for placement in walls */
+export type WindowStyle = "fixed" | "casement" | "sliding";
+
+/** Window node - placed within a wall segment at a given sill height */
+export interface WindowNode extends BaseNode {
+  type: "window";
+  /** Width of the window in meters */
+  width: number;
+  /** Height of the window in meters */
+  height: number;
+  /** Height of the window sill from floor level in meters */
+  sillHeight: number;
+  /** Visual style of the window */
+  style: WindowStyle;
+  /** ID of the wall this door belongs to */
+  wallId: string;
+  /** Position along the wall as a ratio 0-1 */
+  wallPosition: number;
+}
+
+/* ------------------------------------------------------------------ */
+/* Hierarchy nodes — site > building > level structure                  */
+/* ------------------------------------------------------------------ */
+
+/** Site node — top-level container for one or more buildings */
+export interface SiteNode extends BaseNode {
+  type: "site";
+  name?: string;
+}
+
+/** Building node — groups levels; parent is a site or null */
+export interface BuildingNode extends BaseNode {
+  type: "building";
+  name?: string;
+}
+
+/** Level node — a single storey within a building */
+export interface LevelNode extends BaseNode {
+  type: "level";
+  /** Floor index: 0 = ground, 1 = first floor, -1 = basement */
+  level: number;
+  /** Height of this level in meters */
+  height: number;
+  name?: string;
+}
+
 /** Discriminated union of all possible node types */
-export type AnyNode = WallNode | SlabNode | ZoneNode | ItemNode;
+export type AnyNode =
+  | WallNode
+  | SlabNode
+  | ZoneNode
+  | ItemNode
+  | DoorNode
+  | WindowNode
+  | SiteNode
+  | BuildingNode
+  | LevelNode;
 
 /** Extracts the node type matching a given type string */
 export type NodeOfType<T extends AnyNode["type"]> = Extract<AnyNode, { type: T }>;

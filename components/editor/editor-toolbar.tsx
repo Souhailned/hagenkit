@@ -14,7 +14,12 @@ import {
   Box,
   Layers2,
   Download,
+  DoorOpen,
+  AppWindow,
+  Hammer,
+  Sofa,
 } from "lucide-react";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Toggle } from "@/components/ui/toggle";
@@ -25,7 +30,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { useEditorStore, useSceneStore } from "@/lib/editor/stores";
-import type { EditorTool, ViewMode } from "@/lib/editor/stores";
+import type { EditorTool, EditorPhase, ViewMode } from "@/lib/editor/stores";
 import { cn } from "@/lib/utils";
 import { captureCanvasAsPng, downloadDataUrl } from "@/lib/editor/utils";
 import { toast } from "sonner";
@@ -42,11 +47,15 @@ const TOOL_CONFIG: Array<{
   value: EditorTool;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  /** Which phases this tool is available in (undefined = all) */
+  phases?: EditorPhase[];
 }> = [
   { value: "select", label: "Selecteren", icon: MousePointer2 },
-  { value: "wall", label: "Muur tekenen", icon: Square },
-  { value: "zone", label: "Zone tekenen", icon: PenTool },
-  { value: "item", label: "Inventaris plaatsen", icon: Armchair },
+  { value: "wall", label: "Muur tekenen", icon: Square, phases: ["structure"] },
+  { value: "zone", label: "Zone tekenen", icon: PenTool, phases: ["structure"] },
+  { value: "door", label: "Deur plaatsen", icon: DoorOpen, phases: ["structure"] },
+  { value: "window", label: "Raam plaatsen", icon: AppWindow, phases: ["structure"] },
+  { value: "item", label: "Inventaris plaatsen", icon: Armchair, phases: ["furnish"] },
   { value: "measure", label: "Opmeten", icon: Ruler },
   { value: "pan", label: "Verplaatsen", icon: Move },
 ];
@@ -58,6 +67,17 @@ export function EditorToolbar({ onSave, readOnly }: EditorToolbarProps) {
   const toggleGrid = useEditorStore((s) => s.toggleGrid);
   const viewMode = useEditorStore((s) => s.viewMode);
   const setViewMode = useEditorStore((s) => s.setViewMode);
+  const phase = useEditorStore((s) => s.phase);
+  const setPhase = useEditorStore((s) => s.setPhase);
+
+  // Filter tools based on current phase
+  const filteredTools = useMemo(
+    () =>
+      TOOL_CONFIG.filter(
+        (tool) => !tool.phases || tool.phases.includes(phase),
+      ),
+    [phase],
+  );
 
   const handleUndo = () => {
     useSceneStore.temporal.getState().undo();
@@ -80,7 +100,7 @@ export function EditorToolbar({ onSave, readOnly }: EditorToolbarProps) {
         size="sm"
         disabled={readOnly}
       >
-        {TOOL_CONFIG.map((tool) => (
+        {filteredTools.map((tool) => (
           <Tooltip key={tool.value}>
             <TooltipTrigger asChild>
               <ToggleGroupItem
@@ -93,6 +113,43 @@ export function EditorToolbar({ onSave, readOnly }: EditorToolbarProps) {
             <TooltipContent side="bottom">{tool.label}</TooltipContent>
           </Tooltip>
         ))}
+      </ToggleGroup>
+
+      <Separator orientation="vertical" className="h-6" />
+
+      {/* Phase toggle */}
+      <ToggleGroup
+        type="single"
+        value={phase}
+        onValueChange={(value) => {
+          if (value) setPhase(value as EditorPhase);
+        }}
+        variant="outline"
+        size="sm"
+        disabled={readOnly}
+      >
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ToggleGroupItem value="structure" aria-label="Structuur fase">
+              <Hammer className="size-4" />
+              <span className="text-xs">Structuur</span>
+            </ToggleGroupItem>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            Structuur: muren, zones, deuren, ramen (1)
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ToggleGroupItem value="furnish" aria-label="Inrichting fase">
+              <Sofa className="size-4" />
+              <span className="text-xs">Inrichting</span>
+            </ToggleGroupItem>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            Inrichting: meubels en inventaris (2)
+          </TooltipContent>
+        </Tooltip>
       </ToggleGroup>
 
       <Separator orientation="vertical" className="h-6" />

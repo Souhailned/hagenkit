@@ -11,9 +11,16 @@ export type EditorTool =
   | "zone"
   | "item"
   | "measure"
-  | "pan";
+  | "pan"
+  | "door"
+  | "window";
 
 export type ViewMode = "2d" | "3d";
+
+export type EditorPhase = "structure" | "furnish";
+
+/** How multi-level buildings are displayed in the 3D view */
+export type LevelMode = "stacked" | "exploded" | "solo";
 
 interface EditorState {
   activeTool: EditorTool;
@@ -33,9 +40,18 @@ interface EditorState {
   cameraDragging: boolean;
   /** Clipboard for copy/paste operations */
   clipboard: AnyNode[];
+  /** How multi-level buildings are displayed */
+  levelMode: LevelMode;
+  /** Active level index for solo mode (0 = ground floor) */
+  activeLevelIndex: number;
+  /** Current editor phase — determines available tools and selection behavior */
+  phase: EditorPhase;
 
   // Actions
+  setPhase: (phase: EditorPhase) => void;
   setCameraDragging: (dragging: boolean) => void;
+  setLevelMode: (mode: LevelMode) => void;
+  setActiveLevel: (index: number) => void;
   copySelection: () => void;
   pasteClipboard: () => void;
   setTool: (tool: EditorTool) => void;
@@ -50,6 +66,9 @@ interface EditorState {
   addDrawPoint: (point: [number, number]) => void;
   finishDrawing: () => [number, number][];
   cancelDrawing: () => void;
+  /** Atomic restart: cancel + start + add point in one set() call.
+   *  Prevents 1-frame flicker when chaining walls. */
+  restartDrawingAt: (point: [number, number]) => void;
   startPlacingItem: (itemType: string) => void;
   stopPlacingItem: () => void;
 }
@@ -66,8 +85,24 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
   placingItemType: null,
   cameraDragging: false,
   clipboard: [],
+  levelMode: "stacked",
+  activeLevelIndex: 0,
+  phase: "structure",
+
+  setPhase: (phase) => {
+    // When switching phases, reset to select tool and cancel any in-progress drawing
+    set({
+      phase,
+      activeTool: "select",
+      isDrawing: false,
+      drawPoints: [],
+      placingItemType: null,
+    });
+  },
 
   setCameraDragging: (dragging) => set({ cameraDragging: dragging }),
+  setLevelMode: (mode) => set({ levelMode: mode }),
+  setActiveLevel: (index) => set({ activeLevelIndex: index }),
 
   copySelection: () => {
     const { selectedNodeIds } = get();
@@ -177,6 +212,10 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
 
   cancelDrawing: () => {
     set({ isDrawing: false, drawPoints: [] });
+  },
+
+  restartDrawingAt: (point) => {
+    set({ isDrawing: true, drawPoints: [point] });
   },
 
   startPlacingItem: (itemType) => {

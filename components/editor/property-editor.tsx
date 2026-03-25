@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Component, useCallback, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { Canvas, useThree } from "@react-three/fiber";
 import {
   OrbitControls,
   OrthographicCamera,
@@ -12,25 +13,71 @@ import {
 import * as THREE from "three";
 import { useSceneStore, useEditorStore } from "@/lib/editor/stores";
 import { SceneRenderer } from "@/lib/editor/renderers";
-import { useZoneSystem } from "@/lib/editor/systems";
-import type { SceneData } from "@/lib/editor/schema";
+import { useZoneSystem, WallSystem, LevelSystem } from "@/lib/editor/systems";
+import { PolygonEditor } from "@/lib/editor/tools";
+import type { SceneData, ZoneNode } from "@/lib/editor/schema";
 import {
   DEFAULT_WALL_HEIGHT,
   DEFAULT_WALL_THICKNESS,
   ZONE_COLORS,
 } from "@/lib/editor/schema";
 import { useEditorColors } from "@/lib/editor/theme";
-import { generateId } from "@/lib/editor/utils";
+import { generateId, computeSceneBounds } from "@/lib/editor/utils";
 import { useGridEvents, useToolEvents } from "@/lib/editor/hooks";
 import {
   editorEmitter,
   type GridEventPayload,
 } from "@/lib/editor/events";
+import { EditorOutlines } from "@/lib/editor/effects";
 import { EditorToolbar } from "./editor-toolbar";
 import { AssetPanel } from "./asset-panel";
 import { PropertiesPanel } from "./properties-panel";
 import { ZoneLegend } from "./zone-legend";
 import { ShortcutsHelp } from "./shortcuts-help";
+import { EditorEmptyState } from "./editor-empty-state";
+import { TemplateDialog } from "./template-dialog";
+import { AiGenerateDialog } from "./ai-generate-dialog";
+
+/* ------------------------------------------------------------------ */
+/* Error Boundary                                                      */
+/* ------------------------------------------------------------------ */
+
+class EditorErrorBoundary extends Component<
+  { children: ReactNode; fallback?: ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  state = { hasError: false, error: undefined as Error | undefined };
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        this.props.fallback ?? (
+          <div className="flex h-full items-center justify-center bg-muted/30 p-8">
+            <div className="text-center space-y-2">
+              <p className="text-sm font-medium text-destructive">
+                Er is een fout opgetreden in de editor
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {this.state.error?.message}
+              </p>
+              <button
+                onClick={() => this.setState({ hasError: false })}
+                className="text-xs text-primary underline"
+              >
+                Probeer opnieuw
+              </button>
+            </div>
+          </div>
+        )
+      );
+    }
+    return this.props.children;
+  }
+}
 
 interface PropertyEditorProps {
   propertyId: string;
@@ -60,9 +107,8 @@ function GridEventSystem() {
   return null;
 }
 
-/** Visual preview of points and lines while drawing walls/zones.
- *  Also shows a dashed preview line from the last placed point to the
- *  current cursor position, giving the user real-time feedback. */
+/** Visual preview of points and lines while drawing walls/zones/measuring.
+ *  Shows distance labels, close-polygon indicators, and real-time feedback. */
 function DrawingPreview() {
   const isDrawing = useEditorStore((s) => s.isDrawing);
   const drawPoints = useEditorStore((s) => s.drawPoints);
@@ -72,7 +118,12 @@ function DrawingPreview() {
   // Track cursor position via grid:pointermove while drawing
   useEffect(() => {
     const handleMove = (payload: GridEventPayload) => {
-      if (useEditorStore.getState().isDrawing) {
+      if (
+        useEditorStore.getState().isDrawing ||
+        useEditorStore.getState().activeTool === "wall" ||
+        useEditorStore.getState().activeTool === "zone" ||
+        useEditorStore.getState().activeTool === "measure"
+      ) {
         setCursorPos(payload.position);
       } else {
         setCursorPos(null);
@@ -84,26 +135,72 @@ function DrawingPreview() {
     };
   }, []);
 
-  // Reset cursor when drawing stops
   useEffect(() => {
     if (!isDrawing) setCursorPos(null);
   }, [isDrawing]);
 
   if (!isDrawing || drawPoints.length === 0) return null;
 
-  // Convert 2D draw points to 3D positions (Y = slight elevation above floor)
   const points3D = drawPoints.map(
     ([x, z]) => new THREE.Vector3(x, 0.05, z),
   );
 
   const isWall = activeTool === "wall";
-  const lineColor = isWall ? "#3b82f6" : "#22c55e"; // blue for walls, green for zones
+  const isMeasure = activeTool === "measure";
+  const isZone = activeTool === "zone";
+  const lineColor = isWall ? "#3b82f6" : isMeasure ? "#f59e0b" : "#22c55e";
 
-  // Cursor preview line: from last draw point to current mouse position
   const lastPt = points3D[points3D.length - 1];
-  const cursorPt =
-    cursorPos
-      ? new THREE.Vector3(cursorPos[0], 0.05, cursorPos[1])
+  const firstPt = points3D[0];
+  const cursorPt = cursorPos
+    ? new THREE.Vector3(cursorPos[0], 0.05, cursorPos[1])
+    : null;
+
+  // Calculate distance from last point to cursor
+  const cursorDistance =
+    cursorPos && drawPoints.length > 0
+      ? Math.hypot(
+          cursorPos[0] - drawPoints[drawPoints.length - 1][0],
+          cursorPos[1] - drawPoints[drawPoints.length - 1][1],
+        )
+      : 0;
+
+  // Check if cursor is near the first zone point (for close indicator)
+  const isNearFirstPoint =
+    isZone &&
+    cursorPos &&
+    drawPoints.length >= 3 &&
+    Math.hypot(
+      cursorPos[0] - drawPoints[0][0],
+      cursorPos[1] - drawPoints[0][1],
+    ) < 0.3;
+
+  // Midpoint for distance label
+  const labelPos =
+    cursorPt && lastPt
+      ? new THREE.Vector3(
+          (lastPt.x + cursorPt.x) / 2,
+          0.15,
+          (lastPt.z + cursorPt.z) / 2,
+        )
+      : null;
+
+  // For completed measurements (2 points, no cursor)
+  const completedDistance =
+    drawPoints.length === 2
+      ? Math.hypot(
+          drawPoints[1][0] - drawPoints[0][0],
+          drawPoints[1][1] - drawPoints[0][1],
+        )
+      : 0;
+
+  const completedMidpoint =
+    drawPoints.length === 2
+      ? new THREE.Vector3(
+          (drawPoints[0][0] + drawPoints[1][0]) / 2,
+          0.15,
+          (drawPoints[0][1] + drawPoints[1][1]) / 2,
+        )
       : null;
 
   return (
@@ -117,6 +214,7 @@ function DrawingPreview() {
           dashed={false}
         />
       )}
+
       {/* Dashed preview line from last point to cursor */}
       {cursorPt && lastPt && (
         <Line
@@ -128,6 +226,21 @@ function DrawingPreview() {
           gapSize={0.1}
         />
       )}
+
+      {/* Zone: closing line from cursor to first point */}
+      {isZone && cursorPt && drawPoints.length >= 2 && (
+        <Line
+          points={[cursorPt, firstPt]}
+          color={isNearFirstPoint ? "#4ade80" : "#22c55e"}
+          lineWidth={1}
+          dashed
+          dashSize={0.1}
+          gapSize={0.15}
+          transparent
+          opacity={0.4}
+        />
+      )}
+
       {/* Dots at each placed point */}
       {points3D.map((pos, i) => (
         <mesh key={i} position={pos}>
@@ -135,6 +248,20 @@ function DrawingPreview() {
           <meshBasicMaterial color={lineColor} />
         </mesh>
       ))}
+
+      {/* Zone close indicator: larger green ring on first point */}
+      {isNearFirstPoint && (
+        <mesh position={[drawPoints[0][0], 0.06, drawPoints[0][1]]}>
+          <ringGeometry args={[0.15, 0.22, 24]} />
+          <meshBasicMaterial
+            color="#4ade80"
+            transparent
+            opacity={0.8}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      )}
+
       {/* Small dot at cursor position */}
       {cursorPt && (
         <mesh position={cursorPt}>
@@ -142,25 +269,96 @@ function DrawingPreview() {
           <meshBasicMaterial color={lineColor} transparent opacity={0.6} />
         </mesh>
       )}
-      {/* Instruction label at last placed point */}
-      {points3D.length > 0 && (
+
+      {/* Distance label while drawing */}
+      {labelPos && cursorDistance > 0.05 && (
+        <Html position={labelPos} center style={{ pointerEvents: "none" }}>
+          <div className="rounded bg-background/90 px-1.5 py-0.5 text-xs font-mono text-foreground shadow-sm border border-border whitespace-nowrap">
+            {cursorDistance.toFixed(2)}m
+          </div>
+        </Html>
+      )}
+
+      {/* Completed measurement label */}
+      {isMeasure && completedMidpoint && completedDistance > 0 && !cursorPt && (
         <Html
-          position={[lastPt.x, 0.5, lastPt.z]}
+          position={completedMidpoint}
           center
-          distanceFactor={15}
           style={{ pointerEvents: "none" }}
         >
-          <div className="whitespace-nowrap rounded bg-foreground/80 px-2 py-1 text-center font-sans text-xs text-background shadow-sm">
-            {isWall
-              ? `Klik voor eindpunt. Escape om te annuleren.`
-              : drawPoints.length < 3
-                ? `${drawPoints.length} punt${drawPoints.length > 1 ? "en" : ""} -- Klik voor meer punten.`
-                : `${drawPoints.length} punten -- Klik op startpunt om te sluiten. Escape om te annuleren.`}
+          <div className="rounded bg-amber-500/90 px-2 py-1 text-xs font-mono font-bold text-white shadow-sm whitespace-nowrap">
+            {completedDistance.toFixed(2)}m
           </div>
         </Html>
       )}
     </group>
   );
+}
+
+/** Inner R3F component that auto-centers the camera on scene content.
+ *  Runs once after mount and whenever the node count changes (e.g. template
+ *  load). Without this, the 2D orthographic camera defaults to [0,20,0]
+ *  looking at origin while scene content may be offset (e.g. 0-10 on X,
+ *  0-8 on Z), leaving the canvas looking empty. */
+function CameraAutoFit({ viewMode }: { viewMode: "2d" | "3d" }) {
+  const { camera, controls } = useThree();
+  const nodes = useSceneStore((s) => s.nodes);
+  const fittedRef = useRef(false);
+
+  const nodeCount = Object.keys(nodes).length;
+
+  useEffect(() => {
+    // Reset fitted flag when scene is cleared so next load re-fits
+    if (nodeCount === 0) {
+      fittedRef.current = false;
+      return;
+    }
+    // Only auto-fit once per scene load to avoid fighting user panning
+    if (fittedRef.current) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const bounds = computeSceneBounds(nodes as any);
+    if (!bounds) return;
+
+    fittedRef.current = true;
+
+    const padding = 2; // meters of margin around content
+    const cx = bounds.centerX;
+    const cz = bounds.centerZ;
+
+    if (viewMode === "2d") {
+      camera.position.set(cx, 20, cz);
+
+      if (camera instanceof THREE.OrthographicCamera) {
+        const viewWidth = (camera.right - camera.left) / camera.zoom;
+        const viewHeight = (camera.top - camera.bottom) / camera.zoom;
+        const sceneWidth = bounds.width + padding * 2;
+        const sceneDepth = bounds.depth + padding * 2;
+
+        if (viewWidth > 0 && viewHeight > 0) {
+          const zoomX = viewWidth / sceneWidth;
+          const zoomY = viewHeight / sceneDepth;
+          camera.zoom = Math.min(zoomX, zoomY) * camera.zoom;
+          camera.zoom = Math.max(5, Math.min(200, camera.zoom));
+        }
+        camera.updateProjectionMatrix();
+      }
+    } else {
+      const maxSpan = Math.max(bounds.width, bounds.depth) + padding * 2;
+      const dist = maxSpan * 1.2;
+      camera.position.set(cx + dist * 0.7, dist * 0.6, cz + dist * 0.7);
+    }
+
+    // Point OrbitControls at scene center
+    if (controls && "target" in controls) {
+      const orbitTarget = (controls as unknown as { target: THREE.Vector3 })
+        .target;
+      orbitTarget.set(cx, 0, cz);
+      (controls as unknown as { update: () => void }).update();
+    }
+  }, [nodeCount, nodes, camera, controls, viewMode]);
+
+  return null;
 }
 
 /** Camera + OrbitControls setup.
@@ -200,6 +398,7 @@ function CameraSetup({
             RIGHT: THREE.MOUSE.PAN,
           }}
         />
+        <CameraAutoFit viewMode="2d" />
       </>
     );
   }
@@ -215,6 +414,7 @@ function CameraSetup({
         minDistance={2}
         maxDistance={50}
       />
+      <CameraAutoFit viewMode="3d" />
     </>
   );
 }
@@ -238,7 +438,26 @@ export function PropertyEditor({
   const activeTool = useEditorStore((s) => s.activeTool);
   const isDrawing = useEditorStore((s) => s.isDrawing);
   const createNode = useSceneStore((s) => s.createNode);
+  const nodes = useSceneStore((s) => s.nodes);
+  const setTool = useEditorStore((s) => s.setTool);
+  const storeViewMode = useEditorStore((s) => s.viewMode);
+  const gridSize = useEditorStore((s) => s.gridSize);
+  const phase = useEditorStore((s) => s.phase);
   const hasLoadedRef = useRef(false);
+
+  // Derive the selected zone for polygon editing
+  const effectiveViewMode = viewMode ?? storeViewMode;
+  const selectedZone: ZoneNode | null =
+    selectedNodeIds.length === 1
+      ? (() => {
+          const node = nodes[selectedNodeIds[0]];
+          return node?.type === "zone" ? (node as ZoneNode) : null;
+        })()
+      : null;
+
+  // Empty state dialog control
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const [aiGenerateOpen, setAiGenerateOpen] = useState(false);
 
   // Load initial scene once
   useEffect(() => {
@@ -356,6 +575,27 @@ export function PropertyEditor({
             useEditorStore.getState().toggleGrid();
           }
           break;
+        // Phase shortcuts
+        case "1":
+          if (!e.ctrlKey && !e.metaKey) {
+            useEditorStore.getState().setPhase("structure");
+          }
+          break;
+        case "s":
+          if (!e.ctrlKey && !e.metaKey) {
+            useEditorStore.getState().setPhase("structure");
+          }
+          break;
+        case "2":
+          if (!e.ctrlKey && !e.metaKey) {
+            useEditorStore.getState().setPhase("furnish");
+          }
+          break;
+        case "f":
+          if (!e.ctrlKey && !e.metaKey) {
+            useEditorStore.getState().setPhase("furnish");
+          }
+          break;
         case "z":
           if (e.ctrlKey || e.metaKey) {
             if (e.shiftKey) {
@@ -396,31 +636,71 @@ export function PropertyEditor({
       {!readOnly && <EditorToolbar onSave={handleSave} />}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {!readOnly && <AssetPanel />}
-        <div className="relative min-h-0 flex-1 bg-muted/30">
-          <Canvas
-            shadows
-            gl={{ antialias: true, alpha: true }}
-            className="!absolute inset-0"
-          >
-            <CameraSetup viewMode={viewMode} />
-            <ambientLight intensity={0.6} />
-            <directionalLight
-              position={[10, 15, 10]}
-              intensity={0.8}
-              castShadow
-            />
-            <SceneRenderer />
-            <FloorPlane floorColor={colors.floorPlane} />
-            {!readOnly && <GridEventSystem />}
-            {!readOnly && <DrawingPreview />}
-          </Canvas>
+        <div className="relative min-h-0 flex-1 bg-muted/30 z-0">
+          <EditorErrorBoundary>
+            <Canvas
+              shadows
+              gl={{ antialias: true, alpha: true }}
+              className="!absolute inset-0 z-0"
+            >
+              <CameraSetup viewMode={viewMode} />
+              <ambientLight intensity={0.6} />
+              <directionalLight
+                position={[10, 15, 10]}
+                intensity={0.8}
+                castShadow
+              />
+              <SceneRenderer />
+              <WallSystem />
+              <LevelSystem />
+              <EditorOutlines />
+              <FloorPlane floorColor={colors.floorPlane} />
+              {!readOnly && <GridEventSystem />}
+              {!readOnly && <DrawingPreview />}
+              {/* Zone polygon vertex editor — only in 2D select mode */}
+              {!readOnly &&
+                selectedZone &&
+                effectiveViewMode === "2d" &&
+                activeTool === "select" && (
+                  <PolygonEditor
+                    zoneId={selectedZone.id}
+                    polygon={selectedZone.polygon}
+                    color={selectedZone.color}
+                    gridSize={gridSize}
+                  />
+                )}
+            </Canvas>
+          </EditorErrorBoundary>
           {/* Zone legend — floating overlay top-left on canvas */}
           <div className="absolute top-2 left-2 z-10 max-w-[220px]">
             <ZoneLegend />
           </div>
+          {/* Empty state overlay — shown when no nodes exist */}
+          {!readOnly && (
+            <>
+              <EditorEmptyState
+                onOpenTemplate={() => setTemplateOpen(true)}
+                onOpenAiGenerate={() => setAiGenerateOpen(true)}
+                onStartDrawing={() => setTool("wall")}
+              />
+              {/* Headless controlled dialogs for empty state triggers */}
+              <TemplateDialog
+                open={templateOpen}
+                onOpenChange={setTemplateOpen}
+              />
+              <AiGenerateDialog
+                open={aiGenerateOpen}
+                onOpenChange={setAiGenerateOpen}
+              />
+            </>
+          )}
           {/* Status bar with tool instructions */}
           {!readOnly && (
             <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 border-t border-border bg-background/90 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur-sm">
+              <span className="inline-flex items-center rounded-sm border border-border bg-muted px-1.5 py-0.5 font-medium text-foreground">
+                {phase === "structure" ? "Structuur" : "Inrichting"}
+              </span>
+              <span className="text-border">|</span>
               {activeTool === "select" &&
                 (() => {
                   if (selectedNodeIds.length === 1) {
@@ -430,28 +710,40 @@ export function PropertyEditor({
                       const dx = node.end[0] - node.start[0];
                       const dy = node.end[1] - node.start[1];
                       const length = Math.hypot(dx, dy);
-                      return `Muur geselecteerd: ${length.toFixed(2)}m`;
+                      return `Muur geselecteerd: ${length.toFixed(2)}m — Sleep om te verplaatsen. Delete om te verwijderen.`;
+                    }
+                    if (node?.type === "zone") {
+                      return effectiveViewMode === "2d"
+                        ? `Zone geselecteerd: ${node.area.toFixed(1)}m² — Sleep hoekpunten om vorm aan te passen. Dubbelklik om punt te verwijderen. Klik groen punt om nieuw punt toe te voegen.`
+                        : `Zone geselecteerd: ${node.area.toFixed(1)}m² — Delete om te verwijderen.`;
                     }
                     if (node?.type === "item") {
-                      return "Item geselecteerd. R om te roteren. Delete om te verwijderen.";
+                      return "Item geselecteerd. R = roteren, Delete = verwijderen, Cmd+C/V = kopiëren.";
                     }
                   }
-                  return "Klik om te selecteren. Delete om te verwijderen.";
+                  if (selectedNodeIds.length > 1) {
+                    return `${selectedNodeIds.length} elementen geselecteerd. Delete om te verwijderen.`;
+                  }
+                  return "Klik om te selecteren. Cmd+klik voor meervoudige selectie.";
                 })()}
               {activeTool === "wall" &&
                 (isDrawing
-                  ? "Klik voor eindpunt van de muur. Muren worden automatisch doorgetrokken. Escape om te annuleren."
-                  : "Klik op het canvas om een muur te beginnen tekenen.")}
+                  ? "Klik voor eindpunt. Muren worden doorgetrokken. Shift = vrije hoek. Escape = annuleren."
+                  : "Klik om een muur te beginnen. Automatisch 45° snapping en verbinding met bestaande muren.")}
               {activeTool === "zone" &&
                 (isDrawing
-                  ? `${useEditorStore.getState().drawPoints.length} punten -- Klik voor meer punten. Klik op startpunt om zone te sluiten (min. 3). Escape om te annuleren.`
-                  : "Klik op het canvas om een zone te beginnen tekenen.")}
+                  ? `${useEditorStore.getState().drawPoints.length} punten — Klik voor meer punten. Klik op startpunt om te sluiten. Escape = annuleren.`
+                  : "Klik op het canvas om een zone te tekenen (min. 3 punten).")}
               {activeTool === "item" &&
-                "Klik op een item in het zijpaneel en klik dan op het canvas om te plaatsen."}
+                (useEditorStore.getState().placingItemType
+                  ? "Klik op het canvas om te plaatsen. Klik meerdere keren voor meerdere items. Escape = stoppen."
+                  : "Selecteer een item in het zijpaneel en klik dan op het canvas.")}
               {activeTool === "measure" &&
-                "Klik twee punten om af te meten."}
+                (isDrawing
+                  ? "Klik voor het eindpunt van de meting."
+                  : "Klik twee punten om de afstand te meten.")}
               {activeTool === "pan" &&
-                "Sleep om te verplaatsen. Scroll om te zoomen."}
+                "Rechtermuisknop = camera verplaatsen. Scrollwiel = zoomen."}
             </div>
           )}
         </div>

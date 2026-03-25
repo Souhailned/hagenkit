@@ -2,16 +2,13 @@
 
 import { memo, useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
-import { Html } from '@react-three/drei';
-import type { ThreeEvent } from '@react-three/fiber';
 import type { ZoneNode } from '../schema';
-import { ZONE_LABELS } from '../schema';
-import { polygonCentroid } from '../utils/geometry';
+import { useRegistry } from '../registry';
 
 interface ZoneRendererProps {
   node: ZoneNode;
   selected: boolean;
-  onSelect: (id: string) => void;
+  hovered: boolean;
   zoneColor: string;
 }
 
@@ -21,10 +18,11 @@ const ZONE_EXTRUDE_HEIGHT = 0.02;
 function ZoneRendererInner({
   node,
   selected,
-  onSelect,
+  hovered,
   zoneColor,
 }: ZoneRendererProps) {
   const meshRef = useRef<THREE.Mesh>(null);
+  useRegistry(node.id, 'zone', meshRef);
 
   const shape = useMemo(() => {
     const s = new THREE.Shape();
@@ -52,52 +50,24 @@ function ZoneRendererInner({
     };
   }, [geometry]);
 
-  const centroid = useMemo(
-    () => polygonCentroid(node.polygon),
-    [node.polygon],
-  );
-
-  const label = ZONE_LABELS[node.zoneType];
-  const areaText = `${Math.round(node.area)}m\u00B2`;
-
-  const handleClick = (e: ThreeEvent<MouseEvent>) => {
-    e.stopPropagation();
-    onSelect(node.id);
-  };
+  const opacity = selected ? 0.6 : hovered ? 0.55 : 0.4;
 
   return (
-    <group>
-      {/* Zone floor shape - ExtrudeGeometry creates shape in XY plane,
-          rotate to lie flat on XZ plane */}
-      <mesh
-        ref={meshRef}
-        geometry={geometry}
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0.001, 0]}
-        onClick={handleClick}
-      >
-        <meshStandardMaterial
-          color={zoneColor}
-          transparent
-          opacity={selected ? 0.6 : 0.4}
-          side={THREE.DoubleSide}
-          depthWrite={false}
-        />
-      </mesh>
-
-      {/* Floating label above the centroid */}
-      <Html
-        position={[centroid[0], 0.3, centroid[1]]}
-        center
-        distanceFactor={10}
-        style={{ pointerEvents: 'none' }}
-      >
-        <div className="whitespace-nowrap rounded bg-foreground/75 px-2 py-1 text-center font-sans text-xs leading-tight text-background">
-          <div className="font-semibold">{label}</div>
-          <div className="opacity-80">{areaText}</div>
-        </div>
-      </Html>
-    </group>
+    <mesh
+      ref={meshRef}
+      geometry={geometry}
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, 0.001, 0]}
+      userData={{ nodeId: node.id, nodeType: 'zone' }}
+    >
+      <meshStandardMaterial
+        color={zoneColor}
+        transparent
+        opacity={opacity}
+        side={THREE.DoubleSide}
+        depthWrite={false}
+      />
+    </mesh>
   );
 }
 
@@ -105,7 +75,7 @@ export const ZoneRenderer = memo(ZoneRendererInner, (prev, next) => {
   return (
     prev.node === next.node &&
     prev.selected === next.selected &&
-    prev.onSelect === next.onSelect &&
+    prev.hovered === next.hovered &&
     prev.zoneColor === next.zoneColor
   );
 });

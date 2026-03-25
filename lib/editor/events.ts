@@ -9,6 +9,10 @@ export type GridEventPayload = {
   position: [number, number];
   /** Full 3D world position [x, y, z] */
   worldPosition: [number, number, number];
+  /** ID of the topmost interactive node mesh under the pointer, if any */
+  hitNodeId?: string;
+  /** Type of the hit node (wall, zone, item) */
+  hitNodeType?: string;
 };
 
 export type EditorEvents = {

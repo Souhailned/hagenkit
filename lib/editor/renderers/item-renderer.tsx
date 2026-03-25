@@ -2,9 +2,8 @@
 
 import { memo, useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
-import { Edges } from '@react-three/drei';
-import type { ThreeEvent } from '@react-three/fiber';
 import type { HorecaItemType, ItemNode } from '../schema';
+import { useRegistry } from '../registry';
 
 export type ItemCategory = 'table' | 'seating' | 'kitchen' | 'bar' | 'decor';
 
@@ -32,7 +31,7 @@ export const ITEM_CATEGORY: Record<HorecaItemType, ItemCategory> = {
 interface ItemRendererProps {
   node: ItemNode;
   selected: boolean;
-  onSelect: (id: string) => void;
+  hovered: boolean;
   categoryColors: Record<ItemCategory, string>;
   selectedColor: string;
 }
@@ -40,11 +39,12 @@ interface ItemRendererProps {
 function ItemRendererInner({
   node,
   selected,
-  onSelect,
+  hovered,
   categoryColors,
   selectedColor,
 }: ItemRendererProps) {
   const meshRef = useRef<THREE.Mesh>(null);
+  useRegistry(node.id, 'item', meshRef);
 
   const geometry = useMemo(
     () => new THREE.BoxGeometry(node.width, node.height, node.depth),
@@ -60,11 +60,6 @@ function ItemRendererInner({
   const category = ITEM_CATEGORY[node.itemType];
   const color = categoryColors[category];
 
-  const handleClick = (e: ThreeEvent<MouseEvent>) => {
-    e.stopPropagation();
-    onSelect(node.id);
-  };
-
   return (
     <mesh
       ref={meshRef}
@@ -75,20 +70,13 @@ function ItemRendererInner({
         node.position[2],
       ]}
       rotation={[node.rotation[0], node.rotation[1], node.rotation[2]]}
-      onClick={handleClick}
+      userData={{ nodeId: node.id, nodeType: 'item' }}
     >
       <meshStandardMaterial
         color={color}
         roughness={0.7}
         metalness={category === 'kitchen' ? 0.4 : 0.1}
       />
-      {selected && (
-        <Edges
-          threshold={15}
-          color={selectedColor}
-          lineWidth={2}
-        />
-      )}
     </mesh>
   );
 }
@@ -97,7 +85,7 @@ export const ItemRenderer = memo(ItemRendererInner, (prev, next) => {
   return (
     prev.node === next.node &&
     prev.selected === next.selected &&
-    prev.onSelect === next.onSelect &&
+    prev.hovered === next.hovered &&
     prev.categoryColors === next.categoryColors &&
     prev.selectedColor === next.selectedColor
   );

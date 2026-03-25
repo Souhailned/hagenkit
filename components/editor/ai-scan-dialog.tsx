@@ -131,7 +131,7 @@ export function AiScanDialog({ disabled }: { disabled?: boolean }) {
         surfaceTotal: surface,
       });
 
-      if (result.success && result.data) {
+      if (result.success) {
         useSceneStore.getState().loadScene(result.data);
         toast.success("Plattegrond gescand en geladen!");
         setOpen(false);

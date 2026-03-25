@@ -108,7 +108,7 @@ export function FloorPlanEditorClient({
         sceneData: { nodes: {}, rootNodeIds: [] },
       });
 
-      if (result.success && result.data) {
+      if (result.success) {
         const newPlan: FloorPlanData = {
           id: result.data.id,
           propertyId,

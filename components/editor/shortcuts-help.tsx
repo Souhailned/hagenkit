@@ -14,6 +14,8 @@ const SHORTCUTS = [
   { keys: ["Escape"], action: "Tekening annuleren / deselecteren" },
   { keys: ["R"], action: "Geselecteerd item 90\u00B0 draaien" },
   { keys: ["G"], action: "Raster aan/uit" },
+  { keys: ["1", "S"], action: "Structuur fase" },
+  { keys: ["2", "F"], action: "Inrichting fase" },
   { keys: ["Ctrl+Z"], action: "Ongedaan maken" },
   { keys: ["Ctrl+Y", "Ctrl+Shift+Z"], action: "Opnieuw uitvoeren" },
   { keys: ["Ctrl+C"], action: "Selectie kopieren" },

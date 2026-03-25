@@ -68,6 +68,11 @@ const NODE_TYPE_FIELDS: Record<string, Set<string>> = {
     "capacity",
   ]),
   item: new Set(["itemType", "width", "depth", "height", "model"]),
+  door: new Set(["width", "height", "style", "wallId", "wallPosition"]),
+  window: new Set(["width", "height", "sillHeight", "style", "wallId", "wallPosition"]),
+  site: new Set(["name"]),
+  building: new Set(["name"]),
+  level: new Set(["level", "height", "name"]),
 };
 
 export const useSceneStore = create<SceneState>()(

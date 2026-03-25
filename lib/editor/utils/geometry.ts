@@ -1,6 +1,7 @@
 /**
  * Geometry utilities for the floor plan editor.
  */
+import type { AnyNode } from "../schema/nodes";
 
 /** Calculate the area of a polygon using the Shoelace formula */
 export function polygonArea(points: [number, number][]): number {
@@ -60,6 +61,68 @@ export function midpoint2D(
 /** Estimate seating capacity from area (roughly 1 seat per 1.5 m²) */
 export function estimateCapacity(areaM2: number): number {
   return Math.floor(areaM2 / 1.5);
+}
+
+/** Bounding box in 2D */
+export interface Bounds2D {
+  minX: number;
+  minZ: number;
+  maxX: number;
+  maxZ: number;
+  centerX: number;
+  centerZ: number;
+  width: number;
+  depth: number;
+}
+
+/** Compute 2D bounding box (X/Z plane) from a flat node dictionary.
+ *  Inspects wall start/end, zone polygons, and item positions. */
+export function computeSceneBounds(
+  nodes: Record<string, AnyNode>,
+): Bounds2D | null {
+  let minX = Infinity;
+  let minZ = Infinity;
+  let maxX = -Infinity;
+  let maxZ = -Infinity;
+  let hasPoints = false;
+
+  const expand = (x: number, z: number) => {
+    hasPoints = true;
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (z < minZ) minZ = z;
+    if (z > maxZ) maxZ = z;
+  };
+
+  for (const node of Object.values(nodes)) {
+    if (node.type === "wall") {
+      expand(node.start[0], node.start[1]);
+      expand(node.end[0], node.end[1]);
+    } else if (node.type === "zone" || node.type === "slab") {
+      for (const pt of node.polygon) {
+        expand(pt[0], pt[1]);
+      }
+    } else if (node.type === "item") {
+      expand(node.position[0], node.position[2]);
+    } else if (node.type === "door" || node.type === "window") {
+      expand(node.position[0], node.position[2]);
+    }
+  }
+
+  if (!hasPoints) return null;
+
+  const width = maxX - minX;
+  const depth = maxZ - minZ;
+  return {
+    minX,
+    minZ,
+    maxX,
+    maxZ,
+    centerX: minX + width / 2,
+    centerZ: minZ + depth / 2,
+    width,
+    depth,
+  };
 }
 
 /** Generate a unique ID */

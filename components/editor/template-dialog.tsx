@@ -22,8 +22,20 @@ import { TEMPLATES, type FloorPlanTemplate } from "@/lib/editor/templates";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-export function TemplateDialog({ disabled }: { disabled?: boolean }) {
-  const [open, setOpen] = useState(false);
+interface TemplateDialogProps {
+  disabled?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function TemplateDialog({
+  disabled,
+  open: controlledOpen,
+  onOpenChange,
+}: TemplateDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [selected, setSelected] = useState<string | null>(null);
   const loadScene = useSceneStore((s) => s.loadScene);
   const nodes = useSceneStore((s) => s.nodes);
@@ -43,26 +55,30 @@ export function TemplateDialog({ disabled }: { disabled?: boolean }) {
     setSelected(null);
   };
 
+  const isControlled = controlledOpen !== undefined;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DialogTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={disabled}
-              className="gap-1.5"
-            >
-              <LayoutTemplate className="size-4" />
-              <span className="hidden sm:inline">Templates</span>
-            </Button>
-          </DialogTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          Laad een plattegrond template
-        </TooltipContent>
-      </Tooltip>
+      {!isControlled && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={disabled}
+                className="gap-1.5"
+              >
+                <LayoutTemplate className="size-4" />
+                <span className="hidden sm:inline">Templates</span>
+              </Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            Laad een plattegrond template
+          </TooltipContent>
+        </Tooltip>
+      )}
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
