@@ -11,3 +11,4 @@ export { SiteRenderer } from './site-renderer';
 export { BuildingRenderer } from './building-renderer';
 export { LevelRenderer } from './level-renderer';
 export { SceneRenderer } from './scene-renderer';
+export { WallLabels } from './wall-labels';

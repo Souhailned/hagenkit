@@ -38,11 +38,14 @@ import {
   type GridEventPayload,
 } from "@/lib/editor/events";
 import { EditorOutlines } from "@/lib/editor/effects";
+import { WallLabels } from "@/lib/editor/renderers";
 import { EditorToolbar } from "./editor-toolbar";
 import { AssetPanel } from "./asset-panel";
 import { PropertiesPanel } from "./properties-panel";
 import { ZoneLegend } from "./zone-legend";
 import { ShortcutsHelp } from "./shortcuts-help";
+import { CommandPalette } from "./command-palette";
+import { NodeContextMenu } from "./node-context-menu";
 import { EditorEmptyState } from "./editor-empty-state";
 import { TemplateDialog } from "./template-dialog";
 import { AiGenerateDialog } from "./ai-generate-dialog";
@@ -127,11 +130,14 @@ function DrawingPreview() {
   // Track cursor position via grid:pointermove while drawing
   useEffect(() => {
     const handleMove = (payload: GridEventPayload) => {
+      const tool = useEditorStore.getState().activeTool;
       if (
         useEditorStore.getState().isDrawing ||
-        useEditorStore.getState().activeTool === "wall" ||
-        useEditorStore.getState().activeTool === "zone" ||
-        useEditorStore.getState().activeTool === "measure"
+        tool === "wall" ||
+        tool === "zone" ||
+        tool === "slab" ||
+        tool === "ceiling" ||
+        tool === "measure"
       ) {
         setCursorPos(payload.position);
       } else {
@@ -157,7 +163,18 @@ function DrawingPreview() {
   const isWall = activeTool === "wall";
   const isMeasure = activeTool === "measure";
   const isZone = activeTool === "zone";
-  const lineColor = isWall ? "#3b82f6" : isMeasure ? "#f59e0b" : "#22c55e";
+  const isSlab = activeTool === "slab";
+  const isCeiling = activeTool === "ceiling";
+  const isPolygonTool = isZone || isSlab || isCeiling;
+  const lineColor = isWall
+    ? "#3b82f6"
+    : isMeasure
+      ? "#f59e0b"
+      : isSlab
+        ? "#a855f7"
+        : isCeiling
+          ? "#06b6d4"
+          : "#22c55e";
 
   const lastPt = points3D[points3D.length - 1];
   const firstPt = points3D[0];
@@ -174,9 +191,9 @@ function DrawingPreview() {
         )
       : 0;
 
-  // Check if cursor is near the first zone point (for close indicator)
+  // Check if cursor is near the first point (for close indicator) -- works for zone/slab/ceiling
   const isNearFirstPoint =
-    isZone &&
+    isPolygonTool &&
     cursorPos &&
     drawPoints.length >= 3 &&
     Math.hypot(
@@ -236,8 +253,8 @@ function DrawingPreview() {
         />
       )}
 
-      {/* Zone: closing line from cursor to first point */}
-      {isZone && cursorPt && drawPoints.length >= 2 && (
+      {/* Polygon closing line from cursor to first point (zone/slab/ceiling) */}
+      {isPolygonTool && cursorPt && drawPoints.length >= 2 && (
         <Line
           points={[cursorPt, firstPt]}
           color={isNearFirstPoint ? "#4ade80" : "#22c55e"}
@@ -514,6 +531,11 @@ export function PropertyEditor({
     }
   }, [finishDrawing, activeTool, createNode]);
 
+  const handleSave = useCallback(() => {
+    const scene = exportScene();
+    onSave?.(scene);
+  }, [exportScene, onSave]);
+
   // Keyboard shortcuts
   useEffect(() => {
     if (readOnly) return;
@@ -527,6 +549,9 @@ export function PropertyEditor({
         target.tagName === "SELECT"
       )
         return;
+
+      const store = useEditorStore.getState();
+      const currentPhase = store.phase;
 
       switch (e.key) {
         case "Delete":
@@ -584,27 +609,90 @@ export function PropertyEditor({
             useEditorStore.getState().toggleGrid();
           }
           break;
-        // Phase shortcuts
+
+        // ── Phase shortcuts ──────────────────────────────────────────────
         case "1":
           if (!e.ctrlKey && !e.metaKey) {
-            useEditorStore.getState().setPhase("structure");
+            store.setPhase("structure");
           }
           break;
         case "s":
-          if (!e.ctrlKey && !e.metaKey) {
-            useEditorStore.getState().setPhase("structure");
+          if (e.ctrlKey || e.metaKey) {
+            // Cmd+S: save
+            e.preventDefault();
+            handleSave();
+          } else {
+            store.setPhase("structure");
           }
           break;
         case "2":
           if (!e.ctrlKey && !e.metaKey) {
-            useEditorStore.getState().setPhase("furnish");
+            store.setPhase("furnish");
           }
           break;
         case "f":
           if (!e.ctrlKey && !e.metaKey) {
-            useEditorStore.getState().setPhase("furnish");
+            store.setPhase("furnish");
           }
           break;
+
+        // ── Tool shortcuts ───────────────────────────────────────────────
+        case "w":
+          if (!e.ctrlKey && !e.metaKey && currentPhase === "structure") {
+            store.setTool("wall");
+          }
+          break;
+        case "q":
+          if (!e.ctrlKey && !e.metaKey && currentPhase === "structure") {
+            store.setTool("zone");
+          }
+          break;
+        case "d":
+          if (!e.ctrlKey && !e.metaKey && currentPhase === "structure") {
+            store.setTool("door");
+          }
+          break;
+        case "m":
+          if (!e.ctrlKey && !e.metaKey) {
+            store.setTool("measure");
+          }
+          break;
+
+        // ── Select all ───────────────────────────────────────────────────
+        case "a":
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            const allNodeIds = Object.keys(useSceneStore.getState().nodes);
+            // Select all visible nodes
+            for (const id of allNodeIds) {
+              store.selectNode(id, true);
+            }
+          }
+          break;
+
+        // ── Level navigation ─────────────────────────────────────────────
+        case "ArrowUp":
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            store.setActiveLevel(store.activeLevelIndex + 1);
+          }
+          break;
+        case "ArrowDown":
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            store.setActiveLevel(Math.max(0, store.activeLevelIndex - 1));
+          }
+          break;
+
+        // ── Command palette ──────────────────────────────────────────────
+        case "k":
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            editorEmitter.emit("tool:activate", { tool: "command-palette" });
+          }
+          break;
+
+        // ── Undo / Redo ──────────────────────────────────────────────────
         case "z":
           if (e.ctrlKey || e.metaKey) {
             if (e.shiftKey) {
@@ -633,18 +721,15 @@ export function PropertyEditor({
     clearSelection,
     isDrawing,
     completeDrawing,
+    handleSave,
   ]);
-
-  const handleSave = useCallback(() => {
-    const scene = exportScene();
-    onSave?.(scene);
-  }, [exportScene, onSave]);
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       {!readOnly && <EditorToolbar onSave={handleSave} />}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {!readOnly && <AssetPanel />}
+        <NodeContextMenu>
         <div className="relative min-h-0 flex-1 bg-muted/30 z-0">
           <EditorErrorBoundary>
             <Canvas
@@ -663,6 +748,7 @@ export function PropertyEditor({
               <WallSystem />
               <LevelSystem />
               <EditorOutlines />
+              <WallLabels />
               <FloorPlane floorColor={colors.floorPlane} />
               {!readOnly && <GridEventSystem />}
               {!readOnly && <DrawingPreview />}
@@ -751,14 +837,24 @@ export function PropertyEditor({
                 (isDrawing
                   ? "Klik voor het eindpunt van de meting."
                   : "Klik twee punten om de afstand te meten.")}
+              {activeTool === "slab" &&
+                (isDrawing
+                  ? `${useEditorStore.getState().drawPoints.length} punten — Klik voor meer punten. Klik op startpunt om te sluiten. Escape = annuleren.`
+                  : "Klik op het canvas om een vloerplaat te tekenen (min. 3 punten).")}
+              {activeTool === "ceiling" &&
+                (isDrawing
+                  ? `${useEditorStore.getState().drawPoints.length} punten — Klik voor meer punten. Klik op startpunt om te sluiten. Escape = annuleren.`
+                  : "Klik op het canvas om een plafond te tekenen (min. 3 punten).")}
               {activeTool === "pan" &&
                 "Rechtermuisknop = camera verplaatsen. Scrollwiel = zoomen."}
             </div>
           )}
         </div>
+        </NodeContextMenu>
         {!readOnly && <PropertiesPanel />}
       </div>
       {!readOnly && <ShortcutsHelp />}
+      {!readOnly && <CommandPalette onSave={handleSave} />}
     </div>
   );
 }

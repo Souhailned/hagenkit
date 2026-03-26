@@ -13,7 +13,9 @@ export type EditorTool =
   | "measure"
   | "pan"
   | "door"
-  | "window";
+  | "window"
+  | "slab"
+  | "ceiling";
 
 export type ViewMode = "2d" | "3d";
 

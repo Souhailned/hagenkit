@@ -18,6 +18,8 @@ import {
   AppWindow,
   Hammer,
   Sofa,
+  RectangleHorizontal,
+  SquareDashed,
 } from "lucide-react";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -55,6 +57,8 @@ const TOOL_CONFIG: Array<{
   { value: "zone", label: "Zone tekenen", icon: PenTool, phases: ["structure"] },
   { value: "door", label: "Deur plaatsen", icon: DoorOpen, phases: ["structure"] },
   { value: "window", label: "Raam plaatsen", icon: AppWindow, phases: ["structure"] },
+  { value: "slab", label: "Vloer tekenen", icon: RectangleHorizontal, phases: ["structure"] },
+  { value: "ceiling", label: "Plafond tekenen", icon: SquareDashed, phases: ["structure"] },
   { value: "item", label: "Inventaris plaatsen", icon: Armchair, phases: ["furnish"] },
   { value: "measure", label: "Opmeten", icon: Ruler },
   { value: "pan", label: "Verplaatsen", icon: Move },

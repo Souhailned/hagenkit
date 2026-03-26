@@ -23,6 +23,8 @@ import {
   DEFAULT_WINDOW_WIDTH,
   DEFAULT_WINDOW_HEIGHT,
   DEFAULT_WINDOW_SILL_HEIGHT,
+  DEFAULT_SLAB_THICKNESS,
+  DEFAULT_CEILING_HEIGHT,
   ZONE_COLORS,
   type HorecaItemType,
   type HorecaZoneType,
@@ -206,6 +208,8 @@ export function useToolEvents() {
   // Tool state refs
   const wallStartRef = useRef<[number, number] | null>(null);
   const zonePointsRef = useRef<[number, number][]>([]);
+  const slabPointsRef = useRef<[number, number][]>([]);
+  const ceilingPointsRef = useRef<[number, number][]>([]);
   const measureStartRef = useRef<[number, number] | null>(null);
 
   // Drag-to-move state
@@ -237,6 +241,8 @@ export function useToolEvents() {
         prevTool = state.activeTool;
         wallStartRef.current = null;
         zonePointsRef.current = [];
+        slabPointsRef.current = [];
+        ceilingPointsRef.current = [];
         measureStartRef.current = null;
         isDraggingRef.current = false;
         dragStartPosRef.current = null;
@@ -517,6 +523,74 @@ export function useToolEvents() {
         return;
       }
 
+      // ── SLAB TOOL (polygon with close detection, creates SlabNode) ──
+      if (activeTool === "slab") {
+        const points = slabPointsRef.current;
+
+        // Close polygon if near first point
+        if (points.length >= 3) {
+          const first = points[0];
+          if (distance2D(point, first) < CLOSE_POLYGON_THRESHOLD) {
+            sceneStore.createNode({
+              id: generateId(),
+              type: "slab",
+              parentId: null,
+              visible: true,
+              position: [0, 0, 0],
+              rotation: [0, 0, 0],
+              polygon: [...points],
+              thickness: DEFAULT_SLAB_THICKNESS,
+            });
+
+            slabPointsRef.current = [];
+            store.cancelDrawing();
+            return;
+          }
+        }
+
+        // Add point to polygon
+        points.push(point);
+        if (points.length === 1) {
+          store.startDrawing();
+        }
+        store.addDrawPoint(point);
+        return;
+      }
+
+      // ── CEILING TOOL (polygon with close detection, creates CeilingNode) ──
+      if (activeTool === "ceiling") {
+        const points = ceilingPointsRef.current;
+
+        // Close polygon if near first point
+        if (points.length >= 3) {
+          const first = points[0];
+          if (distance2D(point, first) < CLOSE_POLYGON_THRESHOLD) {
+            sceneStore.createNode({
+              id: generateId(),
+              type: "ceiling",
+              parentId: null,
+              visible: true,
+              position: [0, 0, 0],
+              rotation: [0, 0, 0],
+              polygon: [...points],
+              height: DEFAULT_CEILING_HEIGHT,
+            });
+
+            ceilingPointsRef.current = [];
+            store.cancelDrawing();
+            return;
+          }
+        }
+
+        // Add point to polygon
+        points.push(point);
+        if (points.length === 1) {
+          store.startDrawing();
+        }
+        store.addDrawPoint(point);
+        return;
+      }
+
       // ── WINDOW TOOL (place window on nearest wall) ─────────────────
       if (activeTool === "window") {
         const snap = findNearestWall(payload.position);
@@ -590,6 +664,7 @@ export function useToolEvents() {
         for (const id of selectedNodeIds) {
           const node = sceneStore.nodes[id];
           if (!node) continue;
+
           if (node.type === "item") {
             // Check collision at the new position (warn but don't block)
             const newBounds = aabbFromCenter(
@@ -606,17 +681,93 @@ export function useToolEvents() {
               );
             }
 
-            sceneStore.updateNode(id, {
-              position: [
+            // Wall-mounted items: snap to nearest wall when dragged
+            if (node.attachTo === "wall") {
+              const newPos: [number, number] = [
                 node.position[0] + dx,
-                node.position[1],
                 node.position[2] + dz,
-              ],
-            });
+              ];
+              const wallSnap = findNearestWall(newPos, 1.5);
+              if (wallSnap) {
+                const { worldPos, yRotation } = computeWallPlacement(
+                  wallSnap.wall,
+                  wallSnap.position,
+                );
+                sceneStore.updateNode(id, {
+                  position: worldPos,
+                  rotation: [0, yRotation, 0],
+                  wallId: wallSnap.wallId,
+                  wallT: wallSnap.position,
+                });
+              } else {
+                // No wall nearby — free move
+                sceneStore.updateNode(id, {
+                  position: [
+                    node.position[0] + dx,
+                    node.position[1],
+                    node.position[2] + dz,
+                  ],
+                });
+              }
+            } else {
+              sceneStore.updateNode(id, {
+                position: [
+                  node.position[0] + dx,
+                  node.position[1],
+                  node.position[2] + dz,
+                ],
+              });
+            }
           } else if (node.type === "wall") {
             sceneStore.updateNode(id, {
               start: [node.start[0] + dx, node.start[1] + dz],
               end: [node.end[0] + dx, node.end[1] + dz],
+            });
+          } else if (node.type === "door" || node.type === "window") {
+            // Keep attached to parent wall — project new position onto wall
+            const wall = sceneStore.nodes[node.wallId] as WallNode | undefined;
+            if (wall) {
+              const newPos: [number, number] = [
+                node.position[0] + dx,
+                node.position[2] + dz,
+              ];
+              // Project onto the wall segment
+              const wdx = wall.end[0] - wall.start[0];
+              const wdz = wall.end[1] - wall.start[1];
+              const wallLen = Math.hypot(wdx, wdz);
+              if (wallLen > 0.01) {
+                const t = Math.max(
+                  0,
+                  Math.min(
+                    1,
+                    ((newPos[0] - wall.start[0]) * wdx +
+                      (newPos[1] - wall.start[1]) * wdz) /
+                      (wallLen * wallLen),
+                  ),
+                );
+                // Clamp so the opening does not extend past wall ends
+                const openingWidth = node.width;
+                const halfRatio = wallLen > 0 ? (openingWidth / 2) / wallLen : 0;
+                const clampedT = Math.max(halfRatio, Math.min(1 - halfRatio, t));
+
+                const { worldPos, yRotation } = computeWallPlacement(
+                  wall,
+                  clampedT,
+                );
+                sceneStore.updateNode(id, {
+                  position: worldPos,
+                  rotation: [0, yRotation, 0],
+                  wallPosition: clampedT,
+                });
+              }
+            }
+          } else if (node.type === "zone" || node.type === "slab" || node.type === "ceiling") {
+            // Move all polygon points by the delta
+            const newPolygon = node.polygon.map(
+              ([px, pz]) => [px + dx, pz + dz] as [number, number],
+            );
+            sceneStore.updateNode(id, {
+              polygon: newPolygon,
             });
           }
         }
@@ -649,6 +800,8 @@ export function useToolEvents() {
     const handleToolCancel = () => {
       wallStartRef.current = null;
       zonePointsRef.current = [];
+      slabPointsRef.current = [];
+      ceilingPointsRef.current = [];
       measureStartRef.current = null;
       isDraggingRef.current = false;
       dragStartPosRef.current = null;
