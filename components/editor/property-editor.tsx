@@ -13,7 +13,16 @@ import {
 import * as THREE from "three";
 import { useSceneStore, useEditorStore } from "@/lib/editor/stores";
 import { SceneRenderer } from "@/lib/editor/renderers";
-import { useZoneSystem, WallSystem, LevelSystem } from "@/lib/editor/systems";
+import {
+  useZoneSystem,
+  WallSystem,
+  LevelSystem,
+  DoorSystem,
+  WindowSystem,
+  ItemSystem,
+  SlabSystem,
+  CeilingSystem,
+} from "@/lib/editor/systems";
 import { PolygonEditor } from "@/lib/editor/tools";
 import type { SceneData, ZoneNode } from "@/lib/editor/schema";
 import {

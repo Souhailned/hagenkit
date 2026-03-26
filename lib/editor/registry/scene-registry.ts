@@ -6,7 +6,7 @@
 import type * as THREE from 'three';
 
 /** The set of node types tracked by the registry */
-export type RegistryNodeType = 'wall' | 'zone' | 'item' | 'slab' | 'site' | 'building' | 'level' | 'door' | 'window';
+export type RegistryNodeType = 'wall' | 'zone' | 'item' | 'slab' | 'site' | 'building' | 'level' | 'door' | 'window' | 'ceiling' | 'roof' | 'roof-segment' | 'scan' | 'guide';
 
 interface SceneRegistry {
   /** Primary lookup: node ID -> THREE.Object3D */
@@ -44,6 +44,11 @@ function createSceneRegistry(): SceneRegistry {
     level: new Set<string>(),
     door: new Set<string>(),
     window: new Set<string>(),
+    ceiling: new Set<string>(),
+    roof: new Set<string>(),
+    'roof-segment': new Set<string>(),
+    scan: new Set<string>(),
+    guide: new Set<string>(),
   };
 
   return {

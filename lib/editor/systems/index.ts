@@ -1,6 +1,11 @@
 export { useZoneSystem } from "./zone-system";
 export { LevelSystem } from "./level-system";
 export { WallSystem } from "./wall-system";
+export { DoorSystem } from "./door-system";
+export { WindowSystem } from "./window-system";
+export { ItemSystem } from "./item-system";
+export { SlabSystem } from "./slab-system";
+export { CeilingSystem } from "./ceiling-system";
 export { getWallOpenings, subtractOpenings } from "./wall-csg";
 export { useSceneMeasurements } from "./measurement-system";
 export type { ZoneSummary, SceneMeasurements } from "./measurement-system";

@@ -1,6 +1,15 @@
 'use client';
 
-import { memo, useMemo, useRef, useEffect } from 'react';
+// lib/editor/renderers/door-renderer.tsx
+// Door renderer — creates a group that the DoorSystem populates with
+// parametric frame, leaf, and handle meshes.
+//
+// The renderer handles:
+//   - Group ref + scene registry registration
+//   - Initial position based on wall (DoorSystem refines on next frame)
+//   - userData for raycasting
+
+import { memo, useRef } from 'react';
 import * as THREE from 'three';
 import type { DoorNode } from '../schema';
 import { useRegistry } from '../registry';
@@ -13,9 +22,6 @@ interface DoorRendererProps {
   selectedColor: string;
 }
 
-/** Frame thickness in meters for the door outline */
-const FRAME_DEPTH = 0.08;
-
 function DoorRendererInner({
   node,
   selected,
@@ -23,40 +29,20 @@ function DoorRendererInner({
   doorColor,
   selectedColor,
 }: DoorRendererProps) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  useRegistry(node.id, 'door', meshRef);
-
-  const geometry = useMemo(
-    () => new THREE.BoxGeometry(node.width, node.height, FRAME_DEPTH),
-    [node.width, node.height],
-  );
-
-  useEffect(() => {
-    return () => {
-      geometry.dispose();
-    };
-  }, [geometry]);
-
-  const color = selected ? selectedColor : doorColor;
+  const groupRef = useRef<THREE.Group>(null);
+  useRegistry(node.id, 'door', groupRef);
 
   return (
-    <mesh
-      ref={meshRef}
-      geometry={geometry}
+    <group
+      ref={groupRef}
       position={[
         node.position[0],
-        node.position[1] + node.height / 2,
+        node.position[1],
         node.position[2],
       ]}
       rotation={[node.rotation[0], node.rotation[1], node.rotation[2]]}
       userData={{ nodeId: node.id, nodeType: 'door' }}
-    >
-      <meshStandardMaterial
-        color={color}
-        roughness={0.6}
-        metalness={0.1}
-      />
-    </mesh>
+    />
   );
 }
 

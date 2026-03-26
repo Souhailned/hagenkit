@@ -1,6 +1,15 @@
 'use client';
 
-import { memo, useMemo, useRef, useEffect } from 'react';
+// lib/editor/renderers/window-renderer.tsx
+// Window renderer — creates a group that the WindowSystem populates with
+// parametric frame, glass pane, divider, and sill meshes.
+//
+// The renderer handles:
+//   - Group ref + scene registry registration
+//   - Initial position based on wall (WindowSystem refines on next frame)
+//   - userData for raycasting
+
+import { memo, useRef } from 'react';
 import * as THREE from 'three';
 import type { WindowNode } from '../schema';
 import { useRegistry } from '../registry';
@@ -13,9 +22,6 @@ interface WindowRendererProps {
   selectedColor: string;
 }
 
-/** Frame depth in meters for the window */
-const FRAME_DEPTH = 0.06;
-
 function WindowRendererInner({
   node,
   selected,
@@ -23,42 +29,20 @@ function WindowRendererInner({
   windowColor,
   selectedColor,
 }: WindowRendererProps) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  useRegistry(node.id, 'window', meshRef);
-
-  const geometry = useMemo(
-    () => new THREE.BoxGeometry(node.width, node.height, FRAME_DEPTH),
-    [node.width, node.height],
-  );
-
-  useEffect(() => {
-    return () => {
-      geometry.dispose();
-    };
-  }, [geometry]);
-
-  const color = selected ? selectedColor : windowColor;
+  const groupRef = useRef<THREE.Group>(null);
+  useRegistry(node.id, 'window', groupRef);
 
   return (
-    <mesh
-      ref={meshRef}
-      geometry={geometry}
+    <group
+      ref={groupRef}
       position={[
         node.position[0],
-        node.position[1] + node.sillHeight + node.height / 2,
+        node.position[1] + node.sillHeight,
         node.position[2],
       ]}
       rotation={[node.rotation[0], node.rotation[1], node.rotation[2]]}
       userData={{ nodeId: node.id, nodeType: 'window' }}
-    >
-      <meshStandardMaterial
-        color={color}
-        transparent
-        opacity={0.4}
-        roughness={0.1}
-        metalness={0.0}
-      />
-    </mesh>
+    />
   );
 }
 

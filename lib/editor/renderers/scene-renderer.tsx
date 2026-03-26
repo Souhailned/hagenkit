@@ -9,6 +9,8 @@ import { ZoneRenderer } from './zone-renderer';
 import { ItemRenderer } from './item-renderer';
 import { DoorRenderer } from './door-renderer';
 import { WindowRenderer } from './window-renderer';
+import { SlabRenderer } from './slab-renderer';
+import { CeilingRenderer } from './ceiling-renderer';
 import { GridRenderer } from './grid-renderer';
 import { SiteRenderer } from './site-renderer';
 import { BuildingRenderer } from './building-renderer';
@@ -174,7 +176,27 @@ export function SceneRenderer() {
           />
         );
       case 'slab':
+        return (
+          <SlabRenderer
+            key={node.id}
+            node={node}
+            selected={isSelected}
+            hovered={isHovered}
+            slabColor={colors.slab}
+            selectedColor={colors.selected}
+          />
+        );
       case 'ceiling':
+        return (
+          <CeilingRenderer
+            key={node.id}
+            node={node}
+            selected={isSelected}
+            hovered={isHovered}
+            ceilingColor={colors.ceiling}
+            selectedColor={colors.selected}
+          />
+        );
       case 'roof-segment':
       case 'scan':
       case 'guide':
