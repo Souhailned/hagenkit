@@ -8,6 +8,7 @@
 // Zone: polygon with close-on-first-point detection
 // Measure: two-click distance measurement
 // Item: single-click placement, stays in mode for multiple placements
+// Spatial grid: collision detection for items, overlap checking for doors/windows
 
 import { useEffect, useRef } from "react";
 import { editorEmitter, type GridEventPayload } from "../events";
@@ -26,9 +27,9 @@ import {
   type HorecaItemType,
   type HorecaZoneType,
   type WallNode,
-  type DoorNode,
-  type WindowNode,
 } from "../schema";
+import { useSpatialGridSync } from "../spatial/spatial-grid-sync";
+import { aabbFromCenter } from "../spatial/spatial-grid";
 
 // ── Wall snapping constants ──────────────────────────────────────────────
 const WALL_JOIN_SNAP_RADIUS = 0.35; // meters — snap to existing wall endpoints
@@ -165,36 +166,6 @@ function findNearestWall(
 }
 
 /**
- * Check if placing a door/window at `position` on `wallId` would overlap
- * with any existing doors/windows on that wall.
- */
-function checkOverlap(
-  wallId: string,
-  position: number,
-  width: number,
-  wallLength: number,
-): boolean {
-  const nodes = useSceneStore.getState().nodes;
-  const halfRatio = wallLength > 0 ? (width / 2) / wallLength : 0;
-
-  for (const node of Object.values(nodes)) {
-    if (
-      (node.type === "door" || node.type === "window") &&
-      node.wallId === wallId
-    ) {
-      const existingHalfRatio =
-        wallLength > 0 ? (node.width / 2) / wallLength : 0;
-      const minDist = halfRatio + existingHalfRatio;
-      if (Math.abs(position - node.wallPosition) < minDist) {
-        return true; // overlap detected
-      }
-    }
-  }
-
-  return false;
-}
-
-/**
  * Compute the 3D position and Y rotation for a door/window placed on a wall.
  */
 function computeWallPlacement(
@@ -229,6 +200,9 @@ const ZONE_TYPE_CYCLE: HorecaZoneType[] = [
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function useToolEvents() {
+  // Spatial grid manager — synced with scene store, rebuilt on changes
+  const spatialManager = useSpatialGridSync();
+
   // Tool state refs
   const wallStartRef = useRef<[number, number] | null>(null);
   const zonePointsRef = useRef<[number, number][]>([]);
@@ -315,6 +289,76 @@ export function useToolEvents() {
       if (placingItemType) {
         const defaults = ITEM_DEFAULTS[placingItemType as HorecaItemType];
         if (defaults) {
+          const attachTo = ("attachTo" in defaults ? defaults.attachTo : undefined) ?? "floor";
+
+          // Wall-mounted items: snap to nearest wall
+          if (attachTo === "wall") {
+            const wallSnap = findNearestWall(payload.position, 1.5);
+            if (!wallSnap) {
+              console.warn(
+                `[editor] Wall item placement: no wall nearby for ${placingItemType}`,
+              );
+              return;
+            }
+
+            const { worldPos, yRotation } = computeWallPlacement(
+              wallSnap.wall,
+              wallSnap.position,
+            );
+
+            sceneStore.createNode({
+              id: generateId(),
+              type: "item",
+              parentId: null,
+              visible: true,
+              position: worldPos,
+              rotation: [0, yRotation, 0],
+              itemType: placingItemType as HorecaItemType,
+              width: defaults.width,
+              depth: defaults.depth,
+              height: defaults.height,
+              attachTo: "wall",
+              wallId: wallSnap.wallId,
+              wallT: wallSnap.position,
+            });
+            // Stay in item mode
+            return;
+          }
+
+          // Ceiling-mounted items: place at cursor position, system handles Y
+          if (attachTo === "ceiling") {
+            sceneStore.createNode({
+              id: generateId(),
+              type: "item",
+              parentId: null,
+              visible: true,
+              position: [point[0], 0, point[1]],
+              rotation: [0, 0, 0],
+              itemType: placingItemType as HorecaItemType,
+              width: defaults.width,
+              depth: defaults.depth,
+              height: defaults.height,
+              attachTo: "ceiling",
+            });
+            // Stay in item mode
+            return;
+          }
+
+          // Floor items (default): check collisions then place
+          const proposedBounds = aabbFromCenter(
+            point[0],
+            point[1],
+            defaults.width,
+            defaults.depth,
+          );
+          const collisions = spatialManager.checkFloorCollision(proposedBounds);
+          if (collisions.size > 0) {
+            console.warn(
+              `[editor] Item placement collision: ${placingItemType} overlaps with`,
+              Array.from(collisions),
+            );
+          }
+
           sceneStore.createNode({
             id: generateId(),
             type: "item",
@@ -441,8 +485,11 @@ export function useToolEvents() {
         const wallLen = distance2D(snap.wall.start, snap.wall.end);
         const doorWidth = DEFAULT_DOOR_WIDTH;
 
-        // Check overlap with existing openings
-        if (checkOverlap(snap.wallId, snap.position, doorWidth, wallLen)) {
+        // Check overlap with existing openings via spatial grid
+        if (spatialManager.checkWallOverlap(snap.wallId, snap.position, doorWidth, wallLen)) {
+          console.warn(
+            `[editor] Door placement blocked: overlaps existing opening on wall ${snap.wallId}`,
+          );
           return;
         }
 
@@ -478,8 +525,11 @@ export function useToolEvents() {
         const wallLen = distance2D(snap.wall.start, snap.wall.end);
         const windowWidth = DEFAULT_WINDOW_WIDTH;
 
-        // Check overlap with existing openings
-        if (checkOverlap(snap.wallId, snap.position, windowWidth, wallLen)) {
+        // Check overlap with existing openings via spatial grid
+        if (spatialManager.checkWallOverlap(snap.wallId, snap.position, windowWidth, wallLen)) {
+          console.warn(
+            `[editor] Window placement blocked: overlaps existing opening on wall ${snap.wallId}`,
+          );
           return;
         }
 
@@ -541,6 +591,21 @@ export function useToolEvents() {
           const node = sceneStore.nodes[id];
           if (!node) continue;
           if (node.type === "item") {
+            // Check collision at the new position (warn but don't block)
+            const newBounds = aabbFromCenter(
+              node.position[0] + dx,
+              node.position[2] + dz,
+              node.width,
+              node.depth,
+            );
+            const collisions = spatialManager.checkFloorCollision(newBounds, id);
+            if (collisions.size > 0) {
+              console.warn(
+                `[editor] Move collision: ${id} would overlap with`,
+                Array.from(collisions),
+              );
+            }
+
             sceneStore.updateNode(id, {
               position: [
                 node.position[0] + dx,
@@ -605,5 +670,5 @@ export function useToolEvents() {
       editorEmitter.off("tool:cancel", handleToolCancel);
       document.body.style.cursor = "";
     };
-  }, []);
+  }, [spatialManager]);
 }

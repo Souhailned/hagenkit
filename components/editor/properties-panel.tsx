@@ -23,6 +23,7 @@ import type {
   WallMaterial,
   HorecaZoneType,
   HorecaItemType,
+  AttachTo,
 } from "@/lib/editor/schema";
 import { cn } from "@/lib/utils";
 
@@ -348,6 +349,26 @@ function ItemProperties({ node }: { node: ItemNode }) {
         max={5}
         unit="m"
       />
+
+      <Separator />
+
+      {/* Attachment */}
+      <FieldRow label="Bevestiging">
+        <Select
+          value={node.attachTo ?? "floor"}
+          onValueChange={(v) => update({ attachTo: v as AttachTo })}
+        >
+          <SelectTrigger size="sm" className="h-7 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="floor">Vloer</SelectItem>
+            <SelectItem value="wall">Muur</SelectItem>
+            <SelectItem value="ceiling">Plafond</SelectItem>
+            <SelectItem value="none">Vrij</SelectItem>
+          </SelectContent>
+        </Select>
+      </FieldRow>
 
       <Separator />
 

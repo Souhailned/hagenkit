@@ -218,16 +218,21 @@ export interface ItemDefault {
   height: number;
   /** Dutch label */
   label: string;
+  /** How the item attaches to surfaces (defaults to 'floor' if omitted) */
+  attachTo?: AttachTo;
 }
 
 /** Realistic default dimensions (meters) and Dutch labels per item type */
 export const ITEM_DEFAULTS = {
+  // ── Meubilair ──────────────────────────────────────────────────────────
   table_round: { width: 0.9, depth: 0.9, height: 0.75, label: "Ronde tafel" },
   table_square: { width: 0.8, depth: 0.8, height: 0.75, label: "Vierkante tafel" },
   table_long: { width: 1.8, depth: 0.8, height: 0.75, label: "Lange tafel" },
   chair: { width: 0.45, depth: 0.45, height: 0.85, label: "Stoel" },
   barstool: { width: 0.4, depth: 0.4, height: 1.05, label: "Barkruk" },
-  bar_counter: { width: 2.4, depth: 0.6, height: 1.1, label: "Bar" },
+  booth: { width: 1.5, depth: 1.2, height: 1.2, label: "Zitnis" },
+
+  // ── Keuken ─────────────────────────────────────────────────────────────
   kitchen_counter: { width: 1.8, depth: 0.6, height: 0.9, label: "Keukenblad" },
   oven: { width: 0.6, depth: 0.6, height: 0.85, label: "Oven" },
   stove: { width: 0.7, depth: 0.7, height: 0.9, label: "Fornuis" },
@@ -236,9 +241,51 @@ export const ITEM_DEFAULTS = {
   coffee_machine: { width: 0.5, depth: 0.5, height: 0.45, label: "Koffiemachine" },
   display_case: { width: 1.2, depth: 0.7, height: 1.3, label: "Vitrine" },
   register: { width: 0.4, depth: 0.4, height: 0.35, label: "Kassa" },
-  booth: { width: 1.5, depth: 1.2, height: 1.2, label: "Zitnis" },
-  planter: { width: 0.5, depth: 0.5, height: 0.8, label: "Plantenbak" },
+  exhaust_hood: { width: 1.5, depth: 0.8, height: 0.5, label: "Afzuigkap", attachTo: "ceiling" },
+  dishwasher: { width: 0.6, depth: 0.6, height: 0.85, label: "Vaatwasser" },
+  prep_table: { width: 1.8, depth: 0.7, height: 0.9, label: "Werktafel" },
+  warming_cabinet: { width: 0.8, depth: 0.6, height: 0.85, label: "Warmhoudkast" },
+  freezer: { width: 0.7, depth: 0.7, height: 2.0, label: "Vriezer" },
+  pizza_oven: { width: 1.2, depth: 1.0, height: 0.5, label: "Pizzaoven" },
+  grill: { width: 0.9, depth: 0.6, height: 0.3, label: "Grill" },
+  deep_fryer: { width: 0.4, depth: 0.6, height: 0.3, label: "Frituur" },
+
+  // ── Bar ────────────────────────────────────────────────────────────────
+  bar_counter: { width: 2.4, depth: 0.6, height: 1.1, label: "Bar" },
+  beer_tap: { width: 0.3, depth: 0.3, height: 0.5, label: "Biertap" },
+  wine_cooler: { width: 0.6, depth: 0.6, height: 0.85, label: "Wijnkoeler" },
+  ice_machine: { width: 0.5, depth: 0.6, height: 0.85, label: "IJsmachine" },
+  glass_washer: { width: 0.5, depth: 0.5, height: 0.85, label: "Glazenspoeler" },
+  cocktail_station: { width: 1.2, depth: 0.6, height: 0.9, label: "Cocktailstation" },
+  espresso_machine: { width: 0.7, depth: 0.5, height: 0.5, label: "Espressomachine" },
+
+  // ── Sanitair ───────────────────────────────────────────────────────────
+  toilet: { width: 0.4, depth: 0.7, height: 0.4, label: "Toilet" },
+  urinal: { width: 0.4, depth: 0.3, height: 0.6, label: "Urinoir", attachTo: "wall" },
+  hand_basin: { width: 0.45, depth: 0.35, height: 0.85, label: "Handwasbak", attachTo: "wall" },
+  mirror_cabinet: { width: 0.6, depth: 0.15, height: 0.8, label: "Spiegelkast", attachTo: "wall" },
+
+  // ── Terras / Outdoor ──────────────────────────────────────────────────
   parasol: { width: 3.0, depth: 3.0, height: 2.5, label: "Parasol" },
+  planter: { width: 0.5, depth: 0.5, height: 0.8, label: "Plantenbak" },
+  terrace_heater: { width: 0.5, depth: 0.5, height: 2.2, label: "Terrasverwarmer" },
+  windscreen: { width: 2.0, depth: 0.05, height: 1.5, label: "Windscherm" },
+  outdoor_table: { width: 0.8, depth: 0.8, height: 0.75, label: "Terrastafel" },
+  outdoor_chair: { width: 0.5, depth: 0.5, height: 0.85, label: "Terrasstoel" },
+  flower_box: { width: 1.0, depth: 0.3, height: 0.4, label: "Bloembak" },
+
+  // ── Verlichting & Klimaat ──────────────────────────────────────────────
+  ceiling_light: { width: 0.5, depth: 0.5, height: 0.1, label: "Plafondlamp", attachTo: "ceiling" },
+  wall_light: { width: 0.2, depth: 0.15, height: 0.3, label: "Wandlamp", attachTo: "wall" },
+  airco_unit: { width: 1.0, depth: 0.3, height: 0.3, label: "Airco unit", attachTo: "wall" },
+  ventilation: { width: 0.6, depth: 0.6, height: 0.3, label: "Ventilatie", attachTo: "ceiling" },
+  smoke_detector: { width: 0.12, depth: 0.12, height: 0.05, label: "Rookmelder", attachTo: "ceiling" },
+  fire_extinguisher: { width: 0.2, depth: 0.2, height: 0.5, label: "Brandblusser", attachTo: "wall" },
+
+  // ── Opslag ─────────────────────────────────────────────────────────────
+  shelf_unit: { width: 1.2, depth: 0.4, height: 2.0, label: "Stellingkast" },
+  storage_rack: { width: 1.5, depth: 0.6, height: 1.8, label: "Opslagrek" },
+  coat_rack: { width: 1.0, depth: 0.4, height: 1.8, label: "Kapstok" },
 } as const satisfies Record<HorecaItemType, ItemDefault>;
 
 // ---------------------------------------------------------------------------

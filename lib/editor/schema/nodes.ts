@@ -544,12 +544,14 @@ export const AssetEffectSchema = z.object({
 
 /** Item types for horeca furniture and equipment (Horecagrond extension) */
 export const HorecaItemTypeSchema = z.enum([
+  // Meubilair
   "table_round",
   "table_square",
   "table_long",
   "chair",
   "barstool",
-  "bar_counter",
+  "booth",
+  // Keuken
   "kitchen_counter",
   "oven",
   "stove",
@@ -558,17 +560,56 @@ export const HorecaItemTypeSchema = z.enum([
   "coffee_machine",
   "display_case",
   "register",
-  "booth",
-  "planter",
+  "exhaust_hood",
+  "dishwasher",
+  "prep_table",
+  "warming_cabinet",
+  "freezer",
+  "pizza_oven",
+  "grill",
+  "deep_fryer",
+  // Bar
+  "bar_counter",
+  "beer_tap",
+  "wine_cooler",
+  "ice_machine",
+  "glass_washer",
+  "cocktail_station",
+  "espresso_machine",
+  // Sanitair
+  "toilet",
+  "urinal",
+  "hand_basin",
+  "mirror_cabinet",
+  // Terras / Outdoor
   "parasol",
+  "planter",
+  "terrace_heater",
+  "windscreen",
+  "outdoor_table",
+  "outdoor_chair",
+  "flower_box",
+  // Verlichting & Klimaat
+  "ceiling_light",
+  "wall_light",
+  "airco_unit",
+  "ventilation",
+  "smoke_detector",
+  "fire_extinguisher",
+  // Opslag
+  "shelf_unit",
+  "storage_rack",
+  "coat_rack",
 ]);
 export type HorecaItemType =
+  // Meubilair
   | "table_round"
   | "table_square"
   | "table_long"
   | "chair"
   | "barstool"
-  | "bar_counter"
+  | "booth"
+  // Keuken
   | "kitchen_counter"
   | "oven"
   | "stove"
@@ -577,9 +618,46 @@ export type HorecaItemType =
   | "coffee_machine"
   | "display_case"
   | "register"
-  | "booth"
+  | "exhaust_hood"
+  | "dishwasher"
+  | "prep_table"
+  | "warming_cabinet"
+  | "freezer"
+  | "pizza_oven"
+  | "grill"
+  | "deep_fryer"
+  // Bar
+  | "bar_counter"
+  | "beer_tap"
+  | "wine_cooler"
+  | "ice_machine"
+  | "glass_washer"
+  | "cocktail_station"
+  | "espresso_machine"
+  // Sanitair
+  | "toilet"
+  | "urinal"
+  | "hand_basin"
+  | "mirror_cabinet"
+  // Terras / Outdoor
+  | "parasol"
   | "planter"
-  | "parasol";
+  | "terrace_heater"
+  | "windscreen"
+  | "outdoor_table"
+  | "outdoor_chair"
+  | "flower_box"
+  // Verlichting & Klimaat
+  | "ceiling_light"
+  | "wall_light"
+  | "airco_unit"
+  | "ventilation"
+  | "smoke_detector"
+  | "fire_extinguisher"
+  // Opslag
+  | "shelf_unit"
+  | "storage_rack"
+  | "coat_rack";
 
 export interface ItemNode extends BaseNode {
   type: "item";
