@@ -1,7 +1,25 @@
 // lib/editor/schema/constants.ts
 // Constants for the horeca floor plan editor.
+// Includes defaults for all node types from Pascal Editor + Horecagrond extensions.
 
-import type { HorecaZoneType, HorecaItemType } from "./nodes";
+import type {
+  HorecaZoneType,
+  HorecaItemType,
+  NodeType,
+  WallSide,
+  DoorSegmentType,
+  DoorSwing,
+  DoorSide,
+  DoorHandleType,
+  WindowStyle,
+  AttachTo,
+  SurfaceType,
+  RoofType,
+} from "./nodes";
+
+// ---------------------------------------------------------------------------
+// Wall defaults
+// ---------------------------------------------------------------------------
 
 /** Default wall height in meters */
 export const DEFAULT_WALL_HEIGHT = 3.0;
@@ -9,11 +27,43 @@ export const DEFAULT_WALL_HEIGHT = 3.0;
 /** Default wall thickness in meters */
 export const DEFAULT_WALL_THICKNESS = 0.2;
 
+/** Default wall side classification */
+export const DEFAULT_WALL_SIDE: WallSide = "unknown";
+
+// ---------------------------------------------------------------------------
+// Door defaults
+// ---------------------------------------------------------------------------
+
 /** Default door width in meters */
 export const DEFAULT_DOOR_WIDTH = 0.9;
 
 /** Default door height in meters */
 export const DEFAULT_DOOR_HEIGHT = 2.1;
+
+/** Default door segment type */
+export const DEFAULT_DOOR_SEGMENT_TYPE: DoorSegmentType = "single";
+
+/** Default door swing direction */
+export const DEFAULT_DOOR_SWING: DoorSwing = "push";
+
+/** Default door opening side */
+export const DEFAULT_DOOR_SIDE: DoorSide = "left";
+
+/** Default door handle type */
+export const DEFAULT_DOOR_HANDLE_TYPE: DoorHandleType = "lever";
+
+/** Default door handle height in meters */
+export const DEFAULT_DOOR_HANDLE_HEIGHT = 1.0;
+
+/** Default door frame width in meters */
+export const DEFAULT_DOOR_FRAME_WIDTH = 0.05;
+
+/** Default door frame depth in meters */
+export const DEFAULT_DOOR_FRAME_DEPTH = 0.03;
+
+// ---------------------------------------------------------------------------
+// Window defaults
+// ---------------------------------------------------------------------------
 
 /** Default window width in meters */
 export const DEFAULT_WINDOW_WIDTH = 1.2;
@@ -23,6 +73,88 @@ export const DEFAULT_WINDOW_HEIGHT = 1.2;
 
 /** Default window sill height from floor in meters */
 export const DEFAULT_WINDOW_SILL_HEIGHT = 0.9;
+
+/** Default window style */
+export const DEFAULT_WINDOW_STYLE: WindowStyle = "fixed";
+
+/** Default window frame width in meters */
+export const DEFAULT_WINDOW_FRAME_WIDTH = 0.05;
+
+/** Default window frame depth in meters */
+export const DEFAULT_WINDOW_FRAME_DEPTH = 0.03;
+
+// ---------------------------------------------------------------------------
+// Slab defaults
+// ---------------------------------------------------------------------------
+
+/** Default slab thickness in meters */
+export const DEFAULT_SLAB_THICKNESS = 0.2;
+
+/** Default slab elevation in meters */
+export const DEFAULT_SLAB_ELEVATION = 0;
+
+// ---------------------------------------------------------------------------
+// Ceiling defaults
+// ---------------------------------------------------------------------------
+
+/** Default ceiling height in meters */
+export const DEFAULT_CEILING_HEIGHT = 3.0;
+
+// ---------------------------------------------------------------------------
+// Roof segment defaults
+// ---------------------------------------------------------------------------
+
+/** Default roof type */
+export const DEFAULT_ROOF_TYPE: RoofType = "gable";
+
+/** Default roof segment width in meters */
+export const DEFAULT_ROOF_WIDTH = 5;
+
+/** Default roof segment depth in meters */
+export const DEFAULT_ROOF_DEPTH = 5;
+
+/** Default ridge height in meters */
+export const DEFAULT_ROOF_RIDGE_HEIGHT = 2;
+
+/** Default roof overhang in meters */
+export const DEFAULT_ROOF_OVERHANG = 0.3;
+
+/** Default roof cover thickness in meters */
+export const DEFAULT_ROOF_COVER_THICKNESS = 0.05;
+
+/** Default fascia thickness in meters */
+export const DEFAULT_ROOF_FASCIA_THICKNESS = 0.02;
+
+/** Default soffit thickness in meters */
+export const DEFAULT_ROOF_SOFFIT_THICKNESS = 0.02;
+
+// ---------------------------------------------------------------------------
+// Level defaults
+// ---------------------------------------------------------------------------
+
+/** Default level height (floor-to-ceiling) in meters */
+export const DEFAULT_LEVEL_HEIGHT = 3.0;
+
+// ---------------------------------------------------------------------------
+// Item defaults
+// ---------------------------------------------------------------------------
+
+/** Default item attachment mode */
+export const DEFAULT_ITEM_ATTACH_TO: AttachTo = "floor";
+
+/** Default item surface type */
+export const DEFAULT_ITEM_SURFACE: SurfaceType = "none";
+
+// ---------------------------------------------------------------------------
+// Scan / Guide defaults
+// ---------------------------------------------------------------------------
+
+/** Default scan/guide opacity */
+export const DEFAULT_OVERLAY_OPACITY = 0.5;
+
+// ---------------------------------------------------------------------------
+// Zone visualization
+// ---------------------------------------------------------------------------
 
 /** Visualization color per zone type (hex) */
 export const ZONE_COLORS = {
@@ -55,6 +187,26 @@ export const ZONE_LABELS = {
   seating_outside: "Buitenzitplaatsen",
   hallway: "Gang",
 } as const satisfies Record<HorecaZoneType, string>;
+
+/** CSS variable token names per zone type */
+export const ZONE_COLOR_TOKENS: Record<HorecaZoneType, string> = {
+  dining_area: "--editor-zone-dining",
+  bar_area: "--editor-zone-bar",
+  kitchen: "--editor-zone-kitchen",
+  storage: "--editor-zone-storage",
+  terrace: "--editor-zone-terrace",
+  entrance: "--editor-zone-entrance",
+  restroom: "--editor-zone-restroom",
+  office: "--editor-zone-office",
+  prep_area: "--editor-zone-prep-area",
+  walk_in_cooler: "--editor-zone-walk-in-cooler",
+  seating_outside: "--editor-zone-seating-outside",
+  hallway: "--editor-zone-hallway",
+};
+
+// ---------------------------------------------------------------------------
+// Item defaults
+// ---------------------------------------------------------------------------
 
 /** Default dimensions for items */
 export interface ItemDefault {
@@ -89,18 +241,23 @@ export const ITEM_DEFAULTS = {
   parasol: { width: 3.0, depth: 3.0, height: 2.5, label: "Parasol" },
 } as const satisfies Record<HorecaItemType, ItemDefault>;
 
-/** CSS variable token names per zone type */
-export const ZONE_COLOR_TOKENS: Record<HorecaZoneType, string> = {
-  dining_area: "--editor-zone-dining",
-  bar_area: "--editor-zone-bar",
-  kitchen: "--editor-zone-kitchen",
-  storage: "--editor-zone-storage",
-  terrace: "--editor-zone-terrace",
-  entrance: "--editor-zone-entrance",
-  restroom: "--editor-zone-restroom",
-  office: "--editor-zone-office",
-  prep_area: "--editor-zone-prep-area",
-  walk_in_cooler: "--editor-zone-walk-in-cooler",
-  seating_outside: "--editor-zone-seating-outside",
-  hallway: "--editor-zone-hallway",
+// ---------------------------------------------------------------------------
+// Dutch labels per node type
+// ---------------------------------------------------------------------------
+
+export const NODE_TYPE_LABELS: Record<NodeType, string> = {
+  site: "Terrein",
+  building: "Gebouw",
+  level: "Verdieping",
+  wall: "Muur",
+  door: "Deur",
+  window: "Raam",
+  zone: "Zone",
+  item: "Inventaris",
+  slab: "Vloer",
+  ceiling: "Plafond",
+  roof: "Dak",
+  "roof-segment": "Daksegment",
+  scan: "Scan",
+  guide: "Referentie",
 };

@@ -65,6 +65,10 @@ export interface EditorColors {
   wallDrywall: string;
   wallConcrete: string;
 
+  /* Door & window colors */
+  door: string;
+  window: string;
+
   /* Item category colors */
   itemTable: string;
   itemSeating: string;
@@ -105,6 +109,9 @@ export const DEFAULT_COLORS: EditorColors = {
   wallDrywall: "#f5f5f0",
   wallConcrete: "#808080",
 
+  door: "#8B6914",
+  window: "#87CEEB",
+
   itemTable: "#8B4513",
   itemSeating: "#DEB887",
   itemKitchen: "#C0C0C0",
@@ -142,6 +149,9 @@ function resolveEditorColors(): EditorColors {
     wallGlass: resolveVar("--editor-wall-glass"),
     wallDrywall: resolveVar("--editor-wall-drywall"),
     wallConcrete: resolveVar("--editor-wall-concrete"),
+
+    door: resolveVar("--editor-door"),
+    window: resolveVar("--editor-window"),
 
     itemTable: resolveVar("--editor-item-table"),
     itemSeating: resolveVar("--editor-item-seating"),

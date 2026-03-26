@@ -95,17 +95,37 @@ export function computeSceneBounds(
   };
 
   for (const node of Object.values(nodes)) {
-    if (node.type === "wall") {
-      expand(node.start[0], node.start[1]);
-      expand(node.end[0], node.end[1]);
-    } else if (node.type === "zone" || node.type === "slab") {
-      for (const pt of node.polygon) {
-        expand(pt[0], pt[1]);
-      }
-    } else if (node.type === "item") {
-      expand(node.position[0], node.position[2]);
-    } else if (node.type === "door" || node.type === "window") {
-      expand(node.position[0], node.position[2]);
+    switch (node.type) {
+      case "wall":
+        expand(node.start[0], node.start[1]);
+        expand(node.end[0], node.end[1]);
+        break;
+      case "zone":
+      case "slab":
+      case "ceiling":
+        for (const pt of node.polygon) {
+          expand(pt[0], pt[1]);
+        }
+        break;
+      case "item":
+      case "door":
+      case "window":
+      case "scan":
+      case "guide":
+      case "roof-segment":
+        expand(node.position[0], node.position[2]);
+        break;
+      case "site":
+        // Site polygon defines the property boundary
+        if (node.polygon) {
+          for (const pt of node.polygon) {
+            expand(pt[0], pt[1]);
+          }
+        }
+        break;
+      // building, level, roof — container nodes, no own geometry
+      default:
+        break;
     }
   }
 

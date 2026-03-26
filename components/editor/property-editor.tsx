@@ -530,7 +530,7 @@ export function PropertyEditor({
         case "Escape":
           // Emit tool:cancel so use-tool-events resets its internal refs
           // (wallStartRef, zonePointsRef) in addition to the store state.
-          editorEmitter.emit("tool:cancel", undefined as unknown as void);
+          editorEmitter.emit("tool:cancel");
           clearSelection();
           break;
         case "Enter":

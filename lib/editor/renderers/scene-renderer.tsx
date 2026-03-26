@@ -17,9 +17,6 @@ import type {
   AnyNode,
   WallMaterial,
   HorecaZoneType,
-  SiteNode,
-  BuildingNode,
-  LevelNode,
 } from '../schema';
 import type { ItemCategory } from './item-renderer';
 
@@ -40,7 +37,7 @@ const ZONE_TYPE_TO_COLOR_KEY: Record<HorecaZoneType, keyof ReturnType<typeof use
 };
 
 /** Set of node types that act as hierarchy containers */
-const HIERARCHY_TYPES = new Set(['site', 'building', 'level']);
+const HIERARCHY_TYPES = new Set(['site', 'building', 'level', 'roof']);
 
 /**
  * Build a parent -> children index from the flat node dictionary.
@@ -177,7 +174,11 @@ export function SceneRenderer() {
           />
         );
       case 'slab':
-        // Slab renderer not yet implemented; skip for now
+      case 'ceiling':
+      case 'roof-segment':
+      case 'scan':
+      case 'guide':
+        // Renderers for these types not yet implemented; skip for now
         return null;
       default:
         return null;
@@ -197,21 +198,28 @@ export function SceneRenderer() {
     switch (node.type) {
       case 'site':
         return (
-          <SiteRenderer key={node.id} node={node as SiteNode}>
+          <SiteRenderer key={node.id} node={node}>
             {children?.map((child) => renderTree(child))}
           </SiteRenderer>
         );
       case 'building':
         return (
-          <BuildingRenderer key={node.id} node={node as BuildingNode}>
+          <BuildingRenderer key={node.id} node={node}>
             {children?.map((child) => renderTree(child))}
           </BuildingRenderer>
         );
       case 'level':
         return (
-          <LevelRenderer key={node.id} node={node as LevelNode}>
+          <LevelRenderer key={node.id} node={node}>
             {children?.map((child) => renderTree(child))}
           </LevelRenderer>
+        );
+      case 'roof':
+        // Roof is a hierarchy container (renders children as a group)
+        return (
+          <group key={node.id} visible={node.visible}>
+            {children?.map((child) => renderTree(child))}
+          </group>
         );
       default:
         return renderLeafNode(node);
