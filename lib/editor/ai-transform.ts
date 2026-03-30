@@ -19,46 +19,17 @@ import {
   ITEM_DEFAULTS,
   DEFAULT_WALL_HEIGHT,
   DEFAULT_WALL_THICKNESS,
+  ZONE_LABELS,
 } from "@/lib/editor/schema";
+import { wrapNodesInDefaultHierarchy } from "@/lib/editor/scene-graph";
 
 // ---------------------------------------------------------------------------
 // Valid zone / item types (for filtering LLM output)
 // ---------------------------------------------------------------------------
 
-export const VALID_ZONE_TYPES = new Set<string>([
-  "dining_area",
-  "bar_area",
-  "kitchen",
-  "storage",
-  "terrace",
-  "entrance",
-  "restroom",
-  "office",
-  "prep_area",
-  "walk_in_cooler",
-  "seating_outside",
-  "hallway",
-]);
+export const VALID_ZONE_TYPES = new Set<string>(Object.keys(ZONE_LABELS));
 
-export const VALID_ITEM_TYPES = new Set<string>([
-  "table_round",
-  "table_square",
-  "table_long",
-  "chair",
-  "barstool",
-  "bar_counter",
-  "kitchen_counter",
-  "oven",
-  "stove",
-  "fridge",
-  "sink",
-  "coffee_machine",
-  "display_case",
-  "register",
-  "booth",
-  "planter",
-  "parasol",
-]);
+export const VALID_ITEM_TYPES = new Set<string>(Object.keys(ITEM_DEFAULTS));
 
 // ---------------------------------------------------------------------------
 // LLM response types (what we expect back from the model)
@@ -232,5 +203,5 @@ export function transformToSceneData(plan: LlmFloorPlan): SceneData {
     rootNodeIds.push(itemId);
   }
 
-  return { nodes, rootNodeIds };
+  return wrapNodesInDefaultHierarchy(nodes, rootNodeIds);
 }

@@ -137,6 +137,7 @@ export interface BaseNode {
   type: string;
   name?: string;
   parentId: string | null;
+  children?: string[];
   visible: boolean;
   position: Vec3;
   rotation: Vec3;
@@ -149,6 +150,7 @@ export const BaseNodeSchema = z.object({
   type: NodeTypeSchema,
   name: z.string().optional(),
   parentId: z.string().nullable().default(null),
+  children: z.array(z.string()).optional(),
   visible: z.boolean().default(true),
   position: Vec3Schema.default([0, 0, 0]),
   rotation: Vec3Schema.default([0, 0, 0]),

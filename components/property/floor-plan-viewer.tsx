@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
-import type { SceneData } from "@/lib/editor/schema";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,10 +14,11 @@ import { Separator } from "@/components/ui/separator";
 import { Layers, Box, Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const PropertyEditor = dynamic(
+// Use the Pascal editor in read-only preview mode
+const Editor = dynamic(
   () =>
-    import("@/components/editor/property-editor").then((mod) => ({
-      default: mod.PropertyEditor,
+    import("@pascal-app/editor").then((mod) => ({
+      default: mod.Editor,
     })),
   {
     ssr: false,
@@ -48,6 +48,11 @@ interface FloorPlanViewerProps {
   floorPlans: FloorPlanData[];
 }
 
+type SceneGraph = {
+  nodes: Record<string, unknown>;
+  rootNodeIds: string[];
+};
+
 function getFloorLabel(floor: number): string {
   if (floor === -1) return "Kelder";
   if (floor === 0) return "Begane grond";
@@ -64,7 +69,6 @@ export function FloorPlanViewer({
   const [selectedFloorId, setSelectedFloorId] = useState<string>(
     floorPlans[0]?.id ?? ""
   );
-  const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -77,23 +81,20 @@ export function FloorPlanViewer({
     }
   }, []);
 
-  // Sync state when user exits fullscreen via Escape key
   useEffect(() => {
     const handler = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", handler);
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
 
-  // Sort floors ascending
   const sortedFloors = [...floorPlans].sort((a, b) => a.floor - b.floor);
-
   const selectedFloor = sortedFloors.find((fp) => fp.id === selectedFloorId);
 
   if (floorPlans.length === 0) {
     return null;
   }
 
-  const sceneData = selectedFloor?.sceneData as SceneData | undefined;
+  const sceneData = selectedFloor?.sceneData as SceneGraph | undefined;
 
   return (
     <Card ref={containerRef} className={cn(isFullscreen && "flex flex-col h-screen rounded-none border-none shadow-none bg-background")}>
@@ -104,37 +105,6 @@ export function FloorPlanViewer({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* 2D/3D Toggle */}
-          <div className="flex items-center rounded-lg border border-border bg-muted/50 p-0.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "h-7 gap-1.5 px-2.5 text-xs font-medium",
-                viewMode === "2d" &&
-                  "bg-background text-foreground shadow-sm"
-              )}
-              onClick={() => setViewMode("2d")}
-            >
-              <Layers className="size-3.5" />
-              2D
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "h-7 gap-1.5 px-2.5 text-xs font-medium",
-                viewMode === "3d" &&
-                  "bg-background text-foreground shadow-sm"
-              )}
-              onClick={() => setViewMode("3d")}
-            >
-              <Box className="size-3.5" />
-              3D
-            </Button>
-          </div>
-
-          {/* Fullscreen toggle */}
           <Button
             variant="ghost"
             size="sm"
@@ -153,7 +123,6 @@ export function FloorPlanViewer({
         </div>
       </CardHeader>
 
-      {/* Floor selector tabs */}
       {sortedFloors.length > 1 && (
         <div className="flex items-center gap-1.5 px-6 pb-3">
           {sortedFloors.map((fp) => (
@@ -165,10 +134,7 @@ export function FloorPlanViewer({
                 "h-8 gap-1.5 text-xs",
                 fp.id === selectedFloorId && "pointer-events-none"
               )}
-              onClick={() => {
-                setSelectedFloorId(fp.id);
-                setViewMode("3d");
-              }}
+              onClick={() => setSelectedFloorId(fp.id)}
             >
               {getFloorLabel(fp.floor)}
               {fp.totalArea != null && (
@@ -197,14 +163,14 @@ export function FloorPlanViewer({
             isFullscreen && "min-h-0 max-h-none h-full"
           )}
         >
-          {sceneData ? (
-            <PropertyEditor
-              propertyId={propertyId}
-              floorPlanId={selectedFloor?.id}
-              initialScene={sceneData}
-              readOnly
-              viewMode={viewMode}
-            />
+          {sceneData?.nodes && sceneData?.rootNodeIds ? (
+            <div className="h-full w-full dark">
+              <Editor
+                projectId={`viewer-${propertyId}-${selectedFloor?.id}`}
+                previewScene={sceneData}
+                isVersionPreviewMode
+              />
+            </div>
           ) : (
             <div className="flex items-center justify-center h-full bg-muted/20">
               <p className="text-sm text-muted-foreground">
